@@ -1,0 +1,48 @@
+# =========================
+# Environment variables
+# =========================
+.env
+.env.local
+
+# =========================
+# Python / Django
+# =========================
+__pycache__/
+*.py[cod]
+*.sqlite3
+venv/
+.venv/
+backend/venv/
+backend/.venv/
+
+# =========================
+# React / Node
+# =========================
+node_modules/
+frontend/node_modules/
+frontend/dist/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+# IDE
+# =========================
+.vscode/
+.idea/
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# MinIO
+# =========================
+minio/data/
+
+# =========================
+# Logs
+# =========================
+*.log
