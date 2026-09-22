@@ -56,6 +56,7 @@ INSTALLED_APPS = [
 
     # Apps propias
     "core",
+    "users",
 ]
 
 MIDDLEWARE = [
@@ -162,3 +163,5 @@ CORS_ALLOWED_ORIGINS = [
     ).split(",")
     if origin.strip()
 ]
+
+AUTH_USER_MODEL = "users.User"
