@@ -16,6 +16,7 @@ services:
     tty: true
 
 
+
   backend:
     build:
       context: ./backend
@@ -26,5 +27,41 @@ services:
     volumes:
       - ./backend:/app
     env_file:
-      - ./backend/.env 
-          
+      - ./backend/.env
+    environment:
+      - MINIO_ENDPOINT=minio:9000
+    depends_on:
+      - minio
+
+  minio:
+    image: quay.io/minio/minio:latest
+    container_name: vaultdrive-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+
+  minio-init:
+    image: quay.io/minio/mc:latest
+    container_name: vaultdrive-minio-init
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      until (/usr/bin/mc alias set localminio http://minio:9000 minioadmin minioadmin); do
+        echo 'Esperando que MinIO esté disponible...';
+        sleep 2;
+      done;
+      /usr/bin/mc mb localminio/vaultdrive-storage --ignore-existing;
+      echo 'Bucket vaultdrive-storage verificado/creado con éxito.';
+      exit 0;
+      "
+
+volumes:
+  minio_data:
