@@ -59,6 +59,7 @@ INSTALLED_APPS = [
     "users",
     "core",
     "storage",
+    "plans",
 ]
 
 AUTH_USER_MODEL = "users.User"
