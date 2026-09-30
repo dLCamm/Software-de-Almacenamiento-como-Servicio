@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   CubeLogoIcon,
   ArrowRightIcon,
@@ -79,8 +80,9 @@ const PLANS = [
   { id: 'business', name: 'BUSINESS', price: 'Q399', storage: '500 GB de almacenamiento', cta: 'Seleccionar plan', tone: 'green' },
 ]
 
-export default function LandingPage({ onGoToLogin, onGoToRegister }) {
+export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const navigate = useNavigate()
 
   return (
     <div className="landing">
@@ -101,7 +103,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister }) {
             ))}
           </nav>
 
-          <button type="button" className="btn btn--ghost landing-nav__cta" onClick={onGoToLogin}>
+          <button type="button" className="btn btn--ghost landing-nav__cta" onClick={() => navigate('/login')}>
             <ArrowRightIcon className="btn__icon" />
             Iniciar sesión
           </button>
@@ -131,8 +133,8 @@ export default function LandingPage({ onGoToLogin, onGoToRegister }) {
               className="btn btn--ghost"
               onClick={() => {
                 setMenuOpen(false)
-                onGoToLogin?.()
-              }}
+                navigate('/login')
+              }} 
             >
               Iniciar sesión
             </button>
@@ -157,7 +159,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister }) {
           </p>
 
           <div className="hero__actions">
-            <button type="button" className="btn btn--primary btn--lg" onClick={onGoToRegister}>
+            <button type="button" className="btn btn--primary btn--lg" onClick={() => navigate('/register')}>
               Crear cuenta gratis
             </button>
             <button type="button" className="btn btn--secondary btn--lg">
@@ -234,7 +236,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister }) {
                 <button
                   type="button"
                   className={`btn btn--block ${plan.highlighted ? 'btn--primary' : 'btn--secondary'}`}
-                  onClick={plan.highlighted ? onGoToRegister : undefined}
+                  onClick={() => navigate('/register')}
                 >
                   {plan.cta}
                 </button>
@@ -259,7 +261,7 @@ export default function LandingPage({ onGoToLogin, onGoToRegister }) {
           </div>
           <h2>Empieza hoy mismo — gratis</h2>
           <p>Sin tarjeta de crédito. Sin compromisos. Cancela cuando quieras.</p>
-          <button type="button" className="btn btn--primary btn--lg" onClick={onGoToRegister}>
+          <button type="button" className="btn btn--primary btn--lg" onClick={() => navigate('/register')}>
             Crear cuenta gratis
           </button>
         </section>

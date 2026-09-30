@@ -1,23 +1,22 @@
-import { useState } from 'react'
+import { Navigate, Route, Routes } from 'react-router-dom'
+
 import LandingPage from './pages/Landing/LandingPage'
 import AuthPage from './pages/Auth/AuthPage'
+import DashboardPageClient from './pages/client/DashboardPage'
+import ProtectedRoute from './routes/ProtectedRoute'
+
 
 export default function App() {
-  const [view, setView] = useState('landing')
-
-  if (view === 'landing') {
-    return (
-      <LandingPage
-        onGoToLogin={() => setView('login')}
-        onGoToRegister={() => setView('register')}
-      />
-    )
-  }
-
   return (
-    <AuthPage
-      initialTab={view === 'register' ? 'register' : 'login'}
-      onGoHome={() => setView('landing')}
-    />
+    <Routes>
+
+      <Route path="/" element={<LandingPage />}/>
+      <Route path="/login" element={<AuthPage />}/>
+      <Route path="/register" element={<AuthPage />}/>
+      <Route path="/recover-password" element={<AuthPage />}/>
+      <Route path="/app/client" element={ <ProtectedRoute> <DashboardPageClient /> </ProtectedRoute>}/>
+      <Route path="*" element={<Navigate to="/" replace />}/>
+
+    </Routes>
   )
 }

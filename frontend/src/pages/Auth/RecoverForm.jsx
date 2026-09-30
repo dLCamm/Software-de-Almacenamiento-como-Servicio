@@ -6,7 +6,7 @@ import { requestPasswordReset } from '../../api/auth'
 // El backend todavía no expone /api/auth/password-reset/ (ver users/urls.py),
 // así que este formulario mostrará el error de red hasta que se agregue esa
 // vista en el backend. La UI ya queda lista para conectarse ese día.
-export default function RecoverForm({ onSwitchTab }) {
+export default function RecoverForm({ onGoToLogin }) {
   const [email, setEmail] = useState('')
   const [error, setError] = useState('')
   const [formError, setFormError] = useState('')
@@ -75,7 +75,7 @@ export default function RecoverForm({ onSwitchTab }) {
         </ul>
       </div>
 
-      <button type="button" className="link-button back-link" onClick={() => onSwitchTab('login')}>
+      <button type="button" className="link-button back-link" onClick={onGoToLogin}>
         ← Volver al login
       </button>
     </div>
