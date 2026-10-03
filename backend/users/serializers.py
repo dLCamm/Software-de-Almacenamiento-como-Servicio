@@ -1,68 +1,75 @@
 from rest_framework import serializers
 from .models import User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.db import transaction
+from plans.models import Plan, Subscription
 
 
 class RegisterSerializer(serializers.ModelSerializer):
+
     password = serializers.CharField(
-        write_only=True,
-        min_length=8
+        write_only=True
     )
 
     password_confirm = serializers.CharField(
-        write_only=True,
-        min_length=8
+        write_only=True
     )
 
     class Meta:
         model = User
 
-        fields = (
-            "id",
+        fields = [
+            "id",   
             "first_name",
             "last_name",
             "email",
             "password",
             "password_confirm",
-        )
+        ]
 
-        read_only_fields = (
-            "id",
-        )
+    def validate(self, data):
 
-    def validate_email(self, value):
-        email = value.lower().strip()
-
-        if User.objects.filter(email=email).exists():
-            raise serializers.ValidationError(
-                "Ya existe una cuenta con este correo electrónico."
-            )
-
-        return email
-
-    def validate(self, attrs):
-        if attrs["password"] != attrs["password_confirm"]:
+        if data["password"] != data["password_confirm"]:
             raise serializers.ValidationError({
-                "password_confirm": "Las contraseñas no coinciden."
+                "password_confirm":
+                    "Las contraseñas no coinciden."
             })
 
-        return attrs
+        return data
 
     def create(self, validated_data):
-        validated_data.pop("password_confirm")
 
-        password = validated_data.pop("password")
+        # Este campo solo sirve para validar.
+        # NO pertenece al modelo User.
+        validated_data.pop("password_confirm", None)
 
-        user = User.objects.create_user(
-            password=password,
+        with transaction.atomic():
 
-            # Todo registro público será CLIENTE.
-            role=User.Role.CLIENT,
+            try:
+                free_plan = Plan.objects.get(
+                    slug="free",
+                    is_active=True
+                )
 
-            **validated_data
-        )
+            except Plan.DoesNotExist:
+                raise serializers.ValidationError({
+                    "plan":
+                        "El plan gratuito no está configurado."
+                })
 
-        return user
+            user = User.objects.create_user(
+                **validated_data
+            )
+
+            Subscription.objects.create(
+                user=user,
+                plan=free_plan,
+                status="ACTIVE",
+                auto_renew=False
+            )
+
+            return user
+
 
 
 class UserSerializer(serializers.ModelSerializer):

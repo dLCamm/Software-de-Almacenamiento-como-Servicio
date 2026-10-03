@@ -2,7 +2,7 @@ from django.contrib import admin
 
 # Register your models here.
 from django.contrib import admin
-from .models import Plan, PlanBenefit
+from .models import Plan, PlanBenefit, Subscription
 
 
 class PlanBenefitInline(admin.TabularInline):
@@ -44,4 +44,26 @@ class PlanBenefitAdmin(admin.ModelAdmin):
         "plan",
         "description",
         "order"
+    )
+
+@admin.register(Subscription)
+class SubscriptionAdmin(admin.ModelAdmin):
+
+    list_display = (
+        "user",
+        "plan",
+        "status",
+        "start_date",
+        "end_date",
+        "auto_renew",
+    )
+
+    list_filter = (
+        "status",
+        "plan",
+        "auto_renew",
+    )
+
+    search_fields = (
+        "user__email",
     )
