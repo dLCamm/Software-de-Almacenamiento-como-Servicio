@@ -1,7 +1,7 @@
 import Icon from './Icon'
 
 export default function FolderCard({ folder, layout, onOpen, onMenu, menuOpen, onRename, onDelete }) {
-  return <article className={`drive-item drive-item--folder ${layout === 'list' ? 'is-list' : ''}`}>
+  return <article className={`drive-item drive-item--folder ${layout === 'list' ? 'is-list' : ''} ${menuOpen ? 'is-menu-open' : ''}`}>
     <button className="drive-item__open" type="button" onClick={() => onOpen(folder)} aria-label={`Abrir carpeta ${folder.nombre}`}>
       <Icon name="folder" size={51} />
       <span className="drive-item__name">{folder.nombre}</span>

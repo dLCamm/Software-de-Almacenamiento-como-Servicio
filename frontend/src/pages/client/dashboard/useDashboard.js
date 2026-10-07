@@ -238,7 +238,11 @@ export default function useDashboard(storageApi) {
     try {
       const result = await storageApi.shareFile(file.id)
       setCopied(false)
-      setDialog({ type: 'share', url: storageApi.toBrowserAccessibleShareUrl(result.download_url), expiresInSeconds: result.expira_en_segundos })
+      setDialog({
+        type: 'share',
+        url: storageApi.createSharePageUrl(result.download_url, file.nombre_original, result.expira_en_segundos),
+        expiresInSeconds: result.expira_en_segundos,
+      })
     } catch (requestError) {
       setError(getErrorMessage(requestError))
     }

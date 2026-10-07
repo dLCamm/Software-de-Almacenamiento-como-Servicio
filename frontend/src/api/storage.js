@@ -114,3 +114,29 @@ export function toBrowserAccessibleShareUrl(downloadUrl) {
   signedUrl.pathname = `/minio${signedUrl.pathname}`
   return `${window.location.origin}${signedUrl.pathname}${signedUrl.search}`
 }
+
+function getSignedUrlExpiration(downloadUrl, fallbackSeconds) {
+  try {
+    const signedUrl = new URL(downloadUrl)
+    const signedAtValue = signedUrl.searchParams.get('X-Amz-Date') || signedUrl.searchParams.get('x-amz-date')
+    const lifetimeValue = signedUrl.searchParams.get('X-Amz-Expires') || signedUrl.searchParams.get('x-amz-expires')
+    const signedAtMatch = signedAtValue?.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z$/)
+    const lifetimeSeconds = Number(lifetimeValue)
+    if (signedAtMatch && Number.isFinite(lifetimeSeconds) && lifetimeSeconds > 0) {
+      const [, year, month, day, hour, minute, second] = signedAtMatch
+      const signedAt = Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second))
+      return signedAt + lifetimeSeconds * 1000
+    }
+  } catch {
+    // Use the duration returned by the API if the storage URL has no parseable expiry.
+  }
+  return Date.now() + fallbackSeconds * 1000
+}
+
+export function createSharePageUrl(downloadUrl, fileName, expiresInSeconds) {
+  const sharePageUrl = new URL('/share', window.location.origin)
+  sharePageUrl.searchParams.set('download', toBrowserAccessibleShareUrl(downloadUrl))
+  sharePageUrl.searchParams.set('name', fileName)
+  sharePageUrl.searchParams.set('expires_at', String(getSignedUrlExpiration(downloadUrl, expiresInSeconds)))
+  return sharePageUrl.toString()
+}
