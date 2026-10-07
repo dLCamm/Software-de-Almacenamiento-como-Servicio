@@ -8,19 +8,19 @@ import RecoverForm from './RecoverForm'
 import './AuthPage.css'
 
 
-export default function AuthPage({ onAuthenticated }) {
+export default function AuthPage() {
   const navigate = useNavigate()
   const location = useLocation()
 
   const isLogin = location.pathname === '/login'
   const isRegister = location.pathname === '/register'
   const isRecover = location.pathname === '/recover-password'
+  const requestedPlan = new URLSearchParams(location.search).get('plan')
+  const selectedPlan = ['free', 'pro', 'business'].includes(requestedPlan) ? requestedPlan : 'free'
 
-  function handleAuthenticated(data) {
-  console.log('Usuario autenticado:', data)
-
-  navigate('/app/client')
-}
+  function handleAuthenticated() {
+    navigate('/app/client')
+  }
 
   return (
     <div className="auth-page">
@@ -59,7 +59,7 @@ export default function AuthPage({ onAuthenticated }) {
               role="tab"
               aria-selected={isLogin}
               className={`auth-tabs__item${isLogin ? ' is-active' : ''}`}
-              onClick={() => navigate('/app/client')}
+              onClick={() => navigate('/login')}
             >
               Iniciar sesión
             </button>
@@ -91,7 +91,8 @@ export default function AuthPage({ onAuthenticated }) {
 
           {isRegister && (
             <RegisterForm
-              onGoToLogin={() => navigate('/login')}
+              selectedPlan={selectedPlan}
+              onSwitchTab={() => navigate('/login')}
             />
           )}
 

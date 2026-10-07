@@ -33,6 +33,28 @@ services:
     depends_on:
       - minio
 
+  trash-cleanup:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: vaultdrive-trash-cleanup
+    command:
+      - python
+      - manage.py
+      - purge_expired_trash
+      - --loop
+      - --interval-seconds
+      - "86400"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    environment:
+      - MINIO_ENDPOINT=minio:9000
+    depends_on:
+      - minio
+    restart: unless-stopped
+
   minio:
     image: bitnamilegacy/minio:latest
     container_name: vaultdrive-minio

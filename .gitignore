@@ -33,6 +33,12 @@ yarn-error.log*
 .idea/
 
 # =========================
+# Local assistant configuration
+# =========================
+.github/
+.claude/
+
+# =========================
 # OS
 # =========================
 .DS_Store

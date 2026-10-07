@@ -61,8 +61,7 @@ class FileServiceTestCase(TestCase):
         content = b"%PDF-1.4 large file"
         uploaded = SimpleUploadedFile("grande.pdf", content, content_type="application/pdf")
 
-        # Mockeamos la cuota máxima del usuario a 10 bytes
-        with patch.object(FileService, "DEFAULT_USER_QUOTA_BYTES", 10):
+        with patch.object(self.user.plan, "storage_limit_bytes", 10):
             with self.assertRaises(StorageQuotaExceededError):
                 FileService.upload_file(
                     user=self.user,

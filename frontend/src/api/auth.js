@@ -88,7 +88,7 @@ export async function login({ email, password }) {
   return data
 }
 
-export function register({ firstName, lastName, email, password, confirmPassword }) {
+export function register({ firstName, lastName, email, password, confirmPassword, planCode = 'free' }) {
   return apiRequest('/api/auth/register/', {
     method: 'POST',
     body: {
@@ -97,6 +97,7 @@ export function register({ firstName, lastName, email, password, confirmPassword
       email,
       password,
       password_confirm: confirmPassword,
+      plan_code: planCode,
     },
   })
 }

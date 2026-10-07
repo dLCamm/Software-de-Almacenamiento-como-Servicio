@@ -1,10 +1,8 @@
-import io
 import logging
 from datetime import timedelta
-from typing import BinaryIO, Optional
+from typing import BinaryIO, Iterable, Iterator, Optional
 from minio import Minio
 from minio.error import S3Error
-from urllib3.exceptions import MaxRetryError
 
 from storage.interfaces.storage_backend import (
     IStorageBackend,
@@ -15,6 +13,33 @@ from storage.interfaces.storage_backend import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class MinioObjectStream:
+    CHUNK_SIZE = 64 * 1024
+
+    def __init__(self, response) -> None:
+        self._response = response
+        self._closed = False
+
+    def __iter__(self) -> Iterator[bytes]:
+        try:
+            while True:
+                chunk = self._response.read(self.CHUNK_SIZE)
+                if not chunk:
+                    break
+                yield chunk
+        finally:
+            self.close()
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        try:
+            self._response.close()
+        finally:
+            self._response.release_conn()
 
 
 class MinioStorageBackend(IStorageBackend):
@@ -93,15 +118,11 @@ class MinioStorageBackend(IStorageBackend):
             logger.error("Excepción inesperada al subir '%s': %s", object_name, str(e), exc_info=True)
             raise StorageUploadError(f"Error al transferir archivo hacia MinIO: {e}") from e
 
-    def download_object(self, object_name: str) -> BinaryIO:
-        """Descarga un archivo desde MinIO devolviendo un stream en memoria."""
+    def download_object(self, object_name: str) -> Iterable[bytes]:
+        """Descarga un archivo desde MinIO en fragmentos para evitar cargarlo en memoria."""
         try:
             response = self.client.get_object(self.bucket_name, object_name)
-            data = io.BytesIO(response.read())
-            response.close()
-            response.release_conn()
-            data.seek(0)
-            return data
+            return MinioObjectStream(response)
         except S3Error as e:
             if e.code in ("NoSuchKey", "ResourceNotFound"):
                 raise StorageNotFoundError(f"Objeto no encontrado en MinIO: {object_name}") from e

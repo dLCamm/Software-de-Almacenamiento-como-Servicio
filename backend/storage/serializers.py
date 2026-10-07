@@ -51,6 +51,15 @@ class FileUploadInputSerializer(serializers.Serializer):
     )
 
 
+class ShareLinkInputSerializer(serializers.Serializer):
+    expiracion_segundos = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=7 * 24 * 60 * 60,
+        default=7 * 24 * 60 * 60,
+    )
+
+
 class FileDetailSerializer(serializers.ModelSerializer):
     """Serializador detallado para metadatos de archivos (RF-06)."""
     tamano_legible = serializers.SerializerMethodField()
@@ -89,3 +98,19 @@ class StorageUsageSerializer(serializers.Serializer):
     maximo_bytes = serializers.IntegerField()
     disponible_bytes = serializers.IntegerField()
     porcentaje_usado = serializers.FloatField()
+    plan_codigo = serializers.CharField()
+    plan_nombre = serializers.CharField()
+    plan_precio_mensual = serializers.DecimalField(max_digits=8, decimal_places=2)
+    plan_pendiente_codigo = serializers.CharField(allow_null=True)
+    plan_pendiente_nombre = serializers.CharField(allow_null=True)
+
+
+class TrashItemSerializer(serializers.Serializer):
+    """Representación común de archivos y carpetas que están en la papelera."""
+    id = serializers.UUIDField()
+    tipo = serializers.ChoiceField(choices=["archivo", "carpeta"])
+    nombre = serializers.CharField()
+    extension = serializers.CharField(allow_null=True)
+    tamano_bytes = serializers.IntegerField(allow_null=True)
+    fecha_papelera = serializers.DateTimeField()
+    fecha_eliminacion = serializers.DateTimeField()

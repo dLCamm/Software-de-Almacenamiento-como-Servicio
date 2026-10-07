@@ -50,6 +50,8 @@ class Carpeta(models.Model):
     )
     nombre = models.CharField(max_length=255)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_papelera = models.DateTimeField(null=True, blank=True, db_index=True)
+    papelera_grupo = models.UUIDField(null=True, blank=True, db_index=True)
     estado = models.CharField(
         max_length=20,
         choices=EstadoElemento.choices,
@@ -115,6 +117,8 @@ class Archivo(models.Model):
         blank=True,
         help_text="Fecha y hora límite de vida del archivo temporal",
     )
+    fecha_papelera = models.DateTimeField(null=True, blank=True, db_index=True)
+    papelera_grupo = models.UUIDField(null=True, blank=True, db_index=True)
     estado = models.CharField(
         max_length=20,
         choices=EstadoElemento.choices,

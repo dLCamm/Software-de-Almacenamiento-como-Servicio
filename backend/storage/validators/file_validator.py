@@ -98,24 +98,28 @@ class FileValidator:
     def _validate_magic_bytes(cls, uploaded_file: UploadedFile, expected_ext: str) -> None:
         """Lee los primeros bytes para constatar que el contenido corresponda a la extensión."""
         try:
-            current_pos = uploaded_file.tell() if hasattr(uploaded_file, "tell") else 0
-        except Exception:
-            current_pos = 0
+            current_pos = uploaded_file.tell()
+        except Exception as exc:
+            raise FileValidationError("No se pudo leer el archivo para validar su firma binaria.") from exc
 
         try:
             sample = uploaded_file.read(2048)
-            if hasattr(uploaded_file, "seek"):
-                uploaded_file.seek(current_pos)
+        except Exception as exc:
+            raise FileValidationError("No se pudo leer la firma binaria del archivo.") from exc
 
-            if not sample:
-                raise FileValidationError("No se pudo leer la firma binaria del archivo.")
+        try:
+            uploaded_file.seek(current_pos)
+        except Exception as exc:
+            raise FileValidationError("No se pudo validar completamente la firma binaria del archivo.") from exc
 
-            # Chequeo con filetype si está disponible
+        if not sample:
+            raise FileValidationError("No se pudo leer la firma binaria del archivo.")
+
+        try:
             if filetype:
                 kind = filetype.guess(sample)
                 if kind is not None:
                     detected_ext = kind.extension.lower()
-                    # Mapeos especiales (ej. docx es detectado internamente como zip o docx)
                     if expected_ext == "docx" and detected_ext in ("docx", "zip"):
                         return
                     if expected_ext == "doc" and detected_ext in ("doc", "ole"):
@@ -123,11 +127,8 @@ class FileValidator:
                     if detected_ext == expected_ext:
                         return
 
-            # Verificación de firmas binarias manuales
             signatures = cls.MAGIC_SIGNATURES.get(expected_ext, [])
-            matches = any(sample.startswith(sig) for sig in signatures)
-
-            # Para MP3, ID3 puede estar al inicio o frames sincrónicos en los primeros bytes
+            matches = any(sample.startswith(signature) for signature in signatures)
             if expected_ext == "mp3" and not matches:
                 matches = b"ID3" in sample[:128] or b"\xff\xfb" in sample[:128]
 
@@ -135,13 +136,10 @@ class FileValidator:
                 raise FileValidationError(
                     f"Firma binaria corrupta o incompatible: el contenido no coincide con la extensión .{expected_ext}."
                 )
-
         except FileValidationError:
             raise
-        except Exception as e:
-            # En caso de error de lectura, no bloquear pero advertir
-            if hasattr(uploaded_file, "seek"):
-                uploaded_file.seek(current_pos)
+        except Exception as exc:
+            raise FileValidationError("No se pudo validar la firma binaria del archivo.") from exc
 
     @classmethod
     def _resolve_canonical_mime(cls, extension: str, client_mime: str) -> str:
