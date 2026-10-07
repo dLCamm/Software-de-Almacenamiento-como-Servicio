@@ -236,7 +236,7 @@ export default function LandingPage() {
                 <button
                   type="button"
                   className={`btn btn--block ${plan.highlighted ? 'btn--primary' : 'btn--secondary'}`}
-                  onClick={() => navigate('/register')}
+                  onClick={() => navigate(`/register?plan=${plan.id}`)}
                 >
                   {plan.cta}
                 </button>

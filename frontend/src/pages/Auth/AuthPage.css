@@ -154,6 +154,29 @@
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 }
 
+.register-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+.register-plan select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  background: var(--surface-2);
+  font: inherit;
+}
+
+.register-plan select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 .field {
   display: flex;
   flex-direction: column;

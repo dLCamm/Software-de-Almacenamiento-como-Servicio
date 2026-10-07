@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { logout } from '../../api/auth'
+import { getProfile, logout } from '../../api/auth'
 import * as storageApi from '../../api/storage'
 import DashboardModal from './dashboard/components/DashboardModal'
 import FileCard from './dashboard/components/FileCard'
@@ -17,9 +17,23 @@ export default function DashboardPage() {
   const uploadInput = useRef(null)
   const [layout, setLayout] = useState('grid')
   const [dragging, setDragging] = useState(false)
+  const [account, setAccount] = useState(null)
+  const [accountError, setAccountError] = useState('')
 
   // DashboardPage actúa como punto de composición e inyecta el adaptador API.
   const dashboard = useDashboard(storageApi)
+
+  useEffect(() => {
+    let active = true
+    getProfile()
+      .then((profile) => {
+        if (active) setAccount(profile)
+      })
+      .catch((error) => {
+        if (active) setAccountError(error.message)
+      })
+    return () => { active = false }
+  }, [])
 
   function handleLogout() {
     logout()
@@ -52,7 +66,13 @@ export default function DashboardPage() {
       {!dashboard.showTrash && <input ref={uploadInput} className="visually-hidden" type="file" accept={dashboard.acceptedFileTypes} onChange={handleFileSelection} />}
     </header>
 
-    <StorageBar usage={dashboard.usage} onUpgrade={() => {}} />
+    {account && <div className="dashboard-account">
+      <strong>Hola, {[account.first_name, account.last_name].filter(Boolean).join(' ') || account.email}</strong>
+      <span>{account.email}</span>
+    </div>}
+    {accountError && <div className="dashboard-alert dashboard-alert--error" role="alert">{accountError}</div>}
+
+    <StorageBar usage={dashboard.usage} />
 
     <section className="folder-content" aria-label="Contenido de la unidad">
       <div className="folder-heading">{dashboard.showTrash ? <span className="breadcrumb-current">PAPELERA</span> : <><button type="button" className={dashboard.currentFolder ? 'breadcrumb-root' : 'breadcrumb-root is-current'} onClick={dashboard.goToRoot}>MI UNIDAD</button>{dashboard.currentFolder && <><span className="breadcrumb-separator">/</span><span className="breadcrumb-current">{dashboard.currentFolder.name}</span></>}</>}</div>

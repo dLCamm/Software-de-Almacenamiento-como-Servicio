@@ -15,14 +15,21 @@ const initialForm = {
   email: '',
   password: '',
   confirmPassword: '',
+  planCode: 'free',
   acceptedTerms: false,
 }
 
-export default function RegisterForm({ onSwitchTab }) {
-  const [form, setForm] = useState(initialForm)
+const PLAN_OPTIONS = [
+  { code: 'free', label: 'FREE — 5 GB, Q0/mes' },
+  { code: 'pro', label: 'PRO — 50 GB, Q149/mes' },
+  { code: 'business', label: 'BUSINESS — 500 GB, Q399/mes' },
+]
+
+export default function RegisterForm({ onSwitchTab, selectedPlan = 'free' }) {
+  const [form, setForm] = useState(() => ({ ...initialForm, planCode: selectedPlan }))
   const [errors, setErrors] = useState({})
   const [formError, setFormError] = useState('')
-  const [success, setSuccess] = useState(false)
+  const [registration, setRegistration] = useState(null)
   const [loading, setLoading] = useState(false)
 
   const requirementResults = useMemo(
@@ -60,10 +67,8 @@ export default function RegisterForm({ onSwitchTab }) {
 
     setLoading(true)
     try {
-      // register() envía first_name, last_name, email, password y
-      // password_confirm — el backend (RegisterSerializer) exige los 5.
-      await register(form)
-      setSuccess(true)
+      const result = await register(form)
+      setRegistration(result)
     } catch (err) {
       setFormError(err.message)
     } finally {
@@ -71,13 +76,18 @@ export default function RegisterForm({ onSwitchTab }) {
     }
   }
 
-  if (success) {
+  if (registration) {
     return (
       <div className="auth-panel">
         <h2>Cuenta creada</h2>
         <p className="auth-panel__subtitle">
-          Tu cuenta se creó correctamente. Ya puedes iniciar sesión.
+          Tu cuenta se creó con el plan {registration.plan?.name || 'FREE'}. Ya puedes iniciar sesión.
         </p>
+        {registration.pending_plan && (
+          <p className="auth-panel__subtitle">
+            Solicitaste {registration.pending_plan.name}. Se activará únicamente después de confirmar el pago; mientras tanto conservas los 5 GB del plan FREE.
+          </p>
+        )}
         <button type="button" className="btn btn--primary btn--block" onClick={() => onSwitchTab('login')}>
           Ir a iniciar sesión
         </button>
@@ -117,6 +127,22 @@ export default function RegisterForm({ onSwitchTab }) {
           error={errors.email}
           onChange={(e) => updateField('email', e.target.value)}
         />
+        <label className="register-plan">
+          Plan solicitado
+          <select
+            value={form.planCode}
+            onChange={(e) => updateField('planCode', e.target.value)}
+          >
+            {PLAN_OPTIONS.map((plan) => (
+              <option key={plan.code} value={plan.code}>{plan.label}</option>
+            ))}
+          </select>
+        </label>
+        {form.planCode !== 'free' && (
+          <p className="auth-panel__subtitle">
+            El plan de pago quedará pendiente. Tu cuenta iniciará con FREE (5 GB) hasta confirmar el pago.
+          </p>
+        )}
         <FormField
           icon={LockIcon}
           isPassword
