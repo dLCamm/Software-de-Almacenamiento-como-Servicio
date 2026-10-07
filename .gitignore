@@ -33,9 +33,10 @@ yarn-error.log*
 .idea/
 
 # =========================
-# Copilot local-only agents
+# Local assistant configuration
 # =========================
-.github/agents/
+.github/
+.claude/
 
 # =========================
 # OS
