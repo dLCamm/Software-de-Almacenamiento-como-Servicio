@@ -64,9 +64,11 @@ Para consultar validaciones o lógica interna en el repositorio:
     "last_name": "Pérez",
     "email": "juan.perez@example.com",
     "password": "Password123!",
-    "password_confirm": "Password123!"
+    "password_confirm": "Password123!",
+    "plan_code": "pro"
   }
   ```
+- `plan_code` es opcional y acepta `free`, `pro` o `business`. Todas las cuentas se crean con el plan activo FREE (5 GB). Si se solicita PRO o BUSINESS, queda registrado como pendiente de pago y no cambia la cuota hasta que el pago sea confirmado.
 - **Respuestas:**
   - `201 Created`:
     ```json
@@ -75,10 +77,22 @@ Para consultar validaciones o lógica interna en el repositorio:
       "first_name": "Juan",
       "last_name": "Pérez",
       "email": "juan.perez@example.com",
-      "role": "client"
+      "role": "CLIENT",
+      "plan": {
+        "code": "free",
+        "name": "FREE",
+        "storage_limit_bytes": 5368709120,
+        "monthly_price": "0.00"
+      },
+      "pending_plan": {
+        "code": "pro",
+        "name": "PRO",
+        "storage_limit_bytes": 53687091200,
+        "monthly_price": "149.00"
+      }
     }
     ```
-  - `400 Bad Request`: Si el correo ya existe o las contraseñas no coinciden.
+  - `400 Bad Request`: Si el correo ya existe, las contraseñas no coinciden o el plan solicitado no es válido.
 
 ---
 
@@ -103,7 +117,14 @@ Para consultar validaciones o lógica interna en el repositorio:
         "first_name": "Juan",
         "last_name": "Pérez",
         "email": "juan.perez@example.com",
-        "role": "client"
+        "role": "CLIENT",
+        "plan": {
+          "code": "free",
+          "name": "FREE",
+          "storage_limit_bytes": 5368709120,
+          "monthly_price": "0.00"
+        },
+        "pending_plan": null
       }
     }
     ```
@@ -142,7 +163,14 @@ Para consultar validaciones o lógica interna en el repositorio:
       "first_name": "Juan",
       "last_name": "Pérez",
       "email": "juan.perez@example.com",
-      "role": "client",
+      "role": "CLIENT",
+      "plan": {
+        "code": "free",
+        "name": "FREE",
+        "storage_limit_bytes": 5368709120,
+        "monthly_price": "0.00"
+      },
+      "pending_plan": null,
       "is_email_verified": false,
       "is_active": true,
       "created_at": "2026-09-30T10:00:00Z"
@@ -372,7 +400,12 @@ Para consultar validaciones o lógica interna en el repositorio:
       "usado_bytes": 524288000,
       "maximo_bytes": 5368709120,
       "disponible_bytes": 4844421120,
-      "porcentaje_usado": 9.77
+      "porcentaje_usado": 9.77,
+      "plan_codigo": "free",
+      "plan_nombre": "FREE",
+      "plan_precio_mensual": "0.00",
+      "plan_pendiente_codigo": null,
+      "plan_pendiente_nombre": null
     }
     ```
 

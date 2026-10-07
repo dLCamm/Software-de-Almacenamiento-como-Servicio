@@ -5,6 +5,25 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager, AbstractBa
 from django.db import models
 
 
+class Plan(models.Model):
+    class Code(models.TextChoices):
+        FREE = "free", "FREE"
+        PRO = "pro", "PRO"
+        BUSINESS = "business", "BUSINESS"
+
+    code = models.CharField(max_length=20, choices=Code.choices, unique=True)
+    name = models.CharField(max_length=50)
+    storage_limit_bytes = models.BigIntegerField()
+    monthly_price = models.DecimalField(max_digits=8, decimal_places=2)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["monthly_price"]
+
+    def __str__(self):
+        return self.name
+
+
 class UserManager(BaseUserManager):
     """
     Manager personalizado porque utilizaremos email
@@ -16,9 +35,11 @@ class UserManager(BaseUserManager):
             raise ValueError("El correo electrónico es obligatorio.")
 
         email = self.normalize_email(email)
+        plan = extra_fields.pop("plan", None) or Plan.objects.get(code=Plan.Code.FREE)
 
         user = self.model(
             email=email,
+            plan=plan,
             **extra_fields
         )
 
@@ -63,6 +84,21 @@ class User(AbstractUser):
     email = models.EmailField(
         unique=True,
         verbose_name="Correo electrónico"
+    )
+
+    plan = models.ForeignKey(
+        Plan,
+        on_delete=models.PROTECT,
+        related_name="users",
+        verbose_name="Plan actual",
+    )
+    pending_plan = models.ForeignKey(
+        Plan,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="users_with_pending_plan",
+        verbose_name="Plan pendiente de pago",
     )
 
     role = models.CharField(

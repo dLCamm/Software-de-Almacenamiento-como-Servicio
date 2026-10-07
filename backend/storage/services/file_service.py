@@ -219,7 +219,8 @@ class FileService:
             estado__in=(EstadoElemento.ACTIVO, EstadoElemento.PAPELERA),
         ).aggregate(total=models.Sum("tamano_bytes"))["total"] or 0
 
-        max_quota = getattr(user, "storage_limit_bytes", cls.DEFAULT_USER_QUOTA_BYTES)
+        plan = user.plan
+        max_quota = plan.storage_limit_bytes
         available = max(0, max_quota - total_used)
 
         return {
@@ -227,6 +228,11 @@ class FileService:
             "maximo_bytes": max_quota,
             "disponible_bytes": available,
             "porcentaje_usado": round((total_used / max_quota) * 100, 2) if max_quota > 0 else 0.0,
+            "plan_codigo": plan.code,
+            "plan_nombre": plan.name,
+            "plan_precio_mensual": plan.monthly_price,
+            "plan_pendiente_codigo": user.pending_plan.code if user.pending_plan else None,
+            "plan_pendiente_nombre": user.pending_plan.name if user.pending_plan else None,
         }
 
     @classmethod

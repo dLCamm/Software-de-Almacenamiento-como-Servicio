@@ -1,6 +1,12 @@
 from rest_framework import serializers
-from .models import User
+from .models import Plan, User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
+
+class PlanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Plan
+        fields = ("code", "name", "storage_limit_bytes", "monthly_price")
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -13,6 +19,13 @@ class RegisterSerializer(serializers.ModelSerializer):
         write_only=True,
         min_length=8
     )
+    plan_code = serializers.ChoiceField(
+        choices=Plan.Code.choices,
+        write_only=True,
+        default=Plan.Code.FREE,
+    )
+    plan = PlanSerializer(read_only=True)
+    pending_plan = PlanSerializer(read_only=True)
 
     class Meta:
         model = User
@@ -22,12 +35,17 @@ class RegisterSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "email",
+            "role",
             "password",
             "password_confirm",
+            "plan_code",
+            "plan",
+            "pending_plan",
         )
 
         read_only_fields = (
             "id",
+            "role",
         )
 
     def validate_email(self, value):
@@ -52,13 +70,17 @@ class RegisterSerializer(serializers.ModelSerializer):
         validated_data.pop("password_confirm")
 
         password = validated_data.pop("password")
+        selected_plan_code = validated_data.pop("plan_code")
+        free_plan = Plan.objects.get(code=Plan.Code.FREE)
+        selected_plan = Plan.objects.get(code=selected_plan_code, is_active=True)
 
         user = User.objects.create_user(
             password=password,
 
             # Todo registro público será CLIENTE.
             role=User.Role.CLIENT,
-
+            plan=free_plan,
+            pending_plan=selected_plan if selected_plan != free_plan else None,
             **validated_data
         )
 
@@ -66,6 +88,9 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    plan = PlanSerializer(read_only=True)
+    pending_plan = PlanSerializer(read_only=True)
+
     class Meta:
         model = User
 
@@ -75,6 +100,8 @@ class UserSerializer(serializers.ModelSerializer):
             "last_name",
             "email",
             "role",
+            "plan",
+            "pending_plan",
             "is_email_verified",
             "is_active",
             "created_at",
@@ -102,6 +129,12 @@ class LoginSerializer(TokenObtainPairSerializer):
             "last_name": self.user.last_name,
             "email": self.user.email,
             "role": self.user.role,
+            "plan": PlanSerializer(self.user.plan).data,
+            "pending_plan": (
+                PlanSerializer(self.user.pending_plan).data
+                if self.user.pending_plan
+                else None
+            ),
         }
 
         return data

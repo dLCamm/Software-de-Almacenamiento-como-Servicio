@@ -89,6 +89,11 @@ class StorageUsageSerializer(serializers.Serializer):
     maximo_bytes = serializers.IntegerField()
     disponible_bytes = serializers.IntegerField()
     porcentaje_usado = serializers.FloatField()
+    plan_codigo = serializers.CharField()
+    plan_nombre = serializers.CharField()
+    plan_precio_mensual = serializers.DecimalField(max_digits=8, decimal_places=2)
+    plan_pendiente_codigo = serializers.CharField(allow_null=True)
+    plan_pendiente_nombre = serializers.CharField(allow_null=True)
 
 
 class TrashItemSerializer(serializers.Serializer):
