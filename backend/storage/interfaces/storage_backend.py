@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import BinaryIO, Optional
+from typing import BinaryIO, Iterable, Optional
 
 
 class StorageError(Exception):
@@ -48,12 +48,12 @@ class IStorageBackend(ABC):
         pass
 
     @abstractmethod
-    def download_object(self, object_name: str) -> BinaryIO:
+    def download_object(self, object_name: str) -> Iterable[bytes]:
         """
         Descarga el flujo binario de un objeto.
 
         :param object_name: Identificador del objeto en el bucket.
-        :return: Flujo de bytes para lectura.
+        :return: Iterador de fragmentos de bytes.
         """
         pass
 

@@ -3,7 +3,7 @@ import logging
 import os
 import re
 import uuid
-from typing import BinaryIO, Optional, Union
+from typing import Iterable, Optional, Union
 from uuid import UUID
 
 from django.core.files.uploadedfile import UploadedFile
@@ -158,7 +158,7 @@ class FileService:
         user,
         file_id: Union[str, UUID],
         storage_backend: Optional[IStorageBackend] = None,
-    ) -> tuple[Archivo, BinaryIO]:
+    ) -> tuple[Archivo, Iterable[bytes]]:
         """Recupera la instancia del archivo y su flujo binario desde MinIO."""
         backend = storage_backend or get_storage_backend()
         try:
