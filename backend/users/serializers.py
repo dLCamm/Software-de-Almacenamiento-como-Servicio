@@ -1,3 +1,5 @@
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from .models import Plan, User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -58,11 +60,26 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         return email
 
+    def validate_plan_code(self, value):
+        if not Plan.objects.filter(code=value, is_active=True).exists():
+            raise serializers.ValidationError("El plan solicitado no está disponible.")
+        return value
+
     def validate(self, attrs):
         if attrs["password"] != attrs["password_confirm"]:
             raise serializers.ValidationError({
                 "password_confirm": "Las contraseñas no coinciden."
             })
+
+        user = User(
+            email=attrs.get("email", ""),
+            first_name=attrs.get("first_name", ""),
+            last_name=attrs.get("last_name", ""),
+        )
+        try:
+            validate_password(attrs["password"], user=user)
+        except DjangoValidationError as error:
+            raise serializers.ValidationError({"password": error.messages}) from error
 
         return attrs
 

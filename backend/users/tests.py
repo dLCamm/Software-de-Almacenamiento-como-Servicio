@@ -60,3 +60,31 @@ class UserPlanRegistrationTests(TestCase):
         response = self.register("invalid@example.com", "enterprise")
 
         self.assertEqual(response.status_code, 400)
+
+    def test_password_rejected_by_configured_django_validators(self):
+        response = self.client.post(
+            "/api/auth/register/",
+            {
+                "first_name": "Ana",
+                "last_name": "López",
+                "email": "weak-password@example.com",
+                "password": "12345678",
+                "password_confirm": "12345678",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("password", response.data)
+        self.assertFalse(User.objects.filter(email="weak-password@example.com").exists())
+
+    def test_inactive_paid_plan_selection_is_rejected_as_validation_error(self):
+        from users.models import Plan
+
+        Plan.objects.filter(code=Plan.Code.PRO).update(is_active=False)
+
+        response = self.register("inactive-plan@example.com", "pro")
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("plan_code", response.data)
+        self.assertFalse(User.objects.filter(email="inactive-plan@example.com").exists())
