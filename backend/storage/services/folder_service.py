@@ -4,6 +4,7 @@ from uuid import UUID
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import IntegrityError
 from storage.models import Carpeta, EstadoElemento
+from storage.services.trash_service import TrashNotFoundError, TrashService
 
 logger = logging.getLogger(__name__)
 
@@ -125,16 +126,11 @@ class FolderService:
         folder_id: Union[str, UUID],
         soft_delete: bool = True,
     ) -> None:
-        """Elimina una carpeta (borrado lógico por defecto o cascada física)."""
+        """Mueve el árbol completo a papelera o lo elimina tras la retención."""
         try:
-            folder = Carpeta.objects.get(id=folder_id, usuario=user)
-        except Carpeta.DoesNotExist:
-            raise FolderNotFoundError("La carpeta a eliminar no existe.")
-
-        if soft_delete:
-            folder.estado = EstadoElemento.PAPELERA
-            folder.save(update_fields=["estado"])
-            logger.info("Carpeta ID %s marcada como papelera.", folder_id)
-        else:
-            folder.delete()
-            logger.info("Carpeta ID %s eliminada permanentemente.", folder_id)
+            if soft_delete:
+                TrashService.move_folder_to_trash(user, folder_id)
+            else:
+                TrashService.delete_folder_permanently(user, folder_id)
+        except TrashNotFoundError as exc:
+            raise FolderNotFoundError(str(exc)) from exc

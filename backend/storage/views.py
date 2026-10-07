@@ -1,9 +1,8 @@
 import logging
-from django.contrib.auth import get_user_model
-from django.http import FileResponse, Http404
+from django.http import FileResponse
 from rest_framework import status
 from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -15,6 +14,7 @@ from storage.serializers import (
     FolderRenameSerializer,
     FolderSerializer,
     StorageUsageSerializer,
+    TrashItemSerializer,
 )
 from storage.services.file_service import (
     FileNotFoundServiceError,
@@ -29,27 +29,22 @@ from storage.services.folder_service import (
     FolderServiceError,
 )
 from storage.validators.file_validator import FileValidationError
+from storage.services.trash_service import (
+    TrashConflictError,
+    TrashNotFoundError,
+    TrashRetentionError,
+    TrashService,
+    TrashStorageError,
+)
 
 logger = logging.getLogger(__name__)
-User = get_user_model()
 
 
-def _get_current_user(request):
-    """
-    Recupera el usuario de la petición. Si no está autenticado (ej. durante desarrollo temprano
-    de Backend 1 o pruebas sin token), provee un usuario fallback seguro para evitar bloqueos.
-    """
-    if request.user and request.user.is_authenticated:
-        return request.user
-    # Fallback para desarrollo local
-    user, _ = User.objects.get_or_create(
-        email="dev@vaultdrive.local",
-        defaults={"is_active": True, "role": "client"},
-    )
-    return user
+class AuthenticatedStorageAPIView(APIView):
+    permission_classes = [IsAuthenticated]
 
 
-class FileUploadView(APIView):
+class FileUploadView(AuthenticatedStorageAPIView):
     """
     Endpoint para carga de archivos a MinIO y PostgreSQL (RF-06, RF-07, RF-09, RF-10).
     Método: POST /api/storage/files/upload/
@@ -62,7 +57,7 @@ class FileUploadView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        user = _get_current_user(request)
+        user = request.user
         validated_data = serializer.validated_data
 
         try:
@@ -91,7 +86,7 @@ class FileUploadView(APIView):
             return Response({"error": "Error interno en servicio de archivos", "detalle": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class FileListView(APIView):
+class FileListView(AuthenticatedStorageAPIView):
     """
     Endpoint para listado de archivos con filtros (RF-06).
     Método: GET /api/storage/files/
@@ -102,7 +97,7 @@ class FileListView(APIView):
     """
 
     def get(self, request, *args, **kwargs):
-        user = _get_current_user(request)
+        user = request.user
         queryset = Archivo.objects.filter(usuario=user, estado=EstadoElemento.ACTIVO)
 
         carpeta_id = request.query_params.get("carpeta_id")
@@ -124,42 +119,54 @@ class FileListView(APIView):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class FileDetailView(APIView):
+class FileDetailView(AuthenticatedStorageAPIView):
     """
     Endpoint para consulta y eliminación de un archivo específico.
     Métodos: GET, DELETE /api/storage/files/<uuid:file_id>/
     """
 
     def get(self, request, file_id, *args, **kwargs):
-        user = _get_current_user(request)
+        user = request.user
         try:
-            archivo = Archivo.objects.get(id=file_id, usuario=user)
+            archivo = Archivo.objects.get(
+                id=file_id,
+                usuario=user,
+                estado=EstadoElemento.ACTIVO,
+            )
             serializer = FileDetailSerializer(archivo)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Archivo.DoesNotExist:
             return Response({"error": "Archivo no encontrado."}, status=status.HTTP_404_NOT_FOUND)
 
     def delete(self, request, file_id, *args, **kwargs):
-        user = _get_current_user(request)
+        user = request.user
         permanente = request.query_params.get("permanente", "false").lower() in ("true", "1")
         try:
             FileService.delete_file(user=user, file_id=file_id, permanent=permanente)
             return Response(
-                {"message": f"Archivo {'eliminado definitivamente' if permanente else 'movido a la papelera'}."},
+                {
+                    "message": "Archivo eliminado definitivamente."
+                    if permanente
+                    else "Archivo movido a la papelera por 30 días."
+                },
                 status=status.HTTP_200_OK,
             )
-        except FileNotFoundServiceError:
+        except (FileNotFoundServiceError, TrashNotFoundError):
             return Response({"error": "Archivo no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        except TrashRetentionError as e:
+            return Response({"error": str(e)}, status=status.HTTP_409_CONFLICT)
+        except TrashStorageError as e:
+            return Response({"error": str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
-class FileDownloadView(APIView):
+class FileDownloadView(AuthenticatedStorageAPIView):
     """
     Descarga el contenido binario del archivo desde MinIO hacia el cliente.
     Método: GET /api/storage/files/<uuid:file_id>/download/
     """
 
     def get(self, request, file_id, *args, **kwargs):
-        user = _get_current_user(request)
+        user = request.user
         try:
             archivo, stream = FileService.get_file_download_stream(user=user, file_id=file_id)
             response = FileResponse(
@@ -173,14 +180,14 @@ class FileDownloadView(APIView):
             return Response({"error": "Archivo no encontrado."}, status=status.HTTP_404_NOT_FOUND)
 
 
-class FileShareView(APIView):
+class FileShareView(AuthenticatedStorageAPIView):
     """
     Genera un enlace público temporal prefirmado hacia MinIO (RF-11).
     Método: POST /api/storage/files/<uuid:file_id>/share/
     """
 
     def post(self, request, file_id, *args, **kwargs):
-        user = _get_current_user(request)
+        user = request.user
         duracion_segundos = int(request.data.get("expiracion_segundos", 1209600))  # 14 días
         try:
             url = FileService.generate_presigned_download_url(
@@ -193,14 +200,14 @@ class FileShareView(APIView):
             return Response({"error": "Archivo no encontrado."}, status=status.HTTP_404_NOT_FOUND)
 
 
-class FolderListCreateView(APIView):
+class FolderListCreateView(AuthenticatedStorageAPIView):
     """
     Endpoint para listar y crear carpetas en el árbol jerárquico (RF-08).
     Método: GET, POST /api/storage/folders/
     """
 
     def get(self, request, *args, **kwargs):
-        user = _get_current_user(request)
+        user = request.user
         parent_id = request.query_params.get("parent_id")
         folders = FolderService.list_folders(user=user, parent_id=parent_id)
         serializer = FolderSerializer(folders, many=True)
@@ -211,7 +218,7 @@ class FolderListCreateView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        user = _get_current_user(request)
+        user = request.user
         try:
             folder = FolderService.create_folder(
                 user=user,
@@ -225,7 +232,7 @@ class FolderListCreateView(APIView):
             return Response({"error": "Error al crear carpeta", "detalle": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
-class FolderDetailView(APIView):
+class FolderDetailView(AuthenticatedStorageAPIView):
     """
     Endpoint para renombrar o eliminar una carpeta (RF-08).
     Método: PATCH, DELETE /api/storage/folders/<uuid:folder_id>/
@@ -236,7 +243,7 @@ class FolderDetailView(APIView):
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        user = _get_current_user(request)
+        user = request.user
         try:
             folder = FolderService.rename_folder(
                 user=user,
@@ -250,23 +257,69 @@ class FolderDetailView(APIView):
             return Response({"error": "Carpeta no encontrada."}, status=status.HTTP_404_NOT_FOUND)
 
     def delete(self, request, folder_id, *args, **kwargs):
-        user = _get_current_user(request)
+        user = request.user
         permanente = request.query_params.get("permanente", "false").lower() in ("true", "1")
         try:
             FolderService.delete_folder(user=user, folder_id=folder_id, soft_delete=not permanente)
-            return Response({"message": "Carpeta eliminada exitosamente."}, status=status.HTTP_200_OK)
-        except FolderNotFoundError:
+            message = (
+                "Carpeta y contenido eliminados definitivamente."
+                if permanente
+                else "Carpeta y contenido movidos a la papelera por 30 días."
+            )
+            return Response({"message": message}, status=status.HTTP_200_OK)
+        except (FolderNotFoundError, TrashNotFoundError):
             return Response({"error": "Carpeta no encontrada."}, status=status.HTTP_404_NOT_FOUND)
+        except TrashConflictError as e:
+            return Response({"error": str(e)}, status=status.HTTP_409_CONFLICT)
+        except TrashRetentionError as e:
+            return Response({"error": str(e)}, status=status.HTTP_409_CONFLICT)
+        except TrashStorageError as e:
+            return Response({"error": str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
 
-class StorageUsageView(APIView):
+class StorageUsageView(AuthenticatedStorageAPIView):
     """
     Endpoint para calcular y retornar el espacio ocupado y disponible en tiempo real (RF-09).
     Método: GET /api/storage/usage/
     """
 
     def get(self, request, *args, **kwargs):
-        user = _get_current_user(request)
+        user = request.user
         usage = FileService.get_user_storage_usage(user)
         serializer = StorageUsageSerializer(usage)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class TrashListView(AuthenticatedStorageAPIView):
+    def get(self, request, *args, **kwargs):
+        items = TrashService.list_trash(request.user)
+        serializer = TrashItemSerializer(items, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class FileRestoreView(AuthenticatedStorageAPIView):
+    def post(self, request, file_id, *args, **kwargs):
+        try:
+            archivo = TrashService.restore_file(request.user, file_id)
+            return Response(
+                {"message": "Archivo restaurado.", "id": archivo.id},
+                status=status.HTTP_200_OK,
+            )
+        except TrashNotFoundError as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except TrashConflictError as e:
+            return Response({"error": str(e)}, status=status.HTTP_409_CONFLICT)
+
+
+class FolderRestoreView(AuthenticatedStorageAPIView):
+    def post(self, request, folder_id, *args, **kwargs):
+        try:
+            folder = TrashService.restore_folder(request.user, folder_id)
+            return Response(
+                {"message": "Carpeta y contenido restaurados.", "id": folder.id},
+                status=status.HTTP_200_OK,
+            )
+        except TrashNotFoundError as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+        except TrashConflictError as e:
+            return Response({"error": str(e)}, status=status.HTTP_409_CONFLICT)

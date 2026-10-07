@@ -89,3 +89,14 @@ class StorageUsageSerializer(serializers.Serializer):
     maximo_bytes = serializers.IntegerField()
     disponible_bytes = serializers.IntegerField()
     porcentaje_usado = serializers.FloatField()
+
+
+class TrashItemSerializer(serializers.Serializer):
+    """Representación común de archivos y carpetas que están en la papelera."""
+    id = serializers.UUIDField()
+    tipo = serializers.ChoiceField(choices=["archivo", "carpeta"])
+    nombre = serializers.CharField()
+    extension = serializers.CharField(allow_null=True)
+    tamano_bytes = serializers.IntegerField(allow_null=True)
+    fecha_papelera = serializers.DateTimeField()
+    fecha_eliminacion = serializers.DateTimeField()

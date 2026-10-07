@@ -14,6 +14,8 @@ export default function useDashboard(storageApi) {
   const [folderStack, setFolderStack] = useState([])
   const [files, setFiles] = useState([])
   const [folders, setFolders] = useState([])
+  const [trashItems, setTrashItems] = useState([])
+  const [showTrash, setShowTrash] = useState(false)
   const [usage, setUsage] = useState(null)
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
@@ -37,15 +39,26 @@ export default function useDashboard(storageApi) {
       setLoading(true)
       setError('')
       try {
-        const [nextFiles, nextFolders, nextUsage] = await Promise.all([
-          storageApi.listFiles({ folderId: currentFolderId ?? 'root', query: search }),
-          storageApi.listFolders(currentFolderId),
-          storageApi.getStorageUsage(),
-        ])
-        if (!ignored) {
-          setFiles(Array.isArray(nextFiles) ? nextFiles : [])
-          setFolders(Array.isArray(nextFolders) ? nextFolders : [])
-          setUsage(nextUsage)
+        if (showTrash) {
+          const [nextTrashItems, nextUsage] = await Promise.all([
+            storageApi.listTrash(),
+            storageApi.getStorageUsage(),
+          ])
+          if (!ignored) {
+            setTrashItems(Array.isArray(nextTrashItems) ? nextTrashItems : [])
+            setUsage(nextUsage)
+          }
+        } else {
+          const [nextFiles, nextFolders, nextUsage] = await Promise.all([
+            storageApi.listFiles({ folderId: currentFolderId ?? 'root', query: search }),
+            storageApi.listFolders(currentFolderId),
+            storageApi.getStorageUsage(),
+          ])
+          if (!ignored) {
+            setFiles(Array.isArray(nextFiles) ? nextFiles : [])
+            setFolders(Array.isArray(nextFolders) ? nextFolders : [])
+            setUsage(nextUsage)
+          }
         }
       } catch (requestError) {
         if (!ignored) setError(getErrorMessage(requestError))
@@ -54,7 +67,7 @@ export default function useDashboard(storageApi) {
       }
     }, search ? 220 : 0)
     return () => { ignored = true; window.clearTimeout(timer) }
-  }, [currentFolderId, refreshKey, search, storageApi])
+  }, [currentFolderId, refreshKey, search, showTrash, storageApi])
 
   function refresh() {
     setRefreshKey((key) => key + 1)
@@ -92,6 +105,19 @@ export default function useDashboard(storageApi) {
   function goToRoot() {
     setFolderStack([])
     setSearch('')
+  }
+
+  function openTrash() {
+    setFolderStack([])
+    setSearch('')
+    setShowTrash(true)
+    setOpenMenu('')
+    setNotice('')
+  }
+
+  function closeTrash() {
+    setShowTrash(false)
+    setNotice('')
   }
 
   async function acceptFiles(fileList) {
@@ -146,7 +172,7 @@ export default function useDashboard(storageApi) {
     if (!window.confirm(`¿Mover “${file.nombre_original}” a la papelera?`)) return
     try {
       await storageApi.deleteFile(file.id)
-      setNotice('El archivo se movió a la papelera.')
+      setNotice('El archivo se movió a la papelera por 30 días.')
       refresh()
     } catch (requestError) {
       setError(getErrorMessage(requestError))
@@ -158,7 +184,32 @@ export default function useDashboard(storageApi) {
     if (!window.confirm(`¿Mover la carpeta “${folder.nombre}” a la papelera?`)) return
     try {
       await storageApi.deleteFolder(folder.id)
-      setNotice('La carpeta se movió a la papelera.')
+      setNotice('La carpeta y su contenido se movieron a la papelera por 30 días.')
+      refresh()
+    } catch (requestError) {
+      setError(getErrorMessage(requestError))
+    }
+  }
+
+  async function restoreTrashItem(item) {
+    try {
+      if (item.tipo === 'archivo') await storageApi.restoreFile(item.id)
+      else await storageApi.restoreFolder(item.id)
+      setNotice(`${item.tipo === 'archivo' ? 'El archivo' : 'La carpeta y su contenido'} se restauró correctamente.`)
+      refresh()
+    } catch (requestError) {
+      setError(getErrorMessage(requestError))
+    }
+  }
+
+  async function deleteTrashItem(item) {
+    const expiration = Date.parse(item.fecha_eliminacion)
+    if (!Number.isFinite(expiration) || expiration > Date.now()) return
+    if (!window.confirm(`¿Eliminar definitivamente “${item.nombre}”? Esta acción no se puede deshacer.`)) return
+    try {
+      if (item.tipo === 'archivo') await storageApi.deleteFile(item.id, true)
+      else await storageApi.deleteFolder(item.id, true)
+      setNotice(`${item.nombre} se eliminó definitivamente.`)
       refresh()
     } catch (requestError) {
       setError(getErrorMessage(requestError))
@@ -207,6 +258,8 @@ export default function useDashboard(storageApi) {
     currentFolder,
     files,
     visibleFolders,
+    trashItems,
+    showTrash,
     usage,
     search,
     setSearch,
@@ -233,7 +286,11 @@ export default function useDashboard(storageApi) {
     copyShareLink,
     openFolder,
     goToRoot,
+    openTrash,
+    closeTrash,
     showFolderDialog,
+    restoreTrashItem,
+    deleteTrashItem,
     closeDialog,
   }
 }

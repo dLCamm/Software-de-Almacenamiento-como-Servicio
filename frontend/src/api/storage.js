@@ -24,6 +24,24 @@ export function getStorageUsage() {
   return apiRequest('/api/storage/usage/', { auth: true })
 }
 
+export function listTrash() {
+  return apiRequest('/api/storage/trash/', { auth: true })
+}
+
+export function restoreFile(fileId) {
+  return apiRequest(`/api/storage/files/${fileId}/restore/`, {
+    method: 'POST',
+    auth: true,
+  })
+}
+
+export function restoreFolder(folderId) {
+  return apiRequest(`/api/storage/folders/${folderId}/restore/`, {
+    method: 'POST',
+    auth: true,
+  })
+}
+
 export function uploadFile(file, folderId = null) {
   const formData = new FormData()
   formData.append('archivo', file)
@@ -51,15 +69,17 @@ export function renameFolder(folderId, name) {
   })
 }
 
-export function deleteFolder(folderId) {
-  return apiRequest(`/api/storage/folders/${folderId}/`, {
+export function deleteFolder(folderId, permanent = false) {
+  const suffix = permanent ? '?permanente=true' : ''
+  return apiRequest(`/api/storage/folders/${folderId}/${suffix}`, {
     method: 'DELETE',
     auth: true,
   })
 }
 
-export function deleteFile(fileId) {
-  return apiRequest(`/api/storage/files/${fileId}/`, {
+export function deleteFile(fileId, permanent = false) {
+  const suffix = permanent ? '?permanente=true' : ''
+  return apiRequest(`/api/storage/files/${fileId}/${suffix}`, {
     method: 'DELETE',
     auth: true,
   })

@@ -18,6 +18,7 @@ from storage.interfaces.storage_backend import (
 )
 from storage.models import Archivo, Carpeta, EstadoElemento
 from storage.services.storage_service import get_storage_backend
+from storage.services.trash_service import TrashNotFoundError, TrashService
 from storage.validators.file_validator import FileValidationError, FileValidator
 
 logger = logging.getLogger(__name__)
@@ -201,30 +202,21 @@ class FileService:
         permanent: bool = False,
         storage_backend: Optional[IStorageBackend] = None,
     ) -> None:
-        """Elimina un archivo (eliminación lógica o física con borrado en MinIO)."""
-        backend = storage_backend or get_storage_backend()
+        """Mueve el archivo a papelera o lo elimina tras cumplir la retención."""
         try:
-            archivo = Archivo.objects.get(id=file_id, usuario=user)
-        except Archivo.DoesNotExist:
-            raise FileNotFoundServiceError("El archivo a eliminar no existe.")
-
-        if permanent:
-            # Eliminación física tanto en MinIO como en DB
-            backend.delete_object(archivo.object_key)
-            archivo.delete()
-            logger.info("Archivo ID %s eliminado permanentemente de MinIO y DB.", file_id)
-        else:
-            # Eliminación lógica (papelera)
-            archivo.estado = EstadoElemento.PAPELERA
-            archivo.save(update_fields=["estado"])
-            logger.info("Archivo ID %s movido a papelera.", file_id)
+            if permanent:
+                TrashService.delete_file_permanently(user, file_id, storage_backend)
+            else:
+                TrashService.move_file_to_trash(user, file_id)
+        except TrashNotFoundError as exc:
+            raise FileNotFoundServiceError(str(exc)) from exc
 
     @classmethod
     def get_user_storage_usage(cls, user) -> dict:
         """Calcula el uso actual de almacenamiento del usuario (RF-09)."""
         total_used = Archivo.objects.filter(
             usuario=user,
-            estado=EstadoElemento.ACTIVO,
+            estado__in=(EstadoElemento.ACTIVO, EstadoElemento.PAPELERA),
         ).aggregate(total=models.Sum("tamano_bytes"))["total"] or 0
 
         max_quota = getattr(user, "storage_limit_bytes", cls.DEFAULT_USER_QUOTA_BYTES)
