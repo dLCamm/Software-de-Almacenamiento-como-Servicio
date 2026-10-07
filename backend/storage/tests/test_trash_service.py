@@ -181,6 +181,54 @@ class TrashServiceTestCase(TestCase):
         self.assertFalse(Archivo.objects.filter(id=expired.id).exists())
         self.backend.delete_object.assert_called_once_with(expired.object_key)
 
+    def test_purge_removes_expired_temporary_active_files(self):
+        expired = self.create_file(
+            "temporal.pdf",
+            es_temporal=True,
+            fecha_expiracion=timezone.now() - timedelta(minutes=1),
+        )
+        unexpired = self.create_file(
+            "vigente.pdf",
+            es_temporal=True,
+            fecha_expiracion=timezone.now() + timedelta(days=1),
+        )
+
+        result = TrashService.purge_expired_temporary_files(self.backend)
+
+        self.assertEqual(result, {"archivos_eliminados": 1, "errores": 0})
+        self.assertFalse(Archivo.objects.filter(id=expired.id).exists())
+        self.assertTrue(Archivo.objects.filter(id=unexpired.id).exists())
+        self.backend.delete_object.assert_called_once_with(expired.object_key)
+
+    def test_purge_does_not_delete_expired_temporary_files_in_trash(self):
+        trashed = self.create_file(
+            "temporal-papelera.pdf",
+            state=EstadoElemento.PAPELERA,
+            es_temporal=True,
+            fecha_expiracion=timezone.now() - timedelta(days=1),
+            fecha_papelera=timezone.now() - timedelta(days=1),
+            papelera_grupo=uuid4(),
+        )
+
+        result = TrashService.purge_expired_temporary_files(self.backend)
+
+        self.assertEqual(result, {"archivos_eliminados": 0, "errores": 0})
+        self.assertTrue(Archivo.objects.filter(id=trashed.id).exists())
+        self.backend.delete_object.assert_not_called()
+
+    def test_purge_keeps_temporary_file_metadata_when_object_delete_fails(self):
+        expired = self.create_file(
+            "fallo.pdf",
+            es_temporal=True,
+            fecha_expiracion=timezone.now() - timedelta(minutes=1),
+        )
+        self.backend.delete_object.return_value = False
+
+        result = TrashService.purge_expired_temporary_files(self.backend)
+
+        self.assertEqual(result, {"archivos_eliminados": 0, "errores": 1})
+        self.assertTrue(Archivo.objects.filter(id=expired.id).exists())
+
     def test_purge_keeps_folder_tree_when_a_binary_cannot_be_deleted(self):
         root = Carpeta.objects.create(usuario=self.user, nombre="Proyectos")
         file = self.create_file("informe.pdf", folder=root)

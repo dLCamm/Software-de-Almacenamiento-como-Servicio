@@ -385,3 +385,41 @@ class TrashService:
                 counts["errores"] += 1
 
         return counts
+
+    @classmethod
+    def purge_expired_temporary_files(
+        cls,
+        storage_backend: Optional[IStorageBackend] = None,
+    ) -> dict:
+        backend = cls._get_backend(storage_backend)
+        expired_file_ids = Archivo.objects.filter(
+            estado=EstadoElemento.ACTIVO,
+            es_temporal=True,
+            fecha_expiracion__lte=timezone.now(),
+        ).values_list("id", flat=True)
+        counts = {"archivos_eliminados": 0, "errores": 0}
+
+        for file_id in expired_file_ids.iterator():
+            with transaction.atomic():
+                try:
+                    archivo = Archivo.objects.select_for_update().get(
+                        id=file_id,
+                        estado=EstadoElemento.ACTIVO,
+                        es_temporal=True,
+                        fecha_expiracion__lte=timezone.now(),
+                    )
+                except Archivo.DoesNotExist:
+                    continue
+
+                if not backend.delete_object(archivo.object_key):
+                    logger.error(
+                        "No se purgó el archivo temporal %s: MinIO no confirmó su eliminación.",
+                        archivo.id,
+                    )
+                    counts["errores"] += 1
+                    continue
+
+                archivo.delete()
+                counts["archivos_eliminados"] += 1
+
+        return counts

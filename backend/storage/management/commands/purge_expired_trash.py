@@ -28,12 +28,20 @@ class Command(BaseCommand):
 
         while True:
             result = TrashService.purge_expired_trash()
+            temporary_result = TrashService.purge_expired_temporary_files()
             self.stdout.write(
                 self.style.SUCCESS(
                     "Papelera purgada: "
                     f"{result['archivos_eliminados']} archivos y "
                     f"{result['carpetas_eliminadas']} carpetas; "
                     f"{result['errores']} errores."
+                )
+            )
+            self.stdout.write(
+                self.style.SUCCESS(
+                    "Archivos temporales vencidos purgados: "
+                    f"{temporary_result['archivos_eliminados']} archivos; "
+                    f"{temporary_result['errores']} errores."
                 )
             )
             if not options["loop"]:
