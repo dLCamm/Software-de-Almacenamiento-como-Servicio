@@ -61,6 +61,50 @@
   box-shadow: 0 24px 75px rgba(0, 0, 0, .34);
 }
 
+.shared-file__card--preview {
+  width: min(100%, 1160px);
+  min-height: 420px;
+  padding: 16px;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.shared-file__preview {
+  min-height: 250px;
+  flex: 1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid #302d36;
+  border-radius: 12px;
+  background: #141316;
+}
+
+.shared-file__preview--png img {
+  max-width: 100%;
+  max-height: 68svh;
+  display: block;
+  object-fit: contain;
+}
+
+.shared-file__preview--pdf iframe {
+  width: 100%;
+  min-height: min(68svh, 760px);
+  flex: 1;
+  border: 0;
+  background: #fff;
+}
+
+.shared-file__preview--mp3 {
+  min-height: 250px;
+  background: radial-gradient(ellipse at center, rgba(113, 91, 233, .13), transparent 65%), #141316;
+}
+
+.shared-file__preview--mp3 audio {
+  width: min(88%, 680px);
+}
+
 .shared-file__glyph {
   width: 86px;
   height: 86px;
@@ -77,6 +121,29 @@
   justify-items: center;
   gap: 9px;
   text-align: center;
+}
+
+.shared-file__actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.shared-file__actions--preview {
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.shared-file__actions--preview .shared-file__countdown {
+  justify-items: start;
+  text-align: left;
+}
+
+.shared-file__actions--preview .shared-file__countdown strong {
+  font-size: 18px;
 }
 
 .shared-file__countdown span {
@@ -126,4 +193,10 @@
   .shared-file__filename { font-size: 13px; }
   .shared-file__content { padding: 24px 16px; }
   .shared-file__card { min-height: 310px; padding: 32px 20px; }
+  .shared-file__card--preview { min-height: 420px; padding: 10px; }
+  .shared-file__preview--png img { max-height: 55svh; }
+  .shared-file__preview--pdf iframe { min-height: 55svh; }
+  .shared-file__actions--preview { flex-direction: column; align-items: stretch; }
+  .shared-file__actions--preview .shared-file__countdown { justify-items: center; text-align: center; }
+  .shared-file__actions--preview .shared-file__download { align-self: center; }
 }

@@ -37,7 +37,10 @@ export default function SharedFilePage() {
 
   const secondsRemaining = linkIsValid ? Math.max(0, Math.ceil((expiresAt - now) / 1000)) : 0
   const expired = linkIsValid && secondsRemaining === 0
-  const fileKind = getFileKind(getFileExtension(fileName))
+  const extension = getFileExtension(fileName)
+  const fileKind = getFileKind(extension)
+  const previewType = ['png', 'pdf', 'mp3'].includes(extension) ? extension : null
+  const showPreview = linkIsValid && !expired && previewType
 
   return <main className="shared-file-page">
     <header className="shared-file__topbar">
@@ -46,12 +49,18 @@ export default function SharedFilePage() {
     </header>
 
     <section className="shared-file__content" aria-label="Archivo compartido">
-      <div className="shared-file__card">
-        <span className="shared-file__glyph"><Icon name={fileKind} size={46} /></span>
+      <div className={`shared-file__card${showPreview ? ' shared-file__card--preview' : ''}`}>
+        {showPreview
+          ? <div className={`shared-file__preview shared-file__preview--${previewType}`}>
+            {previewType === 'png' && <img src={downloadUrl} alt={`Vista previa de ${fileName}`} />}
+            {previewType === 'pdf' && <iframe src={`${downloadUrl}#toolbar=0&navpanes=0`} title={`Vista previa de ${fileName}`} />}
+            {previewType === 'mp3' && <audio src={downloadUrl} controls preload="metadata">Tu navegador no puede reproducir este archivo de audio.</audio>}
+          </div>
+          : <span className="shared-file__glyph"><Icon name={fileKind} size={46} /></span>}
         {expired
           ? <p className="shared-file__expired" role="status">El enlace ha expirado</p>
           : linkIsValid
-            ? <>
+            ? <div className={`shared-file__actions${showPreview ? ' shared-file__actions--preview' : ''}`}>
               <div className="shared-file__countdown" role="timer" aria-label={`El enlace expira en ${formatCountdown(secondsRemaining)}`}>
                 <span>El enlace expira en</span>
                 <strong>{formatCountdown(secondsRemaining)}</strong>
@@ -59,7 +68,7 @@ export default function SharedFilePage() {
               <a className="shared-file__download" href={downloadUrl} download={fileName} referrerPolicy="no-referrer">
                 <Icon name="download" size={19} />Descargar archivo
               </a>
-            </>
+            </div>
             : <p className="shared-file__expired" role="status">Este enlace no está disponible</p>}
       </div>
     </section>
