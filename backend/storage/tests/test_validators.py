@@ -1,4 +1,5 @@
 import io
+from unittest.mock import patch
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import SimpleTestCase
 from storage.validators.file_validator import FileValidationError, FileValidator
@@ -42,3 +43,13 @@ class FileValidatorTestCase(SimpleTestCase):
         with self.assertRaises(FileValidationError) as ctx:
             FileValidator.validate(uploaded)
         self.assertIn("vacío", str(ctx.exception).lower())
+
+    def test_file_signature_read_error_rejects_upload(self):
+        uploaded = SimpleUploadedFile(
+            "unreadable.pdf",
+            b"%PDF-1.4 sample",
+            content_type="application/pdf",
+        )
+        with patch.object(uploaded.file, "read", side_effect=OSError("read failed")):
+            with self.assertRaises(FileValidationError):
+                FileValidator.validate(uploaded)

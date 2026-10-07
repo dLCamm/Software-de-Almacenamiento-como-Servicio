@@ -5,6 +5,7 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
+from unittest.mock import patch
 
 from storage.models import Archivo, EstadoElemento
 
@@ -87,3 +88,30 @@ class TrashApiTestCase(TestCase):
         self.assertEqual(response.status_code, 404)
         file.refresh_from_db()
         self.assertEqual(file.estado, EstadoElemento.PAPELERA)
+
+    def test_share_endpoint_rejects_invalid_expiry_values(self):
+        self.client.force_authenticate(user=self.user)
+
+        for expiry in ("not-a-number", 0, 604801):
+            with self.subTest(expiry=expiry):
+                response = self.client.post(
+                    f"/api/storage/files/{uuid4()}/share/",
+                    {"expiracion_segundos": expiry},
+                    format="json",
+                )
+                self.assertEqual(response.status_code, 400)
+
+    @patch("storage.views.FileService.generate_presigned_download_url")
+    def test_share_endpoint_default_expiry_matches_minio_limit(self, generate_url):
+        generate_url.return_value = "https://storage.example.test/signed"
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.post(
+            f"/api/storage/files/{uuid4()}/share/",
+            {},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["expira_en_segundos"], 604800)
+        self.assertEqual(generate_url.call_args.kwargs["expiry_seconds"], 604800)

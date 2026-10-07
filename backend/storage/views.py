@@ -13,6 +13,7 @@ from storage.serializers import (
     FolderCreateSerializer,
     FolderRenameSerializer,
     FolderSerializer,
+    ShareLinkInputSerializer,
     StorageUsageSerializer,
     TrashItemSerializer,
 )
@@ -188,7 +189,9 @@ class FileShareView(AuthenticatedStorageAPIView):
 
     def post(self, request, file_id, *args, **kwargs):
         user = request.user
-        duracion_segundos = int(request.data.get("expiracion_segundos", 1209600))  # 14 días
+        serializer = ShareLinkInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        duracion_segundos = serializer.validated_data["expiracion_segundos"]
         try:
             url = FileService.generate_presigned_download_url(
                 user=user,

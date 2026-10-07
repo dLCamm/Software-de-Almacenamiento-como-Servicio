@@ -51,6 +51,15 @@ class FileUploadInputSerializer(serializers.Serializer):
     )
 
 
+class ShareLinkInputSerializer(serializers.Serializer):
+    expiracion_segundos = serializers.IntegerField(
+        required=False,
+        min_value=1,
+        max_value=7 * 24 * 60 * 60,
+        default=7 * 24 * 60 * 60,
+    )
+
+
 class FileDetailSerializer(serializers.ModelSerializer):
     """Serializador detallado para metadatos de archivos (RF-06)."""
     tamano_legible = serializers.SerializerMethodField()

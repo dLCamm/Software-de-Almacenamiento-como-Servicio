@@ -35,7 +35,7 @@ El backend utiliza una arquitectura desacoplada para los archivos:
 - **Guardado (`put_object`):** Se ubican dentro del bucket organizados por clave:
   `usuarios/{user_id}/archivos/{uuid}.{ext}`.
 - **Descarga Streaming (`get_object`):** El backend recupera el stream desde MinIO y lo canaliza directamente al frontend con `FileResponse` sin saturar memoria RAM.
-- **Enlaces Compartidos (`presigned_get_object`):** MinIO genera una URL pública firmada criptográficamente con vencimiento temporal (`X-Amz-Signature`), permitiendo que el navegador descargue directamente desde MinIO sin pasar por Django.
+- **Enlaces Compartidos (`presigned_get_object`):** MinIO genera una URL firmada criptográficamente con vencimiento temporal (`X-Amz-Signature`), permitiendo descargar directamente desde MinIO.
 
 ---
 
@@ -189,7 +189,7 @@ Para consultar validaciones o lógica interna en el repositorio:
   - `archivo` *(File, Requerido)*: Objeto del archivo a cargar.
   - `carpeta_id` *(UUID string, Opcional)*: ID de la carpeta destino. Si se omite, se guarda en la raíz.
   - `es_temporal` *(Boolean, Opcional, Default: `false`)*: Marca si el archivo expirará automáticamente.
-  - `tiempo_vida_dias` *(Integer, Opcional, Default: `14`)*: Días de validez (1 a 365) si es temporal.
+  - `tiempo_vida_dias` *(Integer, Opcional, Default: `14`)*: Días de validez (1 a 365) si es temporal. El sistema elimina el archivo vencido en la tarea de limpieza diaria. Si se mueve a papelera antes de vencer, se conserva según el periodo de retención de la papelera.
 - **Respuestas:**
   - `201 Created`:
     ```json
@@ -259,7 +259,7 @@ Para consultar validaciones o lógica interna en el repositorio:
     "expiracion_segundos": 86400
   }
   ```
-  *(Por defecto dura 1,209,600 segundos = 14 días si no se especifica).*
+  `expiracion_segundos` debe estar entre `1` y `604800` (7 días, límite de MinIO). Si se omite, el enlace dura `604800` segundos.
 - **Respuestas:**
   - `200 OK`:
     ```json
