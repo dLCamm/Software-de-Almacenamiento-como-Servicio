@@ -13,6 +13,7 @@ class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
+    
 
 class LoginView(TokenObtainPairView):
     serializer_class = LoginSerializer

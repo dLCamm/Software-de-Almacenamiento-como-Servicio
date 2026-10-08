@@ -3,6 +3,8 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from .models import Plan, User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from plans.models import Subscription
+from django.utils import timezone
 
 
 class PlanSerializer(serializers.ModelSerializer):
@@ -12,9 +14,9 @@ class PlanSerializer(serializers.ModelSerializer):
 
 
 class RegisterSerializer(serializers.ModelSerializer):
+
     password = serializers.CharField(
-        write_only=True,
-        min_length=8
+        write_only=True
     )
 
     password_confirm = serializers.CharField(
@@ -28,6 +30,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     )
     plan = PlanSerializer(read_only=True)
     pending_plan = PlanSerializer(read_only=True)
+
 
     class Meta:
         model = User
@@ -68,8 +71,19 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         if attrs["password"] != attrs["password_confirm"]:
             raise serializers.ValidationError({
-                "password_confirm": "Las contraseñas no coinciden."
+                "password_confirm":
+                    "Las contraseñas no coinciden."
             })
+
+        user = User(
+            email=attrs.get("email", ""),
+            first_name=attrs.get("first_name", ""),
+            last_name=attrs.get("last_name", ""),
+        )
+        try:
+            validate_password(attrs["password"], user=user)
+        except DjangoValidationError as error:
+            raise serializers.ValidationError({"password": error.messages}) from error
 
         user = User(
             email=attrs.get("email", ""),
@@ -84,7 +98,10 @@ class RegisterSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        validated_data.pop("password_confirm")
+
+        # Este campo solo sirve para validar.
+        # NO pertenece al modelo User.
+        validated_data.pop("password_confirm", None)
 
         password = validated_data.pop("password")
         selected_plan_code = validated_data.pop("plan_code")
@@ -100,8 +117,21 @@ class RegisterSerializer(serializers.ModelSerializer):
             pending_plan=selected_plan if selected_plan != free_plan else None,
             **validated_data
         )
+        
+
+
+        Subscription.objects.get_or_create(
+            user=user,
+            defaults={
+                "start_date": timezone.now(),
+                "end_date": None,
+                "status": "ACTIVE",
+                "auto_renew": False,
+            }
+        )
 
         return user
+
 
 
 class UserSerializer(serializers.ModelSerializer):
