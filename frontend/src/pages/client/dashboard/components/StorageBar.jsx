@@ -1,6 +1,7 @@
 import { formatBytes } from '../formatters'
+import Icon from './Icon'
 
-export default function StorageBar({ usage }) {
+export default function StorageBar({ usage, onUpgrade }) {
   const percent = Math.min(100, Math.max(0, Number(usage?.porcentaje_usado) || 0))
   const monthlyPrice = Number(usage?.plan_precio_mensual || 0)
   return <section className="storage-overview" aria-label="Uso de almacenamiento">
@@ -11,5 +12,10 @@ export default function StorageBar({ usage }) {
       <span>{monthlyPrice === 0 ? 'Gratis' : `Q${monthlyPrice.toLocaleString('es-GT')}/mes`}</span>
       {usage?.plan_pendiente_nombre && <small>Solicitud pendiente: {usage.plan_pendiente_nombre}</small>}
     </div>
+    <button className="storage-upgrade-button" type="button" onClick={onUpgrade}>
+      <Icon name="upgrade" />
+      <span>Ampliar almacenamiento</span>
+      <small>desde Q149</small>
+    </button>
   </section>
 }

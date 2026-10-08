@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import LandingPage from './pages/Landing/LandingPage'
 import AuthPage from './pages/Auth/AuthPage'
 import DashboardPageClient from './pages/client/DashboardPage'
+import BillingPage from './pages/client/billing/BillingPage'
 import SharedFilePage from './pages/shared/SharedFilePage'
 import ProtectedRoute from './routes/ProtectedRoute'
 
@@ -16,6 +17,7 @@ export default function App() {
       <Route path="/register" element={<AuthPage />}/>
       <Route path="/recover-password" element={<AuthPage />}/>
       <Route path="/app/client" element={ <ProtectedRoute> <DashboardPageClient /> </ProtectedRoute>}/>
+      <Route path="/app/client/billing" element={<ProtectedRoute><BillingPage /></ProtectedRoute>} />
       <Route path="/share" element={<SharedFilePage />}/>
       <Route path="*" element={<Navigate to="/" replace />}/>
 
