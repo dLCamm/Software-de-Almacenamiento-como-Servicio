@@ -51,7 +51,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
 
     list_display = (
         "user",
-        "plan",
+        "get_plan",
         "status",
         "start_date",
         "end_date",
@@ -60,10 +60,24 @@ class SubscriptionAdmin(admin.ModelAdmin):
 
     list_filter = (
         "status",
-        "plan",
         "auto_renew",
     )
 
     search_fields = (
         "user__email",
     )
+
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+    )
+
+    @admin.display(
+        description="Plan actual"
+    )
+    def get_plan(self, obj):
+
+        if obj.user.plan:
+            return obj.user.plan.name
+
+        return "Sin plan"

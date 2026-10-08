@@ -1,13 +1,9 @@
-from django.db import models
-
-# Create your models here.
 from django.conf import settings
 from django.db import models
 
 
 class Payment(models.Model):
 
-    # Estados posibles de un pago
     STATUS_CHOICES = [
         ("APPROVED", "Aprobado"),
         ("REJECTED", "Rechazado"),
@@ -24,14 +20,8 @@ class Payment(models.Model):
         related_name="payments"
     )
 
-    subscription = models.ForeignKey(
-        "plans.Subscription",
-        on_delete=models.PROTECT,
-        related_name="payments"
-    )
-
     plan = models.ForeignKey(
-        "plans.Plan",
+        "users.Plan",
         on_delete=models.PROTECT,
         related_name="payments"
     )
@@ -72,7 +62,7 @@ class Payment(models.Model):
 
     def __str__(self):
         return (
-            f"{self.user} - "
+            f"{self.user.email} - "
             f"{self.plan.name} - "
             f"{self.status}"
         )

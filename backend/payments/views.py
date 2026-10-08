@@ -1,20 +1,19 @@
-from django.shortcuts import render
 from datetime import timedelta
 from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from plans.models import Plan, Subscription
+from plans.models import Subscription
+from users.models import Plan
 from .models import Payment
-from rest_framework.generics import ListAPIView
-from .serializers import (
-    ChangePlanSerializer,
-    RenewSubscriptionSerializer,
-    PaymentSerializer,
-)
+from .serializers import (ChangePlanSerializer,RenewSubscriptionSerializer,PaymentSerializer,)
 from .services.mock_gateway import MockPaymentGateway
+
+
+# CAMBIAR / CONTRATAR PLAN
 
 class ChangePlanView(APIView):
 
@@ -25,16 +24,13 @@ class ChangePlanView(APIView):
         serializer = ChangePlanSerializer(
             data=request.data
         )
-
         serializer.is_valid(
             raise_exception=True
         )
 
         plan_id = serializer.validated_data["plan_id"]
-
         card = serializer.validated_data["card"]
 
-        # Buscar plan
         try:
             new_plan = Plan.objects.get(
                 id=plan_id,
@@ -46,80 +42,109 @@ class ChangePlanView(APIView):
             return Response(
                 {
                     "detail":
-                    "El plan seleccionado no existe."
+                        "El plan seleccionado no existe."
                 },
                 status=status.HTTP_404_NOT_FOUND
             )
 
+        user = request.user
 
-        # Obtener suscripción actual
-        try:
-            subscription = request.user.subscription
-
-        except Subscription.DoesNotExist:
+       
+        if user.plan_id == new_plan.id:
 
             return Response(
                 {
                     "detail":
-                    "El usuario no tiene una suscripción."
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Mismo plan
-        if subscription.plan_id == new_plan.id:
-
-            return Response(
-                {
-                    "detail":
-                    "Ya tienes este plan. "
-                    "Utiliza la opción de renovación."
+                        "Ya tienes este plan."
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
 
  
-        # FREE
+        if new_plan.code == Plan.Code.FREE:
 
-        if new_plan.price == 0:
+            with transaction.atomic():
 
-            subscription.plan = new_plan
-            subscription.start_date = timezone.now()
-            subscription.end_date = None
-            subscription.status = "ACTIVE"
-            subscription.auto_renew = False
-            subscription.save()
+                user.plan = new_plan
+                user.pending_plan = None
 
-            return Response({
-                "detail": "Plan gratuito activado.",
-                "plan": new_plan.name
-            })
+                user.save(
+                    update_fields=[
+                        "plan",
+                        "pending_plan",
+                    ]
+                )
 
+                # FREE no tiene fecha de expiración
+                subscription, _ = (
+                    Subscription.objects.get_or_create(
+                        user=user,
+                        defaults={
+                            "start_date": timezone.now(),
+                            "end_date": None,
+                            "status": "ACTIVE",
+                            "auto_renew": False,
+                        }
+                    )
+                )
+
+                subscription.start_date = timezone.now()
+                subscription.end_date = None
+                subscription.status = "ACTIVE"
+                subscription.auto_renew = False
+
+                subscription.save(
+                    update_fields=[
+                        "start_date",
+                        "end_date",
+                        "status",
+                        "auto_renew",
+                        "updated_at",
+                    ]
+                )
+
+            return Response(
+                {
+                    "detail":
+                        "Plan FREE activado correctamente.",
+
+                    "plan":
+                        new_plan.name,
+
+                    "end_date":
+                        None,
+                },
+                status=status.HTTP_200_OK
+            )
+
+        # Guardar plan que intenta comprar
   
-        # Pago simulado
 
+        user.pending_plan = new_plan
+
+        user.save(
+            update_fields=[
+                "pending_plan"
+            ]
+        )
+
+        # MOCK PAYMENT
         result = MockPaymentGateway.process_payment(
-            amount=new_plan.price,
+            amount=new_plan.monthly_price,
             card_number=card["card_number"]
         )
 
-
-        # Guardar operación
-    
+        # Registrar operación
 
         with transaction.atomic():
 
-            subscription = (
-                Subscription.objects
-                .select_for_update()
-                .get(user=request.user)
-            )
+            # Refrescamos usuario
+            user.refresh_from_db()
 
             payment = Payment.objects.create(
-                user=request.user,
-                subscription=subscription,
+                user=user,
                 plan=new_plan,
-                amount=new_plan.price,
+                amount=new_plan.monthly_price,
                 payment_type="SUBSCRIPTION",
                 status=result.status,
                 payment_method="MOCK_CARD",
@@ -127,59 +152,100 @@ class ChangePlanView(APIView):
                 failure_reason=result.reason
             )
 
-     
-            # Pago rechazado
-
+            # PAGO RECHAZADO
             if not result.approved:
+
+                user.pending_plan = None
+
+                user.save(
+                    update_fields=[
+                        "pending_plan"
+                    ]
+                )
 
                 return Response(
                     {
-                        "detail": result.message,
-                        "reason": result.reason,
+                        "detail":
+                            result.message,
+
+                        "reason":
+                            result.reason,
+
                         "transaction_reference":
                             result.reference
                     },
                     status=status.HTTP_402_PAYMENT_REQUIRED
                 )
 
-    
-            # Pago aprobado
+            # PAGO APROBADO
+            user.plan = new_plan
+            user.pending_plan = None
 
-            subscription.plan = new_plan
-
-            subscription.start_date = (
-                timezone.now()
+            user.save(
+                update_fields=[
+                    "plan",
+                    "pending_plan",
+                ]
             )
 
+            now = timezone.now()
+
+            # Creamos o recuperamos información
+            # de suscripción
+            subscription, _ = (
+                Subscription.objects.get_or_create(
+                    user=user,
+                    defaults={
+                        "start_date": now,
+                        "end_date":
+                            now + timedelta(days=30),
+                        "status": "ACTIVE",
+                        "auto_renew": False,
+                    }
+                )
+            )
+
+            # Una compra nueva inicia un nuevo
+            # período mensual
+            subscription.start_date = now
             subscription.end_date = (
-                timezone.now()
-                + timedelta(days=30)
+                now + timedelta(days=30)
             )
-
             subscription.status = "ACTIVE"
 
-            subscription.save()
+            subscription.save(
+                update_fields=[
+                    "start_date",
+                    "end_date",
+                    "status",
+                    "updated_at",
+                ]
+            )
 
         return Response(
             {
                 "detail":
                     "Plan contratado correctamente.",
 
-                "plan": new_plan.name,
+                "plan":
+                    new_plan.name,
 
-                "amount": str(
-                    new_plan.price
-                ),
+                "amount":
+                    str(new_plan.monthly_price),
+
+                "start_date":
+                    subscription.start_date,
+
+                "end_date":
+                    subscription.end_date,
 
                 "transaction_reference":
                     payment.transaction_reference,
-
-                "end_date":
-                    subscription.end_date
             },
             status=status.HTTP_200_OK
         )
 
+# HISTORIAL DE PAGOS
 class PaymentHistoryView(ListAPIView):
 
     permission_classes = [IsAuthenticated]
@@ -190,10 +256,19 @@ class PaymentHistoryView(ListAPIView):
 
         return (
             Payment.objects
-            .filter(user=self.request.user)
-            .select_related("plan")
-            .order_by("-created_at")
+            .filter(
+                user=self.request.user
+            )
+            .select_related(
+                "plan"
+            )
+            .order_by(
+                "-created_at"
+            )
         )
+
+
+# RENOVAR SUSCRIPCIÓN
 
 class RenewSubscriptionView(APIView):
 
@@ -201,55 +276,72 @@ class RenewSubscriptionView(APIView):
 
     def post(self, request):
 
-        serializer = RenewSubscriptionSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        serializer = RenewSubscriptionSerializer(
+            data=request.data
+        )
+        serializer.is_valid(
+            raise_exception=True
+        )
 
         card = serializer.validated_data["card"]
 
-        try:
-            subscription = request.user.subscription
+        user = request.user
+        plan = user.plan
 
-        except Subscription.DoesNotExist:
-
-            return Response(
-                {
-                    "detail":
-                    "El usuario no tiene suscripción."
-                },
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        plan = subscription.plan
-
+        # -------------------------------------------------
         # FREE no necesita renovación
-        if plan.price == 0:
+        # -------------------------------------------------
+
+        if plan.code == Plan.Code.FREE:
 
             return Response(
                 {
                     "detail":
-                    "El plan FREE no requiere renovación."
+                        "El plan FREE no requiere renovación."
                 },
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        # Obtener datos de suscripción
+
+        now = timezone.now()
+
+        subscription, _ = (
+            Subscription.objects.get_or_create(
+                user=user,
+                defaults={
+                    "start_date": now,
+                    "end_date": now,
+                    "status": "ACTIVE",
+                    "auto_renew": False,
+                }
+            )
+        )
+
+        # MOCK PAYMENT
 
         result = MockPaymentGateway.process_payment(
-            amount=plan.price,
+            amount=plan.monthly_price,
             card_number=card["card_number"]
         )
 
+        # Procesar renovación
         with transaction.atomic():
 
+            # Bloquear registro de suscripción
             subscription = (
                 Subscription.objects
                 .select_for_update()
-                .get(user=request.user)
+                .get(
+                    user=user
+                )
             )
 
+            # Registrar pago, incluso si falla
             payment = Payment.objects.create(
-                user=request.user,
-                subscription=subscription,
+                user=user,
                 plan=plan,
-                amount=plan.price,
+                amount=plan.monthly_price,
                 payment_type="RENEWAL",
                 status=result.status,
                 payment_method="MOCK_CARD",
@@ -257,19 +349,26 @@ class RenewSubscriptionView(APIView):
                 failure_reason=result.reason
             )
 
+            # PAGO RECHAZADO
             if not result.approved:
 
                 return Response(
                     {
-                        "detail": result.message,
-                        "reason": result.reason
+                        "detail":
+                            result.message,
+
+                        "reason":
+                            result.reason,
+
+                        "transaction_reference":
+                            result.reference
                     },
                     status=status.HTTP_402_PAYMENT_REQUIRED
                 )
 
             now = timezone.now()
 
-            # Si todavía no venció:
+
             if (
                 subscription.end_date
                 and subscription.end_date > now
@@ -279,6 +378,7 @@ class RenewSubscriptionView(APIView):
 
             else:
 
+                # Si ya venció, empieza desde hoy
                 base_date = now
 
             subscription.end_date = (
@@ -288,20 +388,30 @@ class RenewSubscriptionView(APIView):
 
             subscription.status = "ACTIVE"
 
-            subscription.save()
+            subscription.save(
+                update_fields=[
+                    "end_date",
+                    "status",
+                    "updated_at",
+                ]
+            )
 
-        return Response({
-            "detail":
-                "Plan renovado correctamente.",
+        return Response(
+            {
+                "detail":
+                    "Plan renovado correctamente.",
 
-            "plan":
-                subscription.plan.name,
+                "plan":
+                    plan.name,
 
-            "new_end_date":
-                subscription.end_date,
+                "amount":
+                    str(plan.monthly_price),
 
-            "transaction_reference":
-                payment.transaction_reference
-        })
+                "new_end_date":
+                    subscription.end_date,
 
-    
+                "transaction_reference":
+                    payment.transaction_reference
+            },
+            status=status.HTTP_200_OK
+        )

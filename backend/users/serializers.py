@@ -3,6 +3,8 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
 from .models import Plan, User
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from plans.models import Subscription
+from django.utils import timezone
 
 
 class PlanSerializer(serializers.ModelSerializer):
@@ -28,6 +30,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     )
     plan = PlanSerializer(read_only=True)
     pending_plan = PlanSerializer(read_only=True)
+
 
     class Meta:
         model = User
@@ -113,6 +116,18 @@ class RegisterSerializer(serializers.ModelSerializer):
             plan=free_plan,
             pending_plan=selected_plan if selected_plan != free_plan else None,
             **validated_data
+        )
+        
+
+
+        Subscription.objects.get_or_create(
+            user=user,
+            defaults={
+                "start_date": timezone.now(),
+                "end_date": None,
+                "status": "ACTIVE",
+                "auto_renew": False,
+            }
         )
 
         return user

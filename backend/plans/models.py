@@ -1,5 +1,8 @@
 from django.db import models
 
+from django.conf import settings
+from django.utils import timezone
+
 # Create your models here.
 from django.db import models
 
@@ -59,11 +62,6 @@ class PlanBenefit(models.Model):
     def __str__(self):
         return f"{self.plan.name} - {self.description}"
 
-from django.conf import settings
-from django.db import models
-from django.utils import timezone
-from datetime import timedelta
-
 
 class Subscription(models.Model):
 
@@ -77,12 +75,6 @@ class Subscription(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="subscription"
-    )
-
-    plan = models.ForeignKey(
-        Plan,
-        on_delete=models.PROTECT,
-        related_name="subscriptions"
     )
 
     start_date = models.DateTimeField(
@@ -113,4 +105,4 @@ class Subscription(models.Model):
     )
 
     def __str__(self):
-        return f"{self.user} - {self.plan.name}"
+        return f"{self.user.email} - {self.status}"
