@@ -66,12 +66,18 @@
 
 .plan-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; gap: 24px; }
 .plan-card { position: relative; min-width: 0; border: 1px solid var(--billing-border); border-radius: 19px; background: var(--billing-panel); transition: border-color .16s, background .16s, transform .16s; }
+/* La landing también define .plan-card de forma global; se neutraliza aquí para que no afecte a facturación. */
+.billing-page .plan-card { padding: 0; display: block; gap: 0; text-align: left; align-items: initial; }
 .plan-card:hover { border-color: #514876; transform: translateY(-2px); }
-.plan-card.is-selected { border-color: #5848a5; background: #17151f; }
+.plan-card.is-current { border-color: #5848a5; background: #17151f; }
+.plan-card__head { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.plan-card__current { padding: 4px 10px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid #4b3f8f; border-radius: 999px; color: #c4b8ff; background: rgba(113, 91, 233, .16); font-size: 12px; font-weight: 700; white-space: nowrap; }
+.plan-card__current .billing-icon { color: currentColor; }
+.plan-card__action { width: 100%; margin-top: auto; }
+.plan-card__benefits { margin-bottom: 26px; }
 .plan-card--business .plan-card__name { color: #06c878; }
 .plan-card__popular { position: absolute; z-index: 1; top: -15px; left: 50%; padding: 7px 19px; border-radius: 999px; color: #fff; background: #715be9; font-size: 13px; font-weight: 700; transform: translateX(-50%); }
-.plan-card__select { width: 100%; height: 100%; min-height: 385px; padding: 30px; display: flex; flex-direction: column; align-items: flex-start; border: 0; border-radius: inherit; color: inherit; background: transparent; text-align: left; cursor: pointer; }
-.plan-card__select:focus-visible { outline: 2px solid var(--billing-purple-light); outline-offset: 2px; }
+.plan-card__body { width: 100%; height: 100%; min-height: 385px; padding: 30px; display: flex; flex-direction: column; align-items: flex-start; }
 .plan-card__name { color: #66616f; font-size: 15px; font-weight: 750; letter-spacing: .035em; }
 .plan-card__name--pro { color: #755df0; }
 .plan-card__price { margin-top: 9px; display: flex; align-items: baseline; gap: 7px; }
@@ -81,8 +87,8 @@
 .plan-card__benefits { margin-top: 23px; display: flex; flex-direction: column; gap: 12px; }
 .plan-card__benefits > span, .plan-card__selected { display: flex; align-items: center; gap: 10px; color: #a7a2ad; font-size: 14px; line-height: 1.35; }
 .plan-card__benefits .billing-icon { color: #77747d; }
-.plan-card.is-selected .plan-card__benefits .billing-icon, .plan-card--business .plan-card__benefits .billing-icon { color: #06ca79; }
-.plan-card.is-selected .plan-card__benefits .billing-icon { color: #826df0; }
+.plan-card.is-current .plan-card__benefits .billing-icon, .plan-card--business .plan-card__benefits .billing-icon { color: #06ca79; }
+.plan-card.is-current .plan-card__benefits .billing-icon { color: #826df0; }
 .plan-card__selected { margin-top: auto; padding-top: 20px; color: #8874f0; }
 .plan-card__selected .billing-icon { color: currentColor; }
 .billing-button { min-height: 50px; padding: 0 21px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 0; border-radius: 12px; font-size: 15px !important; font-weight: 700; cursor: pointer; transition: transform .15s, opacity .15s, background .15s; }
@@ -157,7 +163,7 @@
   .billing-summary-grid { gap: 16px; }
   .billing-card { padding: 27px; }
   .plan-cards { gap: 16px; }
-  .plan-card__select { padding: 24px; }
+  .plan-card__body { padding: 24px; }
   .plan-card__price strong { font-size: 35px; }
   .history-table th, .history-table td { padding-inline: 18px; }
 }
@@ -188,7 +194,7 @@
   .next-charge-card__details strong { font-size: 15px; }
   .next-charge-card__details span { font-size: 12px; line-height: 1.4; }
   .next-charge-card__amount { font-size: 15px; }
-  .plan-card__select { min-height: 330px; padding: 25px; }
+  .plan-card__body { min-height: 330px; padding: 25px; }
   .plans-continue { width: 100%; min-width: 0; min-height: 55px; margin-top: 23px; font-size: 15px !important; }
   .checkout-progress { gap: 7px; }
   .checkout-progress__step { gap: 7px; }

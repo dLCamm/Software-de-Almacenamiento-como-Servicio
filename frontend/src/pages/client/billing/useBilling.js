@@ -107,6 +107,16 @@ export default function useBilling({ billingApi, accountApi, storageApi }) {
       setActiveTab('plans')
       return
     }
+    openCheckout()
+  }
+
+  // Botón "Contratar" de cada tarjeta: selecciona el plan y abre el pago en un solo paso.
+  function contractPlan(plan) {
+    setSelectedPlanId(plan.id)
+    openCheckout()
+  }
+
+  function openCheckout() {
     setError('')
     setNotice('')
     setPaymentResult(null)
@@ -221,6 +231,7 @@ export default function useBilling({ billingApi, accountApi, storageApi }) {
     lastFour,
     paymentResult,
     startCheckout,
+    contractPlan,
     continueCheckout,
     previousCheckoutStep,
     confirmPayment,

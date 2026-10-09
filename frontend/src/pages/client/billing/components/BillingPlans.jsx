@@ -8,31 +8,42 @@ function formatStorage(gigabytes) {
   return `${Number(gigabytes || 0).toLocaleString('es-GT')} GB de almacenamiento`
 }
 
-export default function BillingPlans({ plans, currentPlan, selectedPlanId, loading, onSelectPlan, onContinue }) {
-  const selectedPlan = plans.find((plan) => String(plan.id) === String(selectedPlanId))
-  const alreadyFreePlan = selectedPlan?.slug === 'free' && currentPlan?.slug === 'free'
+// Texto y estado del botón de cada tarjeta según la relación con el plan actual.
+function getAction(plan, isCurrent) {
+  if (isCurrent && plan.slug === 'free') return { label: 'Tu plan actual', disabled: true }
+  if (isCurrent) return { label: 'Renovar plan', disabled: false }
+  return { label: 'Contratar', disabled: false }
+}
 
+export default function BillingPlans({ plans, currentPlan, loading, onContract }) {
   return <section className="plans-section" aria-label="Planes disponibles">
-    {loading && !plans.length ? <div className="billing-empty">Cargando planes…</div> : !plans.length ? <div className="billing-empty">No se pudieron cargar los planes disponibles.</div> : <>
+    {loading && !plans.length ? <div className="billing-empty">Cargando planes…</div> : !plans.length ? <div className="billing-empty">No se pudieron cargar los planes disponibles.</div> :
       <div className="plan-cards">
         {plans.map((plan) => {
-          const selected = String(plan.id) === String(selectedPlanId)
           const isCurrent = String(plan.id) === String(currentPlan?.id)
-          return <article key={plan.id} className={`plan-card${selected ? ' is-selected' : ''}${plan.slug === 'business' ? ' plan-card--business' : ''}`}>
+          const action = getAction(plan, isCurrent)
+          return <article key={plan.id} className={`plan-card${isCurrent ? ' is-current' : ''}${plan.slug === 'business' ? ' plan-card--business' : ''}`}>
             {plan.is_popular && <span className="plan-card__popular">Popular</span>}
-            <button type="button" className="plan-card__select" onClick={() => onSelectPlan(plan)} aria-pressed={selected} aria-label={`Seleccionar plan ${plan.name}`}>
-              <span className={`plan-card__name plan-card__name--${plan.slug}`}>{plan.name}</span>
+            <div className="plan-card__body">
+              <div className="plan-card__head">
+                <span className={`plan-card__name plan-card__name--${plan.slug}`}>{plan.name}</span>
+                {isCurrent && <span className="plan-card__current"><BillingIcon name="check" size={14} />Plan actual</span>}
+              </div>
               <span className="plan-card__price"><strong>{formatMoney(plan.price)}</strong><span>/mes</span></span>
               <span className="plan-card__storage">{formatStorage(plan.storage_gb)}</span>
               <span className="plan-card__benefits">{(plan.benefits || []).slice().sort((a, b) => a.order - b.order).map((benefit) => <span key={benefit.id}><BillingIcon name="check" size={18} />{benefit.description}</span>)}</span>
-              {selected && <span className="plan-card__selected"><BillingIcon name="check" size={18} />{isCurrent ? 'Plan actual seleccionado' : 'Plan seleccionado'}</span>}
-            </button>
+              <button
+                type="button"
+                className={`billing-button plan-card__action ${isCurrent ? 'billing-button--secondary' : 'billing-button--primary'}`}
+                onClick={() => onContract(plan)}
+                disabled={action.disabled || loading}
+                aria-label={`${action.label} ${plan.name}`}
+              >
+                {!action.disabled && <BillingIcon name="card" size={18} />}{action.label}
+              </button>
+            </div>
           </article>
         })}
-      </div>
-      <button className="billing-button billing-button--primary plans-continue" type="button" onClick={onContinue} disabled={!selectedPlan || loading || alreadyFreePlan}>
-        <BillingIcon name="card" />{alreadyFreePlan ? 'Ya tienes el plan FREE' : `Continuar con ${selectedPlan?.name || 'el plan'}`}
-      </button>
-    </>}
+      </div>}
   </section>
 }

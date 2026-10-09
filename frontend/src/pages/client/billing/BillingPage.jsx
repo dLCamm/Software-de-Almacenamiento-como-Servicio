@@ -45,7 +45,7 @@ export default function BillingPage() {
 
       <div className="billing-panel" role="tabpanel">
         {billing.activeTab === 'summary' && <BillingSummary usage={billing.usage} currentPlan={billing.currentPlan} nextBillingDate={billing.nextBillingDate} onViewPlans={() => billing.setActiveTab('plans')} />}
-        {billing.activeTab === 'plans' && <BillingPlans plans={billing.plans} currentPlan={billing.currentPlan} selectedPlanId={billing.selectedPlanId} loading={billing.loading} onSelectPlan={billing.selectPlan} onContinue={billing.startCheckout} />}
+        {billing.activeTab === 'plans' && <BillingPlans plans={billing.plans} currentPlan={billing.currentPlan} selectedPlanId={billing.selectedPlanId} loading={billing.loading} onContract={billing.contractPlan} />}
         {billing.activeTab === 'payment' && <BillingCheckout selectedPlan={billing.selectedPlan} currentPlan={billing.currentPlan} isRenewal={billing.isRenewal} step={billing.checkoutStep} paymentMethod={billing.paymentMethod} onChooseMethod={billing.choosePaymentMethod} card={billing.card} onUpdateCard={billing.updateCard} lastFour={billing.lastFour} result={billing.paymentResult} nextBillingDate={billing.nextBillingDate} loading={billing.loading} onContinue={billing.continueCheckout} onBack={billing.previousCheckoutStep} onConfirm={billing.confirmPayment} onReset={billing.resetCheckout} onViewHistory={() => billing.setActiveTab('history')} onViewPlans={() => billing.setActiveTab('plans')} />}
         {billing.activeTab === 'history' && <BillingHistory history={billing.history} loading={billing.loading} />}
       </div>
