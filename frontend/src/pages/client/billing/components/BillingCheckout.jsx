@@ -3,8 +3,7 @@ import BillingIcon from './BillingIcon'
 
 const PAYMENT_METHODS = [
   { id: 'CARD', title: 'Tarjeta de crédito/débito', detail: 'Visa, Mastercard, AMEX', enabled: true },
-  { id: 'OXXO', title: 'OXXO Pay', detail: 'Pago en efectivo', enabled: false },
-  { id: 'TRANSFER', title: 'Transferencia bancaria', detail: 'SPEI / CLABE', enabled: false },
+  { id: 'TRANSFER', title: 'Transferencia bancaria', detail: 'Transferencia ACH o depósito', enabled: false },
 ]
 
 function formatMoney(value) {
