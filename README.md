@@ -39,3 +39,4 @@ mediante Arquitectura por Capas.
 frontend/    Aplicación React
 backend/     API REST Django
 docs/        Documentación del proyecto
+```

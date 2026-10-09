@@ -31,7 +31,8 @@ services:
     environment:
       - MINIO_ENDPOINT=minio:9000
     depends_on:
-      - minio
+      minio-init:
+        condition: service_completed_successfully
 
   trash-cleanup:
     build:
@@ -52,7 +53,8 @@ services:
     environment:
       - MINIO_ENDPOINT=minio:9000
     depends_on:
-      - minio
+      minio-init:
+        condition: service_completed_successfully
     restart: unless-stopped
 
   minio:
@@ -67,15 +69,23 @@ services:
       MINIO_BROWSER: "on"
     volumes:
       - minio_data:/bitnami/minio/data
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://127.0.0.1:9000/minio/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     restart: unless-stopped
 
   minio-init:
     image: bitnamilegacy/minio-client:latest
     container_name: vaultdrive-minio-init
     depends_on:
-      - minio
+      minio:
+        condition: service_healthy
     entrypoint: >
       /bin/sh -c "
+      set -e;
       until (mc alias set localminio http://minio:9000 minioadmin minioadmin); do
         echo 'Esperando que MinIO esté disponible...';
         sleep 2;

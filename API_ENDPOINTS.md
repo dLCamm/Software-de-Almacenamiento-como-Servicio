@@ -32,8 +32,11 @@ El backend utiliza una arquitectura desacoplada para los archivos:
    - **Bucket:** `vaultdrive-storage`.
 
 ### Cómo interactúa el backend con los binarios:
-- **Guardado (`put_object`):** Se ubican dentro del bucket organizados por clave:
-  `usuarios/{user_id}/archivos/{uuid}.{ext}`.
+- **Guardado (`put_object`):** Todos los usuarios comparten el bucket `vaultdrive-storage`. Cada objeto usa una clave generada por el backend con el formato:
+  `users/{user_id}/{uuid}_{nombre_original_sanitizado}`.
+  Por ejemplo: `users/42/a1b2c3d4_reporte.pdf`. El identificador del usuario organiza los objetos y el UUID evita colisiones; el nombre es solo informativo. Estos prefijos no son carpetas con permisos independientes en MinIO.
+- **Propiedad y aislamiento:** PostgreSQL registra para cada archivo su usuario propietario, bucket y `object_key`, además de los metadatos. Las operaciones de listado y acceso consultan los archivos del usuario autenticado; el backend no debe aceptar un `user_id` enviado por el cliente como prueba de propiedad. MinIO no asigna un propietario de aplicación al objeto: la relación entre objeto y usuario la mantiene la aplicación mediante PostgreSQL y la clave.
+- **Persistencia local con Docker Compose:** El contenido binario se guarda en el volumen persistente `minio_data`, montado en el contenedor en `/bitnami/minio/data`. No se guarda como archivo dentro de `backend/`. PostgreSQL mantiene los metadatos y MinIO los bytes; ambos componentes deben conservarse para mantener íntegros los archivos.
 - **Descarga Streaming (`get_object`):** El backend recupera el stream desde MinIO y lo canaliza directamente al frontend con `FileResponse` sin saturar memoria RAM.
 - **Enlaces Compartidos (`presigned_get_object`):** MinIO genera una URL firmada criptográficamente con vencimiento temporal (`X-Amz-Signature`), permitiendo descargar directamente desde MinIO.
 
