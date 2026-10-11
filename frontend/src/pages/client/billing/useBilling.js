@@ -70,7 +70,7 @@ export default function useBilling({ billingApi, accountApi, storageApi }) {
         setProfile(nextProfile)
         const planCode = nextProfile?.plan?.code?.toLowerCase()
         const currentPlan = toArray(plansResult.status === 'fulfilled' ? plansResult.value : [])
-          .find((plan) => plan.slug?.toLowerCase() === planCode)
+          .find((plan) => plan.code?.toLowerCase() === planCode)
         if (currentPlan) setSelectedPlanId(currentPlan.id)
       } else failures.push(errorMessage(profileResult.reason))
 
@@ -90,10 +90,10 @@ export default function useBilling({ billingApi, accountApi, storageApi }) {
 
   const currentPlan = useMemo(() => {
     const code = profile?.plan?.code?.toLowerCase()
-    return plans.find((plan) => plan.slug?.toLowerCase() === code) ?? null
+    return plans.find((plan) => plan.code?.toLowerCase() === code) ?? null
   }, [plans, profile])
   const selectedPlan = useMemo(() => plans.find((plan) => String(plan.id) === String(selectedPlanId)) ?? null, [plans, selectedPlanId])
-  const isRenewal = Boolean(selectedPlan && currentPlan && selectedPlan.id === currentPlan.id && currentPlan.slug !== 'free')
+  const isRenewal = Boolean(selectedPlan && currentPlan && selectedPlan.id === currentPlan.id && currentPlan.code !== 'free')
   const nextBillingDate = paymentResult?.new_end_date || paymentResult?.end_date || profile?.subscription?.end_date || profile?.subscription_end_date || null
 
   function selectPlan(plan) {

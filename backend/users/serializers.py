@@ -16,21 +16,22 @@ class PlanSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.ModelSerializer):
 
     password = serializers.CharField(
-        write_only=True
+        write_only=True,
+        min_length=8
     )
 
     password_confirm = serializers.CharField(
         write_only=True,
         min_length=8
     )
-    plan_code = serializers.ChoiceField(
-        choices=Plan.Code.choices,
-        write_only=True,
-        default=Plan.Code.FREE,
-    )
-    plan = PlanSerializer(read_only=True)
-    pending_plan = PlanSerializer(read_only=True)
 
+    plan = PlanSerializer(
+        read_only=True
+    )
+
+    pending_plan = PlanSerializer(
+        read_only=True
+    )
 
     class Meta:
         model = User
@@ -43,7 +44,6 @@ class RegisterSerializer(serializers.ModelSerializer):
             "role",
             "password",
             "password_confirm",
-            "plan_code",
             "plan",
             "pending_plan",
         )
@@ -51,7 +51,35 @@ class RegisterSerializer(serializers.ModelSerializer):
         read_only_fields = (
             "id",
             "role",
+            "plan",
+            "pending_plan",
         )
+
+    def validate(self, data):
+
+        if (
+            data["password"]
+            != data["password_confirm"]
+        ):
+            raise serializers.ValidationError({
+                "password_confirm":
+                    "Las contraseñas no coinciden."
+            })
+
+        return data
+
+    def create(self, validated_data):
+
+        validated_data.pop(
+            "password_confirm",
+            None
+        )
+
+        user = User.objects.create_user(
+            **validated_data
+        )
+
+        return user
 
     def validate_email(self, value):
         email = value.lower().strip()
@@ -105,7 +133,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         password = validated_data.pop("password")
         selected_plan_code = validated_data.pop("plan_code")
-        free_plan = Plan.objects.get(code=Plan.Code.FREE)
+        free_plan = Plan.objects.get(code=Plan.FREE_CODE)
         selected_plan = Plan.objects.get(code=selected_plan_code, is_active=True)
 
         user = User.objects.create_user(

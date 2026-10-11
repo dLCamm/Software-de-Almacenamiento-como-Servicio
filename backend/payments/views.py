@@ -61,7 +61,7 @@ class ChangePlanView(APIView):
             )
 
  
-        if new_plan.code == Plan.Code.FREE:
+        if new_plan.code == Plan.FREE_CODE:
 
             with transaction.atomic():
 
@@ -292,7 +292,7 @@ class RenewSubscriptionView(APIView):
         # FREE no necesita renovación
         # -------------------------------------------------
 
-        if plan.code == Plan.Code.FREE:
+        if plan.code == Plan.FREE_CODE:
 
             return Response(
                 {
