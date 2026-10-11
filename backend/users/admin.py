@@ -3,15 +3,55 @@ from django.contrib import admin
 # Register your models here.
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-
+from plans.models import PlanBenefit
 from .models import Plan, User
 
 
+class PlanBenefitInline(admin.TabularInline):
+
+    model = PlanBenefit
+
+    extra = 1
+
+    fields = (
+        "description",
+        "order",
+    )
+
 @admin.register(Plan)
 class PlanAdmin(admin.ModelAdmin):
-    list_display = ("name", "code", "storage_limit_bytes", "monthly_price", "is_active")
-    list_filter = ("is_active",)
-    search_fields = ("name", "code")
+
+    list_display = (
+        "name",
+        "code",
+        "monthly_price",
+        "get_storage_gb",
+        "is_active",
+    )
+
+    list_filter = (
+        "is_active",
+    )
+
+    search_fields = (
+        "name",
+        "code",
+    )
+
+    inlines = [
+        PlanBenefitInline
+    ]
+
+    @admin.display(
+        description="Almacenamiento (GB)"
+    )
+    def get_storage_gb(self, obj):
+
+        return round(
+            obj.storage_limit_bytes
+            / (1024 ** 3),
+            2
+        )
 
 
 @admin.register(User)

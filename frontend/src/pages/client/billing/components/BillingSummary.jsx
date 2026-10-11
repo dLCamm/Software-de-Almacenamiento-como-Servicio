@@ -16,7 +16,7 @@ function formatDate(value) {
 export default function BillingSummary({ usage, currentPlan, nextBillingDate, onViewPlans }) {
   const percent = Math.min(100, Math.max(0, Number(usage?.porcentaje_usado) || 0))
   const dateLabel = formatDate(nextBillingDate)
-  const price = Number(currentPlan?.price ?? usage?.plan_precio_mensual ?? 0)
+  const price = Number(currentPlan?.monthly_price ?? usage?.plan_precio_mensual ?? 0)
 
   return <div className="billing-summary">
     <div className="billing-summary-grid">

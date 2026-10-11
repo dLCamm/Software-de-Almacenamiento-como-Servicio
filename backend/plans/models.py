@@ -46,7 +46,7 @@ class Plan(models.Model):
 
 class PlanBenefit(models.Model):
     plan = models.ForeignKey(
-        Plan,
+        "users.Plan",
         on_delete=models.CASCADE,
         related_name="benefits")
 
@@ -61,7 +61,6 @@ class PlanBenefit(models.Model):
 
     def __str__(self):
         return f"{self.plan.name} - {self.description}"
-
 
 class Subscription(models.Model):
 

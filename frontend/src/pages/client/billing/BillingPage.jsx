@@ -26,7 +26,7 @@ export default function BillingPage() {
   const navigate = useNavigate()
   const billing = useBilling({ billingApi, accountApi, storageApi })
   const planName = billing.currentPlan?.name || billing.usage?.plan_nombre || '—'
-  const planPrice = billing.currentPlan?.price ?? billing.usage?.plan_precio_mensual ?? 0
+  const planPrice = billing.currentPlan?.monthly_price ?? billing.usage?.plan_precio_mensual ?? 0
 
   return <main className="billing-page">
     <header className="billing-header">
