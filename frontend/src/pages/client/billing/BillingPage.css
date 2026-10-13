@@ -64,7 +64,7 @@
 .billing-summary__footer { margin-top: 21px; display: flex; align-items: center; justify-content: space-between; gap: 15px; color: #8c8892; font-size: 14px; }
 .billing-summary__footer strong { color: #ddd8e8; }
 
-.plan-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; gap: 24px; }
+.plan-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: stretch; gap: 20px; }
 .plan-card { position: relative; min-width: 0; border: 1px solid var(--billing-border); border-radius: 19px; background: var(--billing-panel); transition: border-color .16s, background .16s, transform .16s; }
 /* La landing también define .plan-card de forma global; se neutraliza aquí para que no afecte a facturación. */
 .billing-page .plan-card { padding: 0; display: block; gap: 0; text-align: left; align-items: initial; }
@@ -166,6 +166,10 @@
   .plan-card__body { padding: 24px; }
   .plan-card__price strong { font-size: 35px; }
   .history-table th, .history-table td { padding-inline: 18px; }
+}
+
+@media (max-width: 900px) {
+  .plan-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 760px) {
