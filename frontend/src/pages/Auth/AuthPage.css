@@ -1,18 +1,19 @@
 .auth-page {
-  --bg: #0a0a0e;
-  --surface: #121218;
-  --surface-2: #17171f;
-  --border: #26262f;
-  --text: #e8e7ec;
-  --text-muted: #8b8a97;
-  --accent: #7c6cf5;
-  --accent-hover: #8f80ff;
-  --accent-soft: rgba(124, 108, 245, 0.14);
-  --danger: #f26565;
-  --success: #34d399;
+  --bg: var(--purple-5);
+  --surface: var(--gray-8);
+  --surface-2: var(--gray-10);
+  --border: var(--gray-17);
+  --text: var(--gray-92);
+  --text-muted: var(--gray-57);
+  --accent: var(--purple-69);
+  --accent-hover: var(--purple-75);
+  --accent-soft: var(--purple-69-a14);
+  --danger: var(--red-67);
+  --success: var(--green-52);
   --radius-lg: 20px;
   --radius-md: 12px;
 
+  position: relative;
   min-height: 100svh;
   display: flex;
   flex-direction: column;
@@ -28,6 +29,8 @@
     sans-serif;
 }
 
+.auth-page__theme { position: absolute; top: 18px; right: 18px; z-index: 2; }
+
 .auth-page__brand {
   display: flex;
   flex-direction: column;
@@ -40,10 +43,10 @@
   width: 56px;
   height: 56px;
   border-radius: 16px;
-  background: linear-gradient(135deg, var(--accent), #5b4fd6);
+  background: linear-gradient(135deg, var(--accent), var(--purple-57));
   display: grid;
   place-items: center;
-  color: #fff;
+  color: var(--on-accent);
   margin-bottom: 8px;
   border: none;
   cursor: pointer;
@@ -111,7 +114,7 @@
 
 .auth-tabs__item.is-active {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .auth-card__panel {
@@ -321,7 +324,7 @@
 
 .btn--primary {
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
 }
 
 .btn--primary:hover {

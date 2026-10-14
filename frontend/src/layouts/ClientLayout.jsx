@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { getProfile, logout } from '../api/auth'
 import { getStorageUsage } from '../api/storage'
 import { CubeLogoIcon } from '../components/icons'
+import ThemeToggle from '../components/ThemeToggle'
 import { formatBytes } from '../pages/client/dashboard/formatters'
 import './ClientLayout.css'
 
@@ -86,6 +87,7 @@ export default function ClientLayout() {
       </div>
 
       <div className="client-nav__footer">
+        <ThemeToggle variant="row" className="client-nav__link" />
         <span className="client-nav__link is-disabled" aria-disabled="true" title="Próximamente"><NavIcon name="settings" /><span>Configuración</span></span>
         <button className="client-nav__link" type="button" onClick={handleLogout}><NavIcon name="logout" /><span>Cerrar sesión</span></button>
       </div>

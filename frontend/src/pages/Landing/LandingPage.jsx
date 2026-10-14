@@ -13,6 +13,7 @@ import {
   AdminShieldIcon,
   CheckIcon,
 } from '../../components/icons'
+import ThemeToggle from '../../components/ThemeToggle'
 import './LandingPage.css'
 
 const NAV_LINKS = [
@@ -107,6 +108,8 @@ export default function LandingPage() {
             <ArrowRightIcon className="btn__icon" />
             Iniciar sesión
           </button>
+
+          <ThemeToggle className="landing-nav__theme" />
 
           <button
             type="button"
