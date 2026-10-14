@@ -1,4 +1,5 @@
 import { apiRequest } from './auth'
+import { publishStorageUsage } from '../utils/storageUsage'
 
 function withQuery(path, params) {
   const query = new URLSearchParams()
@@ -21,7 +22,11 @@ export function listFolders(parentId = null) {
 }
 
 export function getStorageUsage() {
-  return apiRequest('/api/storage/usage/', { auth: true })
+  // Cada consulta avisa a la barra lateral para que su indicador quede al día.
+  return apiRequest('/api/storage/usage/', { auth: true }).then((usage) => {
+    publishStorageUsage(usage)
+    return usage
+  })
 }
 
 export function listTrash() {

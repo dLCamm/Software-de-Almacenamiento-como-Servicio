@@ -5,6 +5,7 @@ import { getStorageUsage } from '../api/storage'
 import { CubeLogoIcon } from '../components/icons'
 import ThemeToggle from '../components/ThemeToggle'
 import { formatBytes } from '../pages/client/dashboard/formatters'
+import { getUsagePercent, getVisualPercent, subscribeStorageUsage } from '../utils/storageUsage'
 import './ClientLayout.css'
 
 const paths = {
@@ -25,11 +26,25 @@ function NavIcon({ name, size = 20 }) {
 
 // Opciones de la barra lateral. `roles` limita quién las ve (undefined = todos).
 // `ready: false` muestra el enlace deshabilitado hasta que exista la página.
+// `children` son sub-opciones que se despliegan cuando estás dentro de esa sección.
 const NAV_ITEMS = [
   { to: '/app/client', label: 'Mis Archivos', icon: 'files', end: true },
-  { to: '/app/client/billing', label: 'Planes y Facturación', icon: 'billing' },
+  {
+    to: '/app/client/billing', label: 'Planes y Facturación', icon: 'billing',
+    children: [
+      { to: '/app/client/billing', label: 'Resumen', end: true },
+      { to: '/app/client/billing/planes', label: 'Planes' },
+      { to: '/app/client/billing/pago', label: 'Método de pago' },
+      { to: '/app/client/billing/historial', label: 'Historial' },
+    ],
+  },
   { to: '/app/support', label: 'Soporte Técnico', icon: 'support', roles: ['SUPPORT', 'ADMIN'], ready: false },
-  { to: '/app/admin', label: 'Administrador', icon: 'admin', roles: ['ADMIN'], ready: false },
+  {
+    to: '/app/admin', label: 'Administrador', icon: 'admin', roles: ['ADMIN'],
+    children: [
+      { to: '/app/admin/planes', label: 'Gestión de planes' },
+    ],
+  },
 ]
 
 export default function ClientLayout() {
@@ -39,17 +54,18 @@ export default function ClientLayout() {
   const [usage, setUsage] = useState(null)
   const [open, setOpen] = useState(false)
 
+  // Cualquier pantalla que consulte el uso (subir, borrar, restaurar, pagar…) actualiza esta barra.
+  useEffect(() => subscribeStorageUsage(setUsage), [])
+
   useEffect(() => {
     let active = true
     getProfile().then((data) => { if (active) setProfile(data) }).catch(() => {})
     return () => { active = false }
   }, [])
 
-  // Se vuelve a pedir el uso al cambiar de página para que la barra no quede desactualizada.
+  // También se vuelve a pedir al cambiar de página (la respuesta llega por subscribeStorageUsage).
   useEffect(() => {
-    let active = true
-    getStorageUsage().then((data) => { if (active) setUsage(data) }).catch(() => {})
-    return () => { active = false }
+    getStorageUsage().catch(() => {})
   }, [pathname])
 
   function handleLogout() {
@@ -58,8 +74,9 @@ export default function ClientLayout() {
   }
 
   const role = profile?.role
+  const isInside = (item) => item.end ? pathname === item.to : pathname === item.to || pathname.startsWith(`${item.to}/`)
   const items = NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(role))
-  const percent = Math.min(100, Math.max(0, Number(usage?.porcentaje_usado) || 0))
+  const percent = getUsagePercent(usage)
 
   return <div className={`client-layout ${open ? 'is-nav-open' : ''}`}>
     <button className="client-nav__toggle" type="button" onClick={() => setOpen(true)} aria-label="Abrir menú"><NavIcon name="menu" /></button>
@@ -75,14 +92,19 @@ export default function ClientLayout() {
       <nav className="client-nav__links">
         {items.map((item) => item.ready === false
           ? <span key={item.to} className="client-nav__link is-disabled" aria-disabled="true" title="Próximamente"><NavIcon name={item.icon} /><span>{item.label}</span><small>Pronto</small></span>
-          : <NavLink key={item.to} to={item.to} end={item.end} onClick={() => setOpen(false)} className={({ isActive }) => `client-nav__link ${isActive ? 'is-active' : ''}`}>
-              <NavIcon name={item.icon} /><span>{item.label}</span><NavIcon name="chevron" size={15} />
-            </NavLink>)}
+          : <div key={item.to} className="client-nav__group">
+              <NavLink to={item.children ? item.children[0].to : item.to} end={item.end} onClick={() => setOpen(false)} className={() => `client-nav__link ${isInside(item) ? 'is-active' : ''} ${item.children ? 'has-children' : ''}`}>
+                <NavIcon name={item.icon} /><span>{item.label}</span><NavIcon name="chevron" size={15} />
+              </NavLink>
+              {item.children && isInside(item) && <div className="client-nav__sub">
+                {item.children.map((child) => <NavLink key={child.to} to={child.to} end={child.end} onClick={() => setOpen(false)} className={({ isActive }) => `client-nav__sublink ${isActive ? 'is-active' : ''}`}>{child.label}</NavLink>)}
+              </div>}
+            </div>)}
       </nav>
 
       <div className="client-nav__storage">
         <div className="client-nav__storage-head"><span>Almacenamiento</span><strong>{formatBytes(usage?.usado_bytes)} / {formatBytes(usage?.maximo_bytes)}</strong></div>
-        <div className="client-nav__storage-track"><span style={{ width: `${percent}%` }} /></div>
+        <div className="client-nav__storage-track" role="img" aria-label={`${percent.toFixed(2)} por ciento utilizado`}><span style={{ width: `${getVisualPercent(percent)}%` }} /></div>
         <small>{formatBytes(usage?.disponible_bytes)} disponibles</small>
       </div>
 

@@ -17,23 +17,20 @@
 .billing-page button, .billing-page input { font: inherit; }
 .billing-icon { display: block; flex: 0 0 auto; }
 .billing-header { min-height: 122px; padding: 27px 3%; display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--gray-15); }
+.billing-header__crumb { display: block; margin-bottom: 4px; color: var(--billing-muted); font-size: 13px; font-weight: 600; letter-spacing: .02em; }
 .billing-header h1 { margin: 0 0 5px; color: var(--gray-96); font-size: 25px; font-weight: 700; letter-spacing: -.025em; }
 .billing-header p { margin: 0; color: var(--billing-muted); font-size: 18px; }
 .billing-header p strong { color: var(--billing-purple-light); font-weight: 500; }
 .billing-back-button { min-height: 42px; padding: 0 13px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--gray-24); border-radius: 10px; color: var(--purple-80); background: var(--gray-10); font-size: 13px !important; cursor: pointer; }
 .billing-back-button:hover { border-color: var(--purple-55); background: var(--gray-12); }
 .billing-content { padding: 36px 3% 50px; }
-.billing-tabs { width: fit-content; max-width: 100%; margin-bottom: 36px; padding: 6px; display: flex; gap: 4px; overflow-x: auto; border: 1px solid var(--gray-19); border-radius: 17px; background: var(--gray-10); }
-.billing-tabs button { min-height: 54px; padding: 0 24px; border: 0; border-radius: 12px; color: var(--gray-47); background: transparent; font-size: 17px !important; font-weight: 500; white-space: nowrap; cursor: pointer; transition: color .15s, background .15s; }
-.billing-tabs button:hover { color: var(--purple-87-2); }
-.billing-tabs button.is-active { color: var(--on-accent); background: var(--billing-purple); font-weight: 700; }
 .billing-panel { min-height: 250px; }
-.billing-alert { min-height: 44px; margin: -17px 0 22px; padding: 10px 13px; display: flex; align-items: center; gap: 12px; border-radius: 9px; font-size: 13px; line-height: 1.45; }
+.billing-alert { min-height: 44px; margin: 0 0 22px; padding: 10px 13px; display: flex; align-items: center; gap: 12px; border-radius: 9px; font-size: 13px; line-height: 1.45; }
 .billing-alert span { flex: 1; }
 .billing-alert button { padding: 3px; display: grid; place-items: center; border: 0; color: inherit; background: transparent; cursor: pointer; }
 .billing-alert--error { border: 1px solid var(--red-61-a33); color: var(--red-85); background: var(--red-33-a18); }
 .billing-alert--success { border: 1px solid var(--green-54-a27); color: var(--green-78); background: var(--green-32-a13); }
-.billing-loading { margin: -17px 0 22px; display: flex; align-items: center; gap: 9px; color: var(--gray-61); font-size: 13px; }
+.billing-loading { margin: 0 0 22px; display: flex; align-items: center; gap: 9px; color: var(--gray-61); font-size: 13px; }
 .billing-spinner { width: 15px; height: 15px; border: 2px solid var(--gray-24); border-top-color: var(--billing-purple-light); border-radius: 50%; animation: billing-spin .75s linear infinite; }
 @keyframes billing-spin { to { transform: rotate(360deg); } }
 
@@ -45,6 +42,7 @@
 .usage-donut::before { content: ''; grid-area: 1 / 1; width: 124px; height: 124px; border-radius: 50%; background: var(--billing-panel); }
 .usage-donut__center { z-index: 1; grid-area: 1 / 1; display: flex; flex-direction: column; align-items: center; transform: rotate(0deg); }
 .usage-donut__center strong { color: var(--gray-100); font-size: 35px; line-height: 1.15; }
+.usage-donut__center strong.is-long { font-size: 26px; }
 .usage-donut__center span { margin-top: 4px; color: var(--billing-muted); font-size: 13px; }
 .usage-total { display: flex; flex-direction: column; gap: 7px; color: var(--billing-muted); font-size: 14px; }
 .usage-total strong { color: var(--purple-95); font-size: 20px; }
@@ -60,6 +58,8 @@
 .next-charge-card__details { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 6px; }
 .next-charge-card__details strong { color: var(--gray-100); font-size: 18px; }
 .next-charge-card__details span { color: var(--gray-47); font-size: 15px; }
+.next-charge-card.is-warning .next-charge-card__icon { color: var(--yellow-55); background: var(--yellow-56-a16); }
+.next-charge-card.is-danger .next-charge-card__icon { color: var(--red-63); background: var(--red-34-a16); }
 .next-charge-card__amount { color: var(--billing-purple-light); font-size: 24px; white-space: nowrap; }
 .billing-summary__footer { margin-top: 21px; display: flex; align-items: center; justify-content: space-between; gap: 15px; color: var(--gray-55); font-size: 14px; }
 .billing-summary__footer strong { color: var(--purple-87-2); }
@@ -102,8 +102,8 @@
 .billing-empty h2 { margin: 0; color: var(--gray-92); font-size: 18px; }
 .billing-empty p { margin: 0; font-size: 14px; }
 
-.checkout-section { max-width: 780px; }
-.checkout-progress { margin: 0 0 26px; display: flex; align-items: center; gap: 12px; }
+.checkout-section { width: min(100%, 780px); margin-inline: auto; }
+.checkout-progress { margin: 0 0 26px; justify-content: center; display: flex; align-items: center; gap: 12px; }
 .checkout-progress__step { display: flex; align-items: center; gap: 12px; }
 .checkout-progress__circle { width: 43px; height: 43px; display: grid; place-items: center; border-radius: 50%; color: var(--gray-43); background: var(--gray-15); font-size: 16px; font-weight: 650; }
 .checkout-progress__step.is-active .checkout-progress__circle { color: var(--on-accent); background: var(--billing-purple); }
@@ -135,13 +135,13 @@
 .billing-secure-note .billing-icon { color: var(--purple-71); }
 .checkout-actions { margin-top: 23px; display: flex; justify-content: flex-end; gap: 12px; }
 .checkout-actions .billing-button { flex: 1; }
-.checkout-review { width: min(100%, 770px); }
+.checkout-review { width: 100%; }
 .checkout-review__card { padding: 27px 30px; border: 1px solid var(--billing-border); border-radius: 18px; background: var(--billing-panel); }
 .checkout-review__card > div { min-height: 55px; display: flex; align-items: center; justify-content: space-between; gap: 18px; border-bottom: 1px solid var(--gray-17); color: var(--gray-47); font-size: 15px; }
 .checkout-review__card > div strong { color: var(--purple-95); text-align: right; }
 .checkout-review__card > div.checkout-review__total { min-height: 58px; border-bottom: 0; color: var(--gray-100); font-size: 18px; font-weight: 700; }
 .checkout-review__total strong { color: var(--billing-purple-light) !important; font-size: 21px; }
-.checkout-success { width: min(100%, 620px); padding: 36px; border: 1px solid var(--purple-23); border-radius: 18px; background: var(--purple-10); }
+.checkout-success { width: min(100%, 620px); margin-inline: auto; padding: 36px; border: 1px solid var(--purple-23); border-radius: 18px; background: var(--purple-10); }
 .checkout-success__icon { width: 64px; height: 64px; margin-bottom: 17px; display: grid; place-items: center; border-radius: 50%; color: var(--green-66); background: var(--green-15); }
 .checkout-success h2 { margin: 0 0 8px; color: var(--gray-100); font-size: 23px; }
 .checkout-success > p { margin: 0 0 22px; color: var(--gray-61); font-size: 14px; line-height: 1.5; }
@@ -178,8 +178,6 @@
   .billing-header p { font-size: 14px; }
   .billing-back-button { width: 40px; min-width: 40px; height: 40px; padding: 0; overflow: hidden; font-size: 0 !important; }
   .billing-content { padding: 22px 16px 35px; }
-  .billing-tabs { width: 100%; margin-bottom: 23px; padding: 4px; border-radius: 13px; }
-  .billing-tabs button { min-height: 43px; padding-inline: 14px; font-size: 13px !important; }
   .billing-summary-grid, .plan-cards { grid-template-columns: 1fr; }
   .billing-card { min-height: 280px; padding: 24px; border-radius: 15px; }
   .billing-card h2 { margin-bottom: 16px; font-size: 17px; }

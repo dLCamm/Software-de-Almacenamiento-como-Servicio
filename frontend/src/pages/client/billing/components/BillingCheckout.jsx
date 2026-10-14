@@ -80,7 +80,10 @@ export default function BillingCheckout({
   if (currentPlan?.code === 'free' && selectedPlan.code === 'free' && step !== 4) return <div className="billing-empty"><p>Tu plan FREE no requiere pago. Elige otro plan para iniciar una contratación.</p><button className="billing-button billing-button--secondary" type="button" onClick={onViewPlans}>Ver planes</button></div>
 
   const price = Number(selectedPlan.monthly_price || 0)
-  const maskedCard = lastFour ? `•••• •••• •••• ${lastFour}` : 'Tarjeta terminada en —'
+  // Antes de pagar, los últimos 4 dígitos salen de la tarjeta que se está escribiendo.
+  const typedLastFour = (card?.number || '').replace(/\D/g, '').slice(-4)
+  const shownLastFour = lastFour || (typedLastFour.length === 4 ? typedLastFour : '')
+  const maskedCard = shownLastFour ? `•••• •••• •••• ${shownLastFour}` : 'Tarjeta terminada en —'
   const newEndDate = formatDate(result?.new_end_date || result?.end_date || nextBillingDate)
 
   if (step === 4) return <section className="checkout-success">
