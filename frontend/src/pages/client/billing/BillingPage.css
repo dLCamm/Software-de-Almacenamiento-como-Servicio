@@ -65,6 +65,21 @@
 .billing-summary__footer strong { color: var(--purple-87-2); }
 
 .plan-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: stretch; gap: 20px; }
+.plan-cards--skeleton { pointer-events: none; }
+.plan-card--skeleton { overflow: hidden; }
+.plan-skeleton__shape { display: block; border-radius: 6px; background: linear-gradient(100deg, #242328 20%, #343139 45%, #242328 70%); background-size: 200% 100%; animation: billing-skeleton-shimmer 1.35s ease-in-out infinite; }
+.plan-skeleton__head { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.plan-skeleton__name { width: 64px; height: 15px; }
+.plan-skeleton__badge { width: 80px; height: 22px; border-radius: 999px; }
+.plan-skeleton__price { width: 65%; height: 48px; margin-top: 9px; }
+.plan-skeleton__storage { width: 78%; height: 16px; margin-top: 8px; }
+.plan-skeleton__benefits { width: 100%; margin-top: 23px; display: flex; flex-direction: column; gap: 12px; }
+.plan-skeleton__benefit { width: 92%; height: 13px; }
+.plan-skeleton__benefit--2 { width: 80%; }
+.plan-skeleton__benefit--3 { width: 88%; }
+.plan-skeleton__benefit--4 { width: 68%; }
+.plan-skeleton__action { width: 100%; min-height: 50px; margin-top: auto; border-radius: 12px; }
+@keyframes billing-skeleton-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
 .plan-card { position: relative; min-width: 0; border: 1px solid var(--billing-border); border-radius: 19px; background: var(--billing-panel); transition: border-color .16s, background .16s, transform .16s; }
 /* La landing también define .plan-card de forma global; se neutraliza aquí para que no afecte a facturación. */
 .billing-page .plan-card { padding: 0; display: block; gap: 0; text-align: left; align-items: initial; }
@@ -226,4 +241,8 @@
   .next-charge-card__amount { margin-left: 57px; }
   .billing-summary__footer { align-items: flex-start; }
   .payment-method__badge { max-width: 70px; white-space: normal; text-align: center; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-skeleton__shape { animation: none; }
 }

@@ -51,7 +51,7 @@ export default function BillingPage() {
     <div className="billing-content">
       {billing.error && <div className="billing-alert billing-alert--error" role="alert"><span>{billing.error}</span><button type="button" onClick={billing.dismissMessages} aria-label="Cerrar mensaje"><BillingIcon name="close" size={17} /></button></div>}
       {billing.notice && billing.checkoutStep !== 4 && <div className="billing-alert billing-alert--success" role="status"><span>{billing.notice}</span><button type="button" onClick={billing.dismissMessages} aria-label="Cerrar mensaje"><BillingIcon name="close" size={17} /></button></div>}
-      {billing.loading && <div className="billing-loading" role="status"><span className="billing-spinner" />Actualizando datos de facturación…</div>}
+      {billing.loading && !(billing.activeTab === 'plans' && !billing.plans.length) && <div className="billing-loading" role="status"><span className="billing-spinner" />Actualizando datos de facturación…</div>}
 
       <div className="billing-panel">
         {billing.activeTab === 'summary' && <BillingSummary usage={billing.usage} currentPlan={billing.currentPlan} subscription={billing.subscription} nextBillingDate={billing.nextBillingDate} onViewPlans={() => billing.setActiveTab('plans')} />}
