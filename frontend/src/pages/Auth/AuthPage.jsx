@@ -5,6 +5,7 @@ import LoginForm from './LoginForm'
 import RegisterForm from './RegisterForm'
 import RecoverForm from './RecoverForm'
 
+import ThemeToggle from '../../components/ThemeToggle'
 import './AuthPage.css'
 
 
@@ -24,6 +25,7 @@ export default function AuthPage() {
 
   return (
     <div className="auth-page">
+      <ThemeToggle className="auth-page__theme" />
 
       {/* Logo / regreso al inicio */}
       <div className="auth-page__brand">

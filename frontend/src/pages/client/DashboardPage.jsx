@@ -12,6 +12,22 @@ import { formatBytes, formatDateTime, getTrashDaysRemaining } from './dashboard/
 import useDashboard from './dashboard/useDashboard'
 import './DashboardPage.css'
 
+function FileSkeletonGrid({ layout }) {
+  const isList = layout === 'list'
+  const skeletonCount = isList ? 6 : 8
+
+  return <div className={`drive-grid drive-grid--skeleton ${isList ? 'drive-grid--list' : ''}`} role="status" aria-label="Cargando archivos" aria-busy="true">
+    {Array.from({ length: skeletonCount }, (_, index) => <article key={index} className={`drive-item file-skeleton ${isList ? 'is-list' : ''}`} aria-hidden="true">
+      <span className="file-skeleton__shape file-skeleton__icon" />
+      <span className="file-skeleton__details">
+        <span className="file-skeleton__shape file-skeleton__name" />
+        <span className="file-skeleton__shape file-skeleton__subtitle" />
+      </span>
+      <span className="file-skeleton__shape file-skeleton__metadata" />
+    </article>)}
+  </div>
+}
+
 export default function DashboardPage() {
   const navigate = useNavigate()
   const uploadInput = useRef(null)
@@ -75,7 +91,7 @@ export default function DashboardPage() {
       {dashboard.error && <div className="dashboard-alert dashboard-alert--error" role="alert"><span>{dashboard.error}</span><button type="button" onClick={dashboard.clearError} aria-label="Cerrar mensaje"><Icon name="x" size={16} /></button></div>}
       {dashboard.notice && <div className="dashboard-alert dashboard-alert--success" role="status"><Icon name="check" size={17} /><span>{dashboard.notice}</span><button type="button" onClick={dashboard.clearNotice} aria-label="Cerrar mensaje"><Icon name="x" size={16} /></button></div>}
 
-      {dashboard.loading ? <div className="drive-loading" role="status"><span className="loading-spinner" />Cargando {dashboard.showTrash ? 'papelera' : 'archivos'}…</div> : dashboard.showTrash ? <div className="trash-list">
+      {dashboard.loading && !dashboard.showTrash ? <FileSkeletonGrid layout={layout} /> : dashboard.loading ? <div className="drive-loading" role="status"><span className="loading-spinner" />Cargando papelera…</div> : dashboard.showTrash ? <div className="trash-list">
         {dashboard.trashItems.map((item) => {
           const daysRemaining = getTrashDaysRemaining(item.fecha_eliminacion)
           const icon = item.tipo === 'carpeta' ? 'folder' : getFileKind(item.extension)

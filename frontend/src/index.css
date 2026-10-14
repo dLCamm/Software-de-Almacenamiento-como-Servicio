@@ -4,12 +4,9 @@
   box-sizing: border-box;
 }
 
-html {
-  color-scheme: dark;
-}
-
 body {
   margin: 0;
+  background: var(--page-bg);
   min-height: 100svh;
   font-family:
     system-ui,

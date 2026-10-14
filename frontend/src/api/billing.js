@@ -4,6 +4,11 @@ export function listPlans() {
   return apiRequest('/api/plans/', { auth: true })
 }
 
+/** Plan y suscripción del usuario: fecha de vencimiento, días restantes, renovación automática. */
+export function getCurrentPlan() {
+  return apiRequest('/api/plans/current/', { auth: true })
+}
+
 export function getPaymentHistory() {
   return apiRequest('/api/payments/history/', { auth: true })
 }

@@ -15,9 +15,28 @@ function getAction(plan, isCurrent) {
   return { label: 'Contratar', disabled: false }
 }
 
+function PlanSkeletonGrid() {
+  return <div className="plan-cards plan-cards--skeleton" role="status" aria-label="Cargando planes" aria-busy="true">
+    {Array.from({ length: 4 }, (_, index) => <article key={index} className="plan-card plan-card--skeleton" aria-hidden="true">
+      <div className="plan-card__body">
+        <div className="plan-skeleton__head">
+          <span className="plan-skeleton__shape plan-skeleton__name" />
+          <span className="plan-skeleton__shape plan-skeleton__badge" />
+        </div>
+        <span className="plan-skeleton__shape plan-skeleton__price" />
+        <span className="plan-skeleton__shape plan-skeleton__storage" />
+        <div className="plan-skeleton__benefits">
+          {[0, 1, 2, 3].map((line) => <span key={line} className={`plan-skeleton__shape plan-skeleton__benefit plan-skeleton__benefit--${line + 1}`} />)}
+        </div>
+        <span className="plan-skeleton__shape plan-skeleton__action" />
+      </div>
+    </article>)}
+  </div>
+}
+
 export default function BillingPlans({ plans, currentPlan, loading, onContract }) {
   return <section className="plans-section" aria-label="Planes disponibles">
-    {loading && !plans.length ? <div className="billing-empty">Cargando planes…</div> : !plans.length ? <div className="billing-empty">No se pudieron cargar los planes disponibles.</div> :
+    {loading && !plans.length ? <PlanSkeletonGrid /> : !plans.length ? <div className="billing-empty">No se pudieron cargar los planes disponibles.</div> :
       <div className="plan-cards">
         {plans.map((plan) => {
           const isCurrent = String(plan.id) === String(currentPlan?.id)
