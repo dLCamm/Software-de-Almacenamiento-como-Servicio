@@ -128,7 +128,8 @@
 .file-skeleton__shape {
     display: block;
     border-radius: 6px;
-    background: linear-gradient(
+    background: linear-gradient( 
+
         100deg,
         #242328 20%,
         #343139 45%,
@@ -136,6 +137,15 @@
     );
     background-size: 200% 100%;
     animation: dashboard-skeleton-shimmer 1.35s ease-in-out infinite;
+}
+
+:root[data-theme='light'] .file-skeleton__shape {
+    background-image: linear-gradient(
+        100deg,
+        var(--gray-19) 20%,
+        var(--gray-15) 45%,
+        var(--gray-19) 70%
+    );
 }
 
 .file-skeleton__icon {

@@ -68,6 +68,15 @@
 .plan-cards--skeleton { pointer-events: none; }
 .plan-card--skeleton { overflow: hidden; }
 .plan-skeleton__shape { display: block; border-radius: 6px; background: linear-gradient(100deg, #242328 20%, #343139 45%, #242328 70%); background-size: 200% 100%; animation: billing-skeleton-shimmer 1.35s ease-in-out infinite; }
+
+:root[data-theme='light'] .plan-skeleton__shape {
+  background-image: linear-gradient(
+    100deg,
+    var(--gray-19) 20%,
+    var(--gray-15) 45%,
+    var(--gray-19) 70%
+  );
+}
 .plan-skeleton__head { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .plan-skeleton__name { width: 64px; height: 15px; }
 .plan-skeleton__badge { width: 80px; height: 22px; border-radius: 999px; }
