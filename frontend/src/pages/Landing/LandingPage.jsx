@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { listPlans } from '../../api/billing'
 import {
   CubeLogoIcon,
   ArrowRightIcon,
@@ -67,23 +68,30 @@ const FEATURES = [
   },
 ]
 
-const PLANS = [
-  { id: 'free', name: 'FREE', price: 'Q0', storage: '5 GB de almacenamiento', cta: 'Seleccionar plan' },
-  {
-    id: 'pro',
-    name: 'PRO',
-    price: 'Q149',
-    storage: '50 GB de almacenamiento',
-    cta: 'Comenzar ahora',
-    highlighted: true,
-    badge: 'Más popular',
-  },
-  { id: 'business', name: 'BUSINESS', price: 'Q399', storage: '500 GB de almacenamiento', cta: 'Seleccionar plan', tone: 'green' },
-]
-
 export default function LandingPage() {
   const [menuOpen, setMenuOpen] = useState(false)
+  const [plans, setPlans] = useState([])
+  const [plansLoading, setPlansLoading] = useState(true)
+  const [plansError, setPlansError] = useState('')
   const navigate = useNavigate()
+
+  useEffect(() => {
+    let active = true
+    listPlans()
+      .then((result) => {
+        if (!active) return
+        const availablePlans = Array.isArray(result) ? result : result?.results
+        setPlans(Array.isArray(availablePlans) ? availablePlans : [])
+      })
+      .catch(() => {
+        if (active) setPlansError('No se pudieron cargar los planes. Intenta de nuevo más tarde.')
+      })
+      .finally(() => {
+        if (active) setPlansLoading(false)
+      })
+
+    return () => { active = false }
+  }, [])
 
   return (
     <div className="landing">
@@ -165,10 +173,10 @@ export default function LandingPage() {
             <button type="button" className="btn btn--primary btn--lg" onClick={() => navigate('/register')}>
               Crear cuenta gratis
             </button>
-            <button type="button" className="btn btn--secondary btn--lg">
+            <a href="https://youtu.be/fBmSZrSWAh0" target="_blank" rel="noopener noreferrer" className="btn btn--secondary btn--lg">
               Ver demostración
               <ArrowRightIcon className="btn__icon" />
-            </button>
+            </a>
           </div>
 
           <div className="hero__formats">
@@ -221,31 +229,46 @@ export default function LandingPage() {
             <h2>Elige el plan que más te conviene</h2>
           </div>
 
-          <div className="pricing__grid">
-            {PLANS.map((plan) => (
-              <div
-                key={plan.id}
-                className={`plan-card${plan.highlighted ? ' plan-card--highlighted' : ''}`}
-              >
-                {plan.badge && <span className="plan-card__badge">{plan.badge}</span>}
-                <span className={`plan-card__name${plan.tone ? ` plan-card__name--${plan.tone}` : ''}`}>
-                  {plan.name}
-                </span>
-                <div className="plan-card__price">
-                  {plan.price}
-                  <span>/mes</span>
-                </div>
-                <p className="plan-card__storage">{plan.storage}</p>
-                <button
-                  type="button"
-                  className={`btn btn--block ${plan.highlighted ? 'btn--primary' : 'btn--secondary'}`}
-                  onClick={() => navigate(`/register?plan=${plan.id}`)}
-                >
-                  {plan.cta}
-                </button>
-              </div>
-            ))}
-          </div>
+          {plansLoading
+            ? <p className="pricing__status" role="status">Cargando planes…</p>
+            : plansError
+              ? <p className="pricing__status pricing__status--error" role="alert">{plansError}</p>
+              : plans.length === 0
+                ? <p className="pricing__status">No hay planes disponibles en este momento.</p>
+                : (
+                  <div className="pricing__grid">
+                    {plans.map((plan) => {
+                      const planCode = String(plan.code || '').toLowerCase()
+                      const isPopular = planCode === 'pro'
+                      const price = Number(plan.monthly_price || 0)
+                      const storage = Number(plan.storage_limit_gb || 0)
+
+                      return (
+                        <div
+                          key={plan.id}
+                          className={`plan-card${isPopular ? ' plan-card--highlighted' : ''}`}
+                        >
+                          {isPopular && <span className="plan-card__badge">Más popular</span>}
+                          <span className={`plan-card__name${planCode === 'business' ? ' plan-card__name--green' : ''}`}>
+                            {plan.name}
+                          </span>
+                          <div className="plan-card__price">
+                            Q{price.toLocaleString('es-GT', { maximumFractionDigits: 2 })}
+                            <span>/mes</span>
+                          </div>
+                          <p className="plan-card__storage">{storage.toLocaleString('es-GT')} GB de almacenamiento</p>
+                          <button
+                            type="button"
+                            className={`btn btn--block ${isPopular ? 'btn--primary' : 'btn--secondary'}`}
+                            onClick={() => navigate(`/register?plan=${encodeURIComponent(plan.code)}`)}
+                          >
+                            {planCode === 'free' ? 'Comenzar gratis' : isPopular ? 'Comenzar ahora' : 'Seleccionar plan'}
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
 
           <p className="pricing__more">
             ¿Necesitas más?{' '}

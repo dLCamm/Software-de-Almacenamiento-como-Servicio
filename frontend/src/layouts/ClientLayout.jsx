@@ -5,7 +5,7 @@ import { getStorageUsage } from '../api/storage'
 import { CubeLogoIcon } from '../components/icons'
 import ThemeToggle from '../components/ThemeToggle'
 import { formatBytes } from '../pages/client/dashboard/formatters'
-import { getUsagePercent, getVisualPercent, subscribeStorageUsage } from '../utils/storageUsage'
+import { getUsagePercent, subscribeStorageUsage } from '../utils/storageUsage'
 import './ClientLayout.css'
 
 const paths = {
@@ -104,7 +104,7 @@ export default function ClientLayout() {
 
       <div className="client-nav__storage">
         <div className="client-nav__storage-head"><span>Almacenamiento</span><strong>{formatBytes(usage?.usado_bytes)} / {formatBytes(usage?.maximo_bytes)}</strong></div>
-        <div className="client-nav__storage-track" role="img" aria-label={`${percent.toFixed(2)} por ciento utilizado`}><span style={{ width: `${getVisualPercent(percent)}%` }} /></div>
+        <div className="client-nav__storage-track" role="img" aria-label={`${percent.toFixed(2)} por ciento utilizado`}><span style={{ width: `${percent}%` }} /></div>
         <small>{formatBytes(usage?.disponible_bytes)} disponibles</small>
       </div>
 
