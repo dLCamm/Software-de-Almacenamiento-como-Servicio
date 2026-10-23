@@ -213,3 +213,180 @@ class LoginSerializer(TokenObtainPairSerializer):
         }
 
         return data
+
+
+class UserListSerializer(serializers.ModelSerializer):
+
+    plan = serializers.SerializerMethodField()
+    subscription = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "role",
+            "is_active",
+            "is_email_verified",
+            "plan",
+            "subscription",
+            "created_at",
+        ]
+
+    def get_plan(self, obj):
+
+        if not obj.plan:
+            return None
+
+        return {
+            "id": obj.plan.id,
+            "code": obj.plan.code,
+            "name": obj.plan.name,
+            "monthly_price": str(
+                obj.plan.monthly_price
+            ),
+            "storage_limit_bytes":
+                obj.plan.storage_limit_bytes,
+        }
+
+    def get_subscription(self, obj):
+
+        try:
+            subscription = obj.subscription
+
+        except Exception:
+            return None
+
+        return {
+            "status":
+                subscription.status,
+
+            "start_date":
+                subscription.start_date,
+
+            "end_date":
+                subscription.end_date,
+
+            "auto_renew":
+                subscription.auto_renew,
+        }
+
+class UserDetailSerializer(serializers.ModelSerializer):
+
+    plan = serializers.SerializerMethodField()
+    subscription = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "role",
+            "is_active",
+            "is_email_verified",
+            "plan",
+            "subscription",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_plan(self, obj):
+
+        if not obj.plan:
+            return None
+
+        return {
+            "id": obj.plan.id,
+            "code": obj.plan.code,
+            "name": obj.plan.name,
+            "monthly_price": str(
+                obj.plan.monthly_price
+            ),
+            "storage_limit_bytes":
+                obj.plan.storage_limit_bytes,
+
+            "storage_limit_gb": round(
+                obj.plan.storage_limit_bytes
+                / (1024 ** 3),
+                2
+            ),
+
+            "is_active":
+                obj.plan.is_active,
+        }
+
+    def get_subscription(self, obj):
+
+        try:
+            subscription = obj.subscription
+
+        except Exception:
+            return None
+
+        return {
+            "status":
+                subscription.status,
+
+            "start_date":
+                subscription.start_date,
+
+            "end_date":
+                subscription.end_date,
+
+            "auto_renew":
+                subscription.auto_renew,
+        }
+
+class UserAdminUpdateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+
+        fields = [
+            "first_name",
+            "last_name",
+            "email",
+            "role",
+        ]
+
+    def validate_email(self, value):
+
+        user = self.instance
+
+        if (
+            User.objects
+            .exclude(id=user.id)
+            .filter(email=value)
+            .exists()
+        ):
+            raise serializers.ValidationError(
+                "Ya existe un usuario con este correo."
+            )
+
+        return value
+
+    def validate_role(self, value):
+
+        valid_roles = [
+            User.Role.CLIENT,
+            User.Role.SUPPORT,
+            User.Role.ADMIN,
+        ]
+
+        if value not in valid_roles:
+
+            raise serializers.ValidationError(
+                "El rol seleccionado no es válido."
+            )
+
+        return value
+
+class UserStatusSerializer(serializers.Serializer):
+
+    is_active = serializers.BooleanField()
