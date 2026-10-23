@@ -7,10 +7,16 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from plans.models import Subscription
-from users.models import Plan
+from users.models import Plan, User
 from .models import Payment
 from .serializers import (ChangePlanSerializer,RenewSubscriptionSerializer,PaymentSerializer,)
 from .services.mock_gateway import MockPaymentGateway
+from django.db.models import Q
+from django.utils.dateparse import parse_date
+from users.permissions import IsAdminOrSupport
+
+from .models import Payment
+from .serializers import PaymentManagementSerializer
 
 
 # CAMBIAR / CONTRATAR PLAN
@@ -413,5 +419,316 @@ class RenewSubscriptionView(APIView):
                 "transaction_reference":
                     payment.transaction_reference
             },
+            status=status.HTTP_200_OK
+        )
+
+class GlobalPaymentHistoryView(ListAPIView):
+
+    permission_classes = [
+        IsAdminOrSupport
+    ]
+
+    serializer_class = PaymentManagementSerializer
+
+    def get_queryset(self):
+
+        queryset = (
+            Payment.objects
+            .select_related(
+                "user",
+                "plan",
+            )
+            .all()
+            .order_by("-created_at")
+        )
+
+        # FILTRO POR ESTADO
+
+        payment_status = (
+            self.request.query_params.get(
+                "status"
+            )
+        )
+
+        if payment_status:
+
+            queryset = queryset.filter(
+                status=payment_status.upper()
+            )
+
+        # FILTRO POR TIPO DE PAGO
+
+        payment_type = (
+            self.request.query_params.get(
+                "payment_type"
+            )
+        )
+
+        if payment_type:
+
+            queryset = queryset.filter(
+                payment_type=payment_type.upper()
+            )
+
+        # FILTRO POR PLAN
+
+        plan = self.request.query_params.get(
+            "plan"
+        )
+
+        if plan:
+
+            queryset = queryset.filter(
+                plan__code=plan.lower()
+            )
+
+        # BÚSQUEDA POR USUARIO
+
+        search = self.request.query_params.get(
+            "search"
+        )
+
+        if search:
+
+            queryset = queryset.filter(
+                Q(
+                    user__email__icontains=search
+                )
+                | Q(
+                    user__first_name__icontains=search
+                )
+                | Q(
+                    user__last_name__icontains=search
+                )
+                | Q(
+                    transaction_reference__icontains=search
+                )
+            )
+
+        # FECHA DESDE
+
+        date_from = (
+            self.request.query_params.get(
+                "date_from"
+            )
+        )
+
+        if date_from:
+
+            parsed_date = parse_date(
+                date_from
+            )
+
+            if parsed_date:
+
+                queryset = queryset.filter(
+                    created_at__date__gte=parsed_date
+                )
+
+        # FECHA HASTA
+
+        date_to = (
+            self.request.query_params.get(
+                "date_to"
+            )
+        )
+
+        if date_to:
+
+            parsed_date = parse_date(
+                date_to
+            )
+
+            if parsed_date:
+
+                queryset = queryset.filter(
+                    created_at__date__lte=parsed_date
+                )
+
+        return queryset
+
+
+class UserPaymentHistoryView(APIView):
+
+    permission_classes = [
+        IsAdminOrSupport
+    ]
+
+    def get(self, request, user_id):
+
+        # BUSCAR USUARIO
+
+        try:
+
+            target_user = User.objects.get(
+                id=user_id
+            )
+
+        except User.DoesNotExist:
+
+            return Response(
+                {
+                    "detail":
+                        "El usuario no existe."
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # SOPORTE SOLO PUEDE CONSULTAR CLIENTES
+
+        if (
+            request.user.role == User.Role.SUPPORT
+            and target_user.role != User.Role.CLIENT
+        ):
+
+            return Response(
+                {
+                    "detail":
+                        "Soporte únicamente puede "
+                        "consultar pagos de clientes."
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        queryset = (
+            Payment.objects
+            .filter(
+                user=target_user
+            )
+            .select_related(
+                "user",
+                "plan"
+            )
+            .order_by(
+                "-created_at"
+            )
+        )
+
+        # FILTRO ESTADO
+
+        payment_status = (
+            request.query_params.get(
+                "status"
+            )
+        )
+
+        if payment_status:
+
+            queryset = queryset.filter(
+                status=payment_status.upper()
+            )
+
+        # FILTRO TIPO
+
+        payment_type = (
+            request.query_params.get(
+                "payment_type"
+            )
+        )
+
+        if payment_type:
+
+            queryset = queryset.filter(
+                payment_type=payment_type.upper()
+            )
+
+        # FILTRO PLAN
+
+        plan = request.query_params.get(
+            "plan"
+        )
+
+        if plan:
+
+            queryset = queryset.filter(
+                plan__code=plan.lower()
+            )
+
+        serializer = PaymentManagementSerializer(
+            queryset,
+            many=True
+        )
+
+        return Response(
+            {
+                "user": {
+                    "id":
+                        target_user.id,
+
+                    "email":
+                        target_user.email,
+
+                    "first_name":
+                        target_user.first_name,
+
+                    "last_name":
+                        target_user.last_name,
+
+                    "current_plan":
+                        target_user.plan.name
+                        if target_user.plan
+                        else None,
+                },
+
+                "payments":
+                    serializer.data
+            },
+            status=status.HTTP_200_OK
+        )
+
+class PaymentManagementDetailView(APIView):
+
+    permission_classes = [
+        IsAdminOrSupport
+    ]
+
+    def get(self, request, payment_id):
+
+        try:
+
+            payment = (
+                Payment.objects
+                .select_related(
+                    "user",
+                    "plan"
+                )
+                .get(
+                    id=payment_id
+                )
+            )
+
+        except Payment.DoesNotExist:
+
+            return Response(
+                {
+                    "detail":
+                        "La transacción no existe."
+                },
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # Soporte solamente clientes
+        if (
+            request.user.role == User.Role.SUPPORT
+            and payment.user.role != User.Role.CLIENT
+        ):
+
+            return Response(
+                {
+                    "detail":
+                        "No tienes permiso para consultar "
+                        "esta transacción."
+                },
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = (
+            PaymentManagementSerializer(
+                payment
+            )
+        )
+
+        return Response(
+            serializer.data,
             status=status.HTTP_200_OK
         )
