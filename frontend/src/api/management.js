@@ -23,3 +23,12 @@ export function updateManagedUser(userId, changes) {
     auth: true,
   })
 }
+
+/** Activa o desactiva una cuenta administrada. */
+export function updateManagedUserStatus(userId, isActive) {
+  return apiRequest(`/api/auth/management/${userId}/status/`, {
+    method: 'PATCH',
+    body: { is_active: isActive },
+    auth: true,
+  })
+}

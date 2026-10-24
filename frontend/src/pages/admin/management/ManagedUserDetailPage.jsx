@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getProfile } from '../../../api/auth'
-import { getManagedUser } from '../../../api/management'
+import { getManagedUser, updateManagedUserStatus } from '../../../api/management'
 import { AdminIcon } from '../plans/AdminIcon'
 import UserEditDialog from './UserEditDialog'
 import '../plans/AdminPlansPage.css'
@@ -29,7 +29,9 @@ export default function ManagedUserDetailPage() {
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [editing, setEditing] = useState(false)
+  const [changingStatus, setChangingStatus] = useState(false)
 
   const load = useCallback(async () => {
     setError('')
@@ -59,6 +61,27 @@ export default function ManagedUserDetailPage() {
   }, [userId])
 
   const subscription = user?.subscription
+  const canChangeStatus = user && profile && profile.id !== user.id && (
+    profile.role === 'ADMIN' || (profile.role === 'SUPPORT' && user.role === 'CLIENT')
+  )
+
+  async function toggleStatus() {
+    const nextStatus = !user.is_active
+    const action = nextStatus ? 'activar' : 'desactivar'
+    if (!window.confirm(`¿Quieres ${action} la cuenta de ${displayName(user)}?`)) return
+    setChangingStatus(true)
+    setError('')
+    setNotice('')
+    try {
+      const result = await updateManagedUserStatus(user.id, nextStatus)
+      setUser((current) => ({ ...current, is_active: result?.user?.is_active ?? nextStatus }))
+      setNotice(result?.detail || `Usuario ${nextStatus ? 'activado' : 'desactivado'} correctamente.`)
+    } catch (statusError) {
+      setError(statusError.message || 'No se pudo cambiar el estado de la cuenta.')
+    } finally {
+      setChangingStatus(false)
+    }
+  }
 
   return <main className="admin-page">
     <header className="admin-header">
@@ -67,11 +90,15 @@ export default function ManagedUserDetailPage() {
         <h1>{user ? displayName(user) : `Usuario #${userId}`}</h1>
         <p>{user?.email || 'Información de la cuenta y su plan'}</p>
       </div>
-      {profile?.role === 'ADMIN' && user && <button className="admin-button admin-button--primary" type="button" onClick={() => setEditing(true)}><AdminIcon name="edit" />Editar usuario</button>}
+      <div className="management-header-actions">
+        {canChangeStatus && <button className={`admin-button ${user.is_active ? 'admin-button--danger' : 'admin-button--secondary'}`} type="button" onClick={toggleStatus} disabled={changingStatus}>{changingStatus ? 'Actualizando…' : user.is_active ? 'Desactivar cuenta' : 'Activar cuenta'}</button>}
+        {profile?.role === 'ADMIN' && user && <button className="admin-button admin-button--primary" type="button" onClick={() => setEditing(true)}><AdminIcon name="edit" />Editar usuario</button>}
+      </div>
     </header>
 
     <div className="admin-content">
       {error && <div className="admin-alert admin-alert--error" role="alert"><span>{error}</span></div>}
+      {notice && <div className="admin-alert admin-alert--success" role="status"><span>{notice}</span></div>}
       {loading
         ? <div className="admin-empty"><span className="admin-spinner" />Cargando usuario…</div>
         : user && <>
