@@ -48,6 +48,16 @@
 .management-user-email { display: block; margin-top: 4px; color: var(--admin-muted); font-size: 12px; }
 .management-users-table .management-badge { margin-top: 0; }
 .management-detail-button { min-height: 36px; padding: 0 11px; font-size: 12px; text-decoration: none; }
+.management-table-link { display: block; color: var(--purple-80); font-weight: 650; text-decoration: none; }
+.management-table-link:hover { color: var(--admin-purple-light); text-decoration: underline; }
+.management-table-link small { display: block; margin-top: 4px; color: var(--admin-muted); font-size: 12px; font-weight: 400; }
+.management-payment-amount { color: var(--admin-strong); white-space: nowrap; }
+.management-badge.is-danger { color: var(--red-85); background: var(--red-33-a18); }
+.management-payment-filters { grid-template-columns: minmax(190px, 2fr) repeat(3, minmax(115px, 1fr)); }
+.management-payment-filters .management-search { grid-column: 1 / -1; }
+.management-payment-filters .management-filter-actions { grid-column: 1 / -1; }
+.management-payments-table td { white-space: nowrap; }
+.management-payments-table td[data-label="Usuario"] { white-space: normal; min-width: 180px; }
 
 @media (max-width: 760px) {
   .management-detail-grid { grid-template-columns: 1fr; }
@@ -56,6 +66,6 @@
 
 @media (max-width: 1050px) {
   .management-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .management-search { grid-column: 1 / -1; }
-  .management-filter-actions { grid-column: 1 / -1; }
+  .management-filters .management-search { grid-column: 1 / -1; }
+  .management-filters .management-filter-actions { grid-column: 1 / -1; }
 }
