@@ -1,0 +1,21 @@
+.admin-page .admin-field select,
+.admin-page .admin-field input[type="date"] {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--gray-26);
+  border-radius: 10px;
+  color: var(--admin-strong);
+  background: var(--gray-8);
+  font-size: 14px;
+  outline: 0;
+}
+
+.admin-page .admin-field select:focus,
+.admin-page .admin-field input[type="date"]:focus {
+  border-color: var(--purple-66);
+  box-shadow: 0 0 0 3px var(--purple-63-a15);
+}
+
+.admin-page .admin-dialog form { display: flex; flex: 1; flex-direction: column; min-height: 0; }
