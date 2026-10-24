@@ -39,8 +39,22 @@
 .management-data-list dt { color: var(--admin-muted); font-size: 13px; }
 .management-data-list dd { margin: 0; color: var(--gray-85); font-size: 13px; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
 .management-card--identity .management-data-list { grid-column: 1 / -1; }
+.management-filters { margin-bottom: 22px; padding: 18px; display: grid; grid-template-columns: minmax(200px, 2fr) repeat(3, minmax(125px, 1fr)) auto; align-items: end; gap: 12px; border: 1px solid var(--gray-19); border-radius: 16px; background: var(--admin-panel); }
+.management-filters .admin-field { margin: 0; }
+.management-filter-actions { display: flex; gap: 8px; }
+.management-filter-actions .admin-button { min-height: 44px; padding: 0 13px; }
+.management-user-name { display: block; color: var(--admin-strong); font-weight: 650; }
+.management-user-email { display: block; margin-top: 4px; color: var(--admin-muted); font-size: 12px; }
+.management-users-table .management-badge { margin-top: 0; }
+.management-detail-button { min-height: 36px; padding: 0 11px; font-size: 12px; text-decoration: none; }
 
 @media (max-width: 760px) {
   .management-detail-grid { grid-template-columns: 1fr; }
   .management-card--identity { grid-row: auto; }
+}
+
+@media (max-width: 1050px) {
+  .management-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .management-search { grid-column: 1 / -1; }
+  .management-filter-actions { grid-column: 1 / -1; }
 }

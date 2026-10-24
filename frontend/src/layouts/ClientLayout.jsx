@@ -38,11 +38,12 @@ const NAV_ITEMS = [
       { to: '/app/client/billing/historial', label: 'Historial' },
     ],
   },
-  { to: '/app/support', label: 'Soporte Técnico', icon: 'support', roles: ['SUPPORT', 'ADMIN'], ready: false },
   {
-    to: '/app/admin', label: 'Administrador', icon: 'admin', roles: ['ADMIN'],
+    to: '/app/admin', label: 'Administración', icon: 'admin', roles: ['ADMIN', 'SUPPORT'],
     children: [
-      { to: '/app/admin/planes', label: 'Gestión de planes' },
+      { to: '/app/admin/usuarios', label: 'Usuarios' },
+      { to: '/app/admin/pagos', label: 'Pagos' },
+      { to: '/app/admin/planes', label: 'Planes', roles: ['ADMIN'] },
     ],
   },
 ]
@@ -93,11 +94,11 @@ export default function ClientLayout() {
         {items.map((item) => item.ready === false
           ? <span key={item.to} className="client-nav__link is-disabled" aria-disabled="true" title="Próximamente"><NavIcon name={item.icon} /><span>{item.label}</span><small>Pronto</small></span>
           : <div key={item.to} className="client-nav__group">
-              <NavLink to={item.children ? item.children[0].to : item.to} end={item.end} onClick={() => setOpen(false)} className={() => `client-nav__link ${isInside(item) ? 'is-active' : ''} ${item.children ? 'has-children' : ''}`}>
+              <NavLink to={item.children ? (item.children.find((child) => !child.roles || child.roles.includes(role))?.to || item.to) : item.to} end={item.end} onClick={() => setOpen(false)} className={() => `client-nav__link ${isInside(item) ? 'is-active' : ''} ${item.children ? 'has-children' : ''}`}>
                 <NavIcon name={item.icon} /><span>{item.label}</span><NavIcon name="chevron" size={15} />
               </NavLink>
               {item.children && isInside(item) && <div className="client-nav__sub">
-                {item.children.map((child) => <NavLink key={child.to} to={child.to} end={child.end} onClick={() => setOpen(false)} className={({ isActive }) => `client-nav__sublink ${isActive ? 'is-active' : ''}`}>{child.label}</NavLink>)}
+                {item.children.filter((child) => !child.roles || child.roles.includes(role)).map((child) => <NavLink key={child.to} to={child.to} end={child.end} onClick={() => setOpen(false)} className={({ isActive }) => `client-nav__sublink ${isActive ? 'is-active' : ''}`}>{child.label}</NavLink>)}
               </div>}
             </div>)}
       </nav>
