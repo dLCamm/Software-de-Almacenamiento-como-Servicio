@@ -52,3 +52,8 @@ export function getManagedUserPayments(userId, filters = {}) {
   const suffix = query.size ? `?${query.toString()}` : ''
   return apiRequest(`/api/payments/management/user/${userId}/${suffix}`, { auth: true })
 }
+
+/** Consulta el detalle de una transacción administrada. */
+export function getManagedPayment(paymentId) {
+  return apiRequest(`/api/payments/management/${paymentId}/`, { auth: true })
+}

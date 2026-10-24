@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { listManagedPayments } from '../../../api/management'
 import { AdminIcon } from '../plans/AdminIcon'
 import ManagementPaymentsTable from './ManagementPaymentsTable'
+import PaymentDetailDialog from './PaymentDetailDialog'
 import '../plans/AdminPlansPage.css'
 import './ManagementPage.css'
 
@@ -11,6 +12,7 @@ export default function ManagedPaymentsPage() {
   const [form, setForm] = useState(initialFilters)
   const [filters, setFilters] = useState({})
   const [payments, setPayments] = useState([])
+  const [selectedPaymentId, setSelectedPaymentId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -57,7 +59,8 @@ export default function ManagedPaymentsPage() {
         ? <div className="admin-empty"><span className="admin-spinner" />Cargando pagos…</div>
         : !payments.length
           ? <div className="admin-empty"><AdminIcon name="layers" size={34} /><h2>No hay pagos para mostrar</h2><p>Ajusta los filtros para buscar otras transacciones.</p></div>
-          : <ManagementPaymentsTable payments={payments} />}
+          : <ManagementPaymentsTable payments={payments} onOpenPayment={setSelectedPaymentId} />}
     </div>
+    {selectedPaymentId && <PaymentDetailDialog paymentId={selectedPaymentId} onClose={() => setSelectedPaymentId(null)} />}
   </main>
 }

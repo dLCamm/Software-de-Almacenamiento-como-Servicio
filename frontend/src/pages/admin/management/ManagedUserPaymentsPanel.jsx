@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getManagedUserPayments } from '../../../api/management'
 import { AdminIcon } from '../plans/AdminIcon'
 import ManagementPaymentsTable from './ManagementPaymentsTable'
+import PaymentDetailDialog from './PaymentDetailDialog'
 import '../plans/AdminPlansPage.css'
 import './ManagementPage.css'
 
@@ -11,6 +12,7 @@ export default function ManagedUserPaymentsPanel({ userId }) {
   const [form, setForm] = useState(initialFilters)
   const [filters, setFilters] = useState({})
   const [payments, setPayments] = useState([])
+  const [selectedPaymentId, setSelectedPaymentId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -52,6 +54,7 @@ export default function ManagedUserPaymentsPanel({ userId }) {
       ? <div className="admin-empty management-inline-empty"><span className="admin-spinner" />Cargando historial…</div>
       : !payments.length
         ? <div className="admin-empty management-inline-empty"><AdminIcon name="layers" size={28} /><h2>Sin transacciones</h2><p>No hay pagos que coincidan con los filtros.</p></div>
-        : <ManagementPaymentsTable payments={payments} />}
+        : <ManagementPaymentsTable payments={payments} onOpenPayment={setSelectedPaymentId} />}
+    {selectedPaymentId && <PaymentDetailDialog paymentId={selectedPaymentId} onClose={() => setSelectedPaymentId(null)} />}
   </section>
 }

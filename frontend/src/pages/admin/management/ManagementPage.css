@@ -66,6 +66,13 @@
 .management-user-payment-filters { grid-template-columns: repeat(3, minmax(0, 1fr)) auto; margin-bottom: 16px; padding: 14px; }
 .management-user-payment-filters .management-filter-actions { grid-column: auto; }
 .management-inline-empty { min-height: 180px; }
+.management-payment-dialog { width: min(100%, 560px); }
+.management-payment-dialog .admin-dialog__body { padding-top: 16px; }
+.management-payment-summary { margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.management-payment-summary > strong { color: var(--admin-strong); font-size: 28px; }
+.management-payment-data { margin-top: 8px; }
+.management-payment-data code { color: var(--purple-80); font-size: 12px; overflow-wrap: anywhere; }
+.management-payment-failure dd { color: var(--red-85); }
 
 @media (max-width: 760px) {
   .management-detail-grid { grid-template-columns: 1fr; }
