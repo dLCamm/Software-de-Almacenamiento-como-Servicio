@@ -42,18 +42,3 @@ export function listManagedPayments(filters = {}) {
   const suffix = query.size ? `?${query.toString()}` : ''
   return apiRequest(`/api/payments/management/${suffix}`, { auth: true })
 }
-
-/** Historial de pagos de una cuenta, con filtros de estado, tipo y plan. */
-export function getManagedUserPayments(userId, filters = {}) {
-  const query = new URLSearchParams()
-  for (const [key, value] of Object.entries(filters)) {
-    if (value !== '' && value !== undefined && value !== null) query.set(key, value)
-  }
-  const suffix = query.size ? `?${query.toString()}` : ''
-  return apiRequest(`/api/payments/management/user/${userId}/${suffix}`, { auth: true })
-}
-
-/** Consulta el detalle de una transacción administrada. */
-export function getManagedPayment(paymentId) {
-  return apiRequest(`/api/payments/management/${paymentId}/`, { auth: true })
-}

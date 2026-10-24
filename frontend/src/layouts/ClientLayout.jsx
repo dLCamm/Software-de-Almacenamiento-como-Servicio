@@ -85,7 +85,9 @@ export default function ClientLayout() {
 
     <aside className="client-nav" aria-label="Navegación principal">
       <div className="client-nav__brand">
-        <span className="client-nav__logo"><CubeLogoIcon width={22} height={22} /></span>
+        <button className="client-nav__logo client-nav__logo-button" type="button" onClick={() => { setOpen(false); navigate('/') }} aria-label="Volver a la página principal de Kubo" title="Volver al landing page">
+          <CubeLogoIcon width={22} height={22} />
+        </button>
         <strong>Kubo</strong>
         <button className="client-nav__close" type="button" onClick={() => setOpen(false)} aria-label="Cerrar menú"><NavIcon name="close" size={18} /></button>
       </div>

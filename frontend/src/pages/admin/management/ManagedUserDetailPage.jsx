@@ -4,7 +4,6 @@ import { getProfile } from '../../../api/auth'
 import { getManagedUser, updateManagedUserStatus } from '../../../api/management'
 import { AdminIcon } from '../plans/AdminIcon'
 import UserEditDialog from './UserEditDialog'
-import ManagedUserPaymentsPanel from './ManagedUserPaymentsPanel'
 import '../plans/AdminPlansPage.css'
 import './ManagementPage.css'
 
@@ -125,7 +124,6 @@ export default function ManagedUserDetailPage() {
               </> : <p className="management-muted">Este usuario no tiene una suscripción registrada.</p>}
             </article>
           </section>
-          <ManagedUserPaymentsPanel userId={user.id} />
         </>}
     </div>
 
