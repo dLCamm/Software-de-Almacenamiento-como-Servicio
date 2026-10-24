@@ -19,3 +19,28 @@
 }
 
 .admin-page .admin-dialog form { display: flex; flex: 1; flex-direction: column; min-height: 0; }
+
+.management-back { width: fit-content; margin-bottom: 5px; display: inline-flex; align-items: center; gap: 5px; color: var(--admin-purple-light); text-decoration: none; }
+.management-back .admin-icon { transform: rotate(-90deg); }
+.management-detail-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.management-card { min-width: 0; padding: 24px; border: 1px solid var(--gray-19); border-radius: 18px; background: var(--admin-panel); }
+.management-card h2 { margin: 4px 0; color: var(--admin-strong); font-size: 20px; }
+.management-card--identity { grid-row: span 2; display: grid; grid-template-columns: 58px minmax(0, 1fr); align-content: start; align-items: center; gap: 0 16px; }
+.management-avatar { width: 58px; height: 58px; display: grid; place-items: center; border-radius: 17px; color: var(--purple-85); background: var(--purple-63-a20); font-size: 24px; font-weight: 750; }
+.management-card__identity h2 { margin: 0 0 3px; }
+.management-card__identity p, .management-muted { margin: 0; color: var(--admin-muted); font-size: 14px; overflow-wrap: anywhere; }
+.management-card__eyebrow { display: block; margin-bottom: 8px; color: var(--admin-muted); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.management-card__code { color: var(--admin-muted); font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; font-size: 13px; }
+.management-badge { display: inline-flex; width: fit-content; margin-top: 9px; padding: 5px 9px; border-radius: 99px; font-size: 12px; font-weight: 700; }
+.management-badge.is-success { color: var(--green-78); background: var(--green-32-a13); }
+.management-badge.is-muted { color: var(--gray-67); background: var(--gray-15); }
+.management-data-list { margin: 20px 0 0; padding: 0; }
+.management-data-list > div { padding: 11px 0; display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; border-top: 1px solid var(--gray-15); }
+.management-data-list dt { color: var(--admin-muted); font-size: 13px; }
+.management-data-list dd { margin: 0; color: var(--gray-85); font-size: 13px; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.management-card--identity .management-data-list { grid-column: 1 / -1; }
+
+@media (max-width: 760px) {
+  .management-detail-grid { grid-template-columns: 1fr; }
+  .management-card--identity { grid-row: auto; }
+}
