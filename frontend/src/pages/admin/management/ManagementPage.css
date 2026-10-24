@@ -58,6 +58,14 @@
 .management-payment-filters .management-filter-actions { grid-column: 1 / -1; }
 .management-payments-table td { white-space: nowrap; }
 .management-payments-table td[data-label="Usuario"] { white-space: normal; min-width: 180px; }
+.management-user-payments { margin-top: 22px; padding: 24px; border: 1px solid var(--gray-19); border-radius: 18px; background: var(--admin-panel); }
+.management-section-heading { margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.management-section-heading h2 { margin: 0; color: var(--admin-strong); font-size: 20px; }
+.management-section-heading .management-card__eyebrow { margin-bottom: 4px; }
+.management-payment-count { color: var(--admin-muted); font-size: 13px; }
+.management-user-payment-filters { grid-template-columns: repeat(3, minmax(0, 1fr)) auto; margin-bottom: 16px; padding: 14px; }
+.management-user-payment-filters .management-filter-actions { grid-column: auto; }
+.management-inline-empty { min-height: 180px; }
 
 @media (max-width: 760px) {
   .management-detail-grid { grid-template-columns: 1fr; }
