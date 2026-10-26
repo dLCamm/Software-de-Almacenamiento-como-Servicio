@@ -11,6 +11,7 @@ from rest_framework.test import APIClient
 
 from storage.interfaces.storage_backend import IStorageBackend
 from storage.models import Archivo, Carpeta, EstadoElemento
+from core.models import AuditLog
 from users.models import Plan
 
 
@@ -111,6 +112,13 @@ class StorageApiTestCase(TestCase):
         self.assertEqual(archivo.nombre_original, "invoice.pdf")
         self.assertEqual(archivo.tamano_bytes, len(PDF_CONTENT))
         self.storage_backend.upload_object.assert_called_once()
+        self.assertTrue(
+            AuditLog.objects.filter(
+                actor=self.user,
+                action="file.upload",
+                resource_id=str(archivo.id),
+            ).exists()
+        )
 
     def test_upload_persists_valid_file_in_own_folder(self):
         folder = Carpeta.objects.create(usuario=self.user, nombre="Invoices")
@@ -198,6 +206,13 @@ class StorageApiTestCase(TestCase):
         self.assertEqual(response["Content-Length"], str(len(PDF_CONTENT)))
         self.assertEqual(b"".join(response.streaming_content), PDF_CONTENT)
         self.storage_backend.download_object.assert_called_once_with(archivo.object_key)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                actor=self.user,
+                action="file.download",
+                resource_id=str(archivo.id),
+            ).exists()
+        )
 
     def test_download_hides_another_users_file_with_404(self):
         archivo = self.create_file(user=self.other_user)
@@ -221,6 +236,13 @@ class StorageApiTestCase(TestCase):
         self.assertEqual(archivo.estado, EstadoElemento.PAPELERA)
         self.assertIsNotNone(archivo.fecha_papelera)
         self.storage_backend.delete_object.assert_not_called()
+        self.assertTrue(
+            AuditLog.objects.filter(
+                actor=self.user,
+                action="file.move_to_trash",
+                resource_id=str(archivo.id),
+            ).exists()
+        )
 
     def test_delete_cannot_move_another_users_file_to_trash(self):
         archivo = self.create_file(user=self.other_user)

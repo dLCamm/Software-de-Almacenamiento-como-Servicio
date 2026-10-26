@@ -1,5 +1,6 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
+from core.models import AuditLog
 from users.models import User
 
 
@@ -26,6 +27,29 @@ class UserPlanRegistrationTests(TestCase):
         self.assertEqual(response.data["role"], "CLIENT")
         self.assertEqual(response.data["plan"]["code"], "free")
         self.assertIsNone(response.data["pending_plan"])
+        self.assertTrue(
+            AuditLog.objects.filter(
+                actor__email="free@example.com",
+                action="auth.register",
+            ).exists()
+        )
+
+    def test_successful_login_is_audited(self):
+        self.register("login-audit@example.com")
+
+        response = self.client.post(
+            "/api/auth/login/",
+            {"email": "login-audit@example.com", "password": "SecurePass123!"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                actor__email="login-audit@example.com",
+                action="auth.login",
+            ).exists()
+        )
 
     def test_paid_plan_selection_remains_pending_and_does_not_raise_quota(self):
         response = self.register("pro@example.com", "pro")

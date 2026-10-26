@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from core.audit import record_audit_event
 from storage.models import Archivo, Carpeta, EstadoElemento
 from storage.serializers import (
     FileDetailSerializer,
@@ -68,6 +69,13 @@ class FileUploadView(AuthenticatedStorageAPIView):
                 folder_id=validated_data.get("carpeta_id"),
                 is_temporary=validated_data.get("es_temporal", False),
                 ttl_days=validated_data.get("tiempo_vida_dias"),
+            )
+            record_audit_event(
+                actor=user,
+                action="file.upload",
+                resource_type="file",
+                resource_id=archivo.id,
+                details={"extension": archivo.extension, "tamano_bytes": archivo.tamano_bytes},
             )
             response_serializer = FileDetailSerializer(archivo)
             return Response(
@@ -144,6 +152,12 @@ class FileDetailView(AuthenticatedStorageAPIView):
         permanente = request.query_params.get("permanente", "false").lower() in ("true", "1")
         try:
             FileService.delete_file(user=user, file_id=file_id, permanent=permanente)
+            record_audit_event(
+                actor=user,
+                action="file.delete_permanently" if permanente else "file.move_to_trash",
+                resource_type="file",
+                resource_id=file_id,
+            )
             return Response(
                 {
                     "message": "Archivo eliminado definitivamente."
@@ -170,6 +184,12 @@ class FileDownloadView(AuthenticatedStorageAPIView):
         user = request.user
         try:
             archivo, stream = FileService.get_file_download_stream(user=user, file_id=file_id)
+            record_audit_event(
+                actor=user,
+                action="file.download",
+                resource_type="file",
+                resource_id=archivo.id,
+            )
             response = FileResponse(
                 stream,
                 content_type=archivo.mime_type or "application/octet-stream",
@@ -197,6 +217,13 @@ class FileShareView(AuthenticatedStorageAPIView):
                 user=user,
                 file_id=file_id,
                 expiry_seconds=duracion_segundos,
+            )
+            record_audit_event(
+                actor=user,
+                action="file.share",
+                resource_type="file",
+                resource_id=file_id,
+                details={"expiracion_segundos": duracion_segundos},
             )
             return Response({"download_url": url, "expira_en_segundos": duracion_segundos}, status=status.HTTP_200_OK)
         except FileNotFoundServiceError:
@@ -264,6 +291,12 @@ class FolderDetailView(AuthenticatedStorageAPIView):
         permanente = request.query_params.get("permanente", "false").lower() in ("true", "1")
         try:
             FolderService.delete_folder(user=user, folder_id=folder_id, soft_delete=not permanente)
+            record_audit_event(
+                actor=user,
+                action="folder.delete_permanently" if permanente else "folder.move_to_trash",
+                resource_type="folder",
+                resource_id=folder_id,
+            )
             message = (
                 "Carpeta y contenido eliminados definitivamente."
                 if permanente
@@ -304,6 +337,12 @@ class FileRestoreView(AuthenticatedStorageAPIView):
     def post(self, request, file_id, *args, **kwargs):
         try:
             archivo = TrashService.restore_file(request.user, file_id)
+            record_audit_event(
+                actor=request.user,
+                action="file.restore",
+                resource_type="file",
+                resource_id=archivo.id,
+            )
             return Response(
                 {"message": "Archivo restaurado.", "id": archivo.id},
                 status=status.HTTP_200_OK,
@@ -318,6 +357,12 @@ class FolderRestoreView(AuthenticatedStorageAPIView):
     def post(self, request, folder_id, *args, **kwargs):
         try:
             folder = TrashService.restore_folder(request.user, folder_id)
+            record_audit_event(
+                actor=request.user,
+                action="folder.restore",
+                resource_type="folder",
+                resource_id=folder.id,
+            )
             return Response(
                 {"message": "Carpeta y contenido restaurados.", "id": folder.id},
                 status=status.HTTP_200_OK,

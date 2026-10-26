@@ -6,6 +6,7 @@ from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from core.audit import record_audit_event
 from plans.models import Subscription
 from users.models import Plan
 from .models import Payment
@@ -48,6 +49,7 @@ class ChangePlanView(APIView):
             )
 
         user = request.user
+        previous_plan_id = user.plan_id
 
        
         if user.plan_id == new_plan.id:
@@ -102,6 +104,16 @@ class ChangePlanView(APIView):
                         "updated_at",
                     ]
                 )
+                record_audit_event(
+                    actor=user,
+                    action="plan.changed",
+                    resource_type="user",
+                    resource_id=user.pk,
+                    details={
+                        "from_plan_id": previous_plan_id,
+                        "to_plan_id": new_plan.pk,
+                    },
+                )
 
             return Response(
                 {
@@ -151,6 +163,18 @@ class ChangePlanView(APIView):
                 transaction_reference=result.reference,
                 failure_reason=result.reason
             )
+            record_audit_event(
+                actor=user,
+                action="payment.recorded",
+                resource_type="payment",
+                resource_id=payment.pk,
+                details={
+                    "status": payment.status,
+                    "payment_type": payment.payment_type,
+                    "amount": str(payment.amount),
+                    "plan_id": payment.plan_id,
+                },
+            )
 
             # PAGO RECHAZADO
             if not result.approved:
@@ -186,6 +210,16 @@ class ChangePlanView(APIView):
                     "plan",
                     "pending_plan",
                 ]
+            )
+            record_audit_event(
+                actor=user,
+                action="plan.changed",
+                resource_type="user",
+                resource_id=user.pk,
+                details={
+                    "from_plan_id": previous_plan_id,
+                    "to_plan_id": new_plan.pk,
+                },
             )
 
             now = timezone.now()
@@ -347,6 +381,18 @@ class RenewSubscriptionView(APIView):
                 payment_method="MOCK_CARD",
                 transaction_reference=result.reference,
                 failure_reason=result.reason
+            )
+            record_audit_event(
+                actor=user,
+                action="payment.recorded",
+                resource_type="payment",
+                resource_id=payment.pk,
+                details={
+                    "status": payment.status,
+                    "payment_type": payment.payment_type,
+                    "amount": str(payment.amount),
+                    "plan_id": payment.plan_id,
+                },
             )
 
             # PAGO RECHAZADO

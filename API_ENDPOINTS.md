@@ -51,6 +51,7 @@ Para consultar validaciones o lógica interna en el repositorio:
 | **Enrutador Principal** | `backend/config/urls.py` | — | — |
 | **Autenticación y Usuarios** | `backend/users/urls.py` | `backend/users/views.py` | `backend/users/serializers.py` |
 | **Almacenamiento (Storage)** | `backend/storage/urls.py` | `backend/storage/views.py` | `backend/storage/serializers.py` |
+| **Auditoría y Estadísticas de Administración** | `backend/core/urls.py` | `backend/core/views.py` | `backend/core/serializers.py`, `backend/core/models.py` |
 | **Health Check** | `backend/config/urls.py` | `backend/core/views.py` | — |
 
 ---
@@ -412,11 +413,101 @@ Para consultar validaciones o lógica interna en el repositorio:
     }
     ```
 
+## 7. Administración, Auditoría y Estadísticas (`/api/admin/`)
+
+Todos los endpoints de esta sección requieren autenticación JWT y un usuario con `is_staff=true`. Un usuario con `role=ADMIN` pero `is_staff=false` no obtiene acceso. Los endpoints son de solo lectura.
+
+### 7.1. Consultar eventos de auditoría
+- **Ruta:** `GET /api/admin/audit/`
+- **Query Parameters (Opcionales):**
+    - `action`: filtra por acción exacta, por ejemplo `file.upload`, `auth.login` o `payment.recorded`.
+    - `resource_type`: filtra por tipo de recurso, por ejemplo `file`, `folder`, `payment` o `user`.
+    - `page`: número de página.
+    - `page_size`: elementos por página (predeterminado `50`, máximo `100`).
+- **Eventos registrados:** registros e inicios de sesión exitosos; subidas, descargas y creación de enlaces compartidos; movimientos a papelera, restauraciones y eliminaciones definitivas de archivos/carpetas; pagos procesados, aprobados o rechazados; y cambios de plan completados.
+- **Respuesta (`200 OK`):**
+    ```json
+    {
+      "count": 1,
+      "next": null,
+      "previous": null,
+      "results": [
+        {
+          "id": 1,
+          "actor_id": 12,
+          "actor_email": "cliente@example.com",
+          "action": "file.upload",
+          "resource_type": "file",
+          "resource_id": "e3b0c442-98fc-1c14-9afbf4c8996fb924",
+          "details": {
+            "extension": "pdf",
+            "tamano_bytes": 2048576
+          },
+          "created_at": "2026-10-26T12:30:00Z"
+        }
+      ]
+    }
+    ```
+    Los detalles no incluyen contraseñas, tarjetas, tokens, URL firmadas ni claves/rutas internas de MinIO. `actor_id` y `actor_email` pueden ser `null` si la cuenta fue eliminada.
+
+### 7.2. Resumen de estadísticas
+- **Ruta:** `GET /api/admin/statistics/`
+- **Respuesta (`200 OK`):**
+    ```json
+    {
+      "usuarios": {
+        "total": 120,
+        "clientes": 114,
+        "clientes_activos": 110,
+        "por_rol": {
+          "CLIENT": 114,
+          "SUPPORT": 4,
+          "ADMIN": 2
+        }
+      },
+      "ingresos": {
+        "total_aprobado": "1490.00",
+        "pagos_aprobados": 10
+      },
+      "pagos": {
+        "aprobados": 10,
+        "rechazados": 2
+      },
+      "almacenamiento": {
+        "archivos_activos_y_en_papelera": 50,
+        "usado_bytes": 524288000
+      }
+    }
+    ```
+    `total_aprobado` es la suma histórica de `amount` para pagos `APPROVED`; no se añade una moneda porque el modelo de pagos no almacena ese dato. El uso total incluye archivos activos y en papelera, igual que la cuota de almacenamiento; excluye elementos eliminados definitivamente.
+
+### 7.3. Uso global de almacenamiento por extensión
+- **Ruta:** `GET /api/admin/statistics/storage-by-type/`
+- **Respuesta (`200 OK`):**
+    ```json
+    {
+      "total_usado_bytes": 524288000,
+      "tipos": [
+        {
+          "extension": "pdf",
+          "archivos_count": 20,
+          "usado_bytes": 314572800
+        },
+        {
+          "extension": "png",
+          "archivos_count": 30,
+          "usado_bytes": 209715200
+        }
+      ]
+    }
+    ```
+    El conteo y los bytes se agrupan por extensión y abarcan todos los usuarios. Incluye archivos activos y en papelera; no consulta ni revela contenido binario.
+
 ---
 
-## 7. Health Check del Servicio (`/api/health/`)
+## 8. Health Check del Servicio (`/api/health/`)
 
-### 7.1. Comprobar Disponibilidad
+### 8.1. Comprobar Disponibilidad
 - **Ruta:** `GET /api/health/`
 - **Autenticación:** Pública.
 - **Respuestas:**
@@ -430,7 +521,7 @@ Para consultar validaciones o lógica interna en el repositorio:
 
 ---
 
-## 8. Guía Rápida de Integración en Frontend (Ejemplos con `fetch` / `axios`)
+## 9. Guía Rápida de Integración en Frontend (Ejemplos con `fetch` / `axios`)
 
 ### Configurar Axios con Interceptor de Token:
 ```javascript
