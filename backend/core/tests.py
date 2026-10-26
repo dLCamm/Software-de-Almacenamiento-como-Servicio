@@ -13,13 +13,12 @@ from users.models import Plan, User
 
 class AdminReportingTests(TestCase):
     def setUp(self):
-        self.plan = Plan.objects.get(code=Plan.Code.FREE)
+        self.plan = Plan.objects.get(code=Plan.FREE_CODE)
         self.admin = User.objects.create_user(
             email="admin-reporting@example.com",
             password="SafePassword123!",
             plan=self.plan,
             role=User.Role.ADMIN,
-            is_staff=True,
         )
         self.client_user = User.objects.create_user(
             email="client-reporting@example.com",
@@ -43,7 +42,7 @@ class AdminReportingTests(TestCase):
     def authenticate_as_admin(self):
         self.api.force_authenticate(user=self.admin)
 
-    def test_admin_endpoints_reject_non_staff_users(self):
+    def test_admin_endpoints_require_admin_role_not_django_staff_flag(self):
         self.api.force_authenticate(user=self.client_user)
 
         for url in (
@@ -54,6 +53,11 @@ class AdminReportingTests(TestCase):
             with self.subTest(url=url):
                 response = self.api.get(url)
                 self.assertEqual(response.status_code, 403)
+
+        self.authenticate_as_admin()
+        response = self.api.get("/api/admin/statistics/")
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(self.admin.is_staff)
 
     def test_audit_log_endpoint_filters_and_paginates_events(self):
         record_audit_event(
@@ -76,7 +80,7 @@ class AdminReportingTests(TestCase):
         self.assertEqual(event["details"], {"extension": "pdf"})
 
     def test_statistics_include_clients_approved_revenue_and_stored_bytes(self):
-        pro_plan = Plan.objects.get(code=Plan.Code.PRO)
+        pro_plan = Plan.objects.get(code="pro")
         Payment.objects.create(
             user=self.client_user,
             plan=pro_plan,

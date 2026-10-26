@@ -77,10 +77,13 @@ export default function BillingCheckout({
   onViewPlans,
 }) {
   if (!selectedPlan) return <div className="billing-empty"><p>Primero selecciona un plan para continuar.</p></div>
-  if (currentPlan?.slug === 'free' && selectedPlan.slug === 'free' && step !== 4) return <div className="billing-empty"><p>Tu plan FREE no requiere pago. Elige otro plan para iniciar una contratación.</p><button className="billing-button billing-button--secondary" type="button" onClick={onViewPlans}>Ver planes</button></div>
+  if (currentPlan?.code === 'free' && selectedPlan.code === 'free' && step !== 4) return <div className="billing-empty"><p>Tu plan FREE no requiere pago. Elige otro plan para iniciar una contratación.</p><button className="billing-button billing-button--secondary" type="button" onClick={onViewPlans}>Ver planes</button></div>
 
-  const price = Number(selectedPlan.price || 0)
-  const maskedCard = lastFour ? `•••• •••• •••• ${lastFour}` : 'Tarjeta terminada en —'
+  const price = Number(selectedPlan.monthly_price || 0)
+  // Antes de pagar, los últimos 4 dígitos salen de la tarjeta que se está escribiendo.
+  const typedLastFour = (card?.number || '').replace(/\D/g, '').slice(-4)
+  const shownLastFour = lastFour || (typedLastFour.length === 4 ? typedLastFour : '')
+  const maskedCard = shownLastFour ? `•••• •••• •••• ${shownLastFour}` : 'Tarjeta terminada en —'
   const newEndDate = formatDate(result?.new_end_date || result?.end_date || nextBillingDate)
 
   if (step === 4) return <section className="checkout-success">
@@ -112,7 +115,7 @@ export default function BillingCheckout({
     {step === 3 && <div className="checkout-review">
       <h2>Resumen del pedido</h2>
       <div className="checkout-review__card">
-        <div><span>Plan</span><strong>{selectedPlan.name} — {formatStorage(selectedPlan.storage_gb)}</strong></div>
+        <div><span>Plan</span><strong>{selectedPlan.name} — {formatStorage(selectedPlan.storage_limit_gb)}</strong></div>
         <div><span>Ciclo</span><strong>Mensual</strong></div>
         <div><span>{isRenewal ? 'Renovar con' : 'Tarjeta'}</span><strong>{maskedCard}</strong></div>
         <div className="checkout-review__total"><span>Total</span><strong>{formatMoney(price)}</strong></div>

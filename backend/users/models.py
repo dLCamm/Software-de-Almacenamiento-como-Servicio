@@ -6,16 +6,23 @@ from django.db import models
 
 
 class Plan(models.Model):
-    class Code(models.TextChoices):
-        FREE = "free", "FREE"
-        PRO = "pro", "PRO"
-        BUSINESS = "business", "BUSINESS"
 
-    code = models.CharField(max_length=20, choices=Code.choices, unique=True)
-    name = models.CharField(max_length=50)
+    FREE_CODE = "free"
+    code = models.SlugField(
+        max_length=50,
+        unique=True )
+
+    name = models.CharField(
+        max_length=50)
+
     storage_limit_bytes = models.BigIntegerField()
-    monthly_price = models.DecimalField(max_digits=8, decimal_places=2)
-    is_active = models.BooleanField(default=True)
+
+    monthly_price = models.DecimalField(
+        max_digits=8,
+        decimal_places=2)
+
+    is_active = models.BooleanField(
+        default=True)
 
     class Meta:
         ordering = ["monthly_price"]
@@ -35,7 +42,7 @@ class UserManager(BaseUserManager):
             raise ValueError("El correo electrónico es obligatorio.")
 
         email = self.normalize_email(email)
-        plan = extra_fields.pop("plan", None) or Plan.objects.get(code=Plan.Code.FREE)
+        plan = extra_fields.pop("plan", None) or Plan.objects.get(code=Plan.FREE_CODE)
 
         user = self.model(
             email=email,

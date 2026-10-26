@@ -6,7 +6,6 @@ from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.generics import ListAPIView
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import IsAdminUser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -14,6 +13,7 @@ from core.models import AuditLog
 from core.serializers import AuditLogSerializer
 from payments.models import Payment
 from storage.models import Archivo, EstadoElemento
+from users.permissions import IsAdministrator
 
 
 User = get_user_model()
@@ -26,7 +26,7 @@ class AdminAuditPagination(PageNumberPagination):
 
 
 class AdminAuditLogView(ListAPIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdministrator]
     serializer_class = AuditLogSerializer
     pagination_class = AdminAuditPagination
 
@@ -42,7 +42,7 @@ class AdminAuditLogView(ListAPIView):
 
 
 class AdminStatisticsView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdministrator]
 
     def get(self, request):
         clients = User.objects.filter(role=User.Role.CLIENT)
@@ -78,7 +78,10 @@ class AdminStatisticsView(APIView):
                     "por_rol": role_counts,
                 },
                 "ingresos": {
-                    "total_aprobado": str(approved_totals["amount"] or Decimal("0.00")),
+                    "total_aprobado": format(
+                        approved_totals["amount"] or Decimal("0.00"),
+                        ".2f",
+                    ),
                     "pagos_aprobados": approved_totals["count"],
                 },
                 "pagos": {
@@ -95,7 +98,7 @@ class AdminStatisticsView(APIView):
 
 
 class AdminStorageByTypeView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAdministrator]
 
     def get(self, request):
         usage_by_extension = list(

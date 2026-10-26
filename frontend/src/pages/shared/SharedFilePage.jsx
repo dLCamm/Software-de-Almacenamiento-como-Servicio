@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getFileExtension, getFileKind } from '../client/dashboard/fileTypes'
 import Icon from '../client/dashboard/components/Icon'
+import ThemeToggle from '../../components/ThemeToggle'
 import './SharedFilePage.css'
 
 function formatCountdown(totalSeconds) {
@@ -46,6 +47,7 @@ export default function SharedFilePage() {
     <header className="shared-file__topbar">
       <span className="shared-file__brand">Kubo</span>
       <span className="shared-file__filename" title={fileName || undefined}>{fileName || 'Archivo compartido'}</span>
+      <ThemeToggle className="shared-file__theme" />
     </header>
 
     <section className="shared-file__content" aria-label="Archivo compartido">

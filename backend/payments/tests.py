@@ -10,8 +10,8 @@ from users.models import Plan, User
 
 class PaymentAuditTests(TestCase):
     def setUp(self):
-        self.free_plan = Plan.objects.get(code=Plan.Code.FREE)
-        self.paid_plan = Plan.objects.get(code=Plan.Code.PRO)
+        self.free_plan = Plan.objects.get(code=Plan.FREE_CODE)
+        self.paid_plan = Plan.objects.get(code="pro")
         self.user = User.objects.create_user(
             email="payment-audit@example.com",
             password="SafePassword123!",

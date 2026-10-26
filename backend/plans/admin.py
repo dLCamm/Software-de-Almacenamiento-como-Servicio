@@ -1,50 +1,26 @@
 from django.contrib import admin
 
-# Register your models here.
-from django.contrib import admin
-from .models import Plan, PlanBenefit, Subscription
-
-
-class PlanBenefitInline(admin.TabularInline):
-    model = PlanBenefit
-    extra = 1
-
-
-@admin.register(Plan)
-class PlanAdmin(admin.ModelAdmin):
-    list_display = (
-        "name",
-        "price",
-        "storage_gb",
-        "is_active",
-        "is_popular",
-    )
-
-    list_filter = (
-        "is_active",
-        "is_popular",
-    )
-
-    search_fields = (
-        "name",
-    )
-
-    prepopulated_fields = {
-        "slug": ("name",)
-    }
-
-    inlines = [
-        PlanBenefitInline
-    ]
+from .models import PlanBenefit, Subscription
 
 
 @admin.register(PlanBenefit)
 class PlanBenefitAdmin(admin.ModelAdmin):
+
     list_display = (
         "plan",
         "description",
-        "order"
+        "order",
     )
+
+    list_filter = (
+        "plan",
+    )
+
+    search_fields = (
+        "plan__name",
+        "description",
+    )
+
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
@@ -61,6 +37,7 @@ class SubscriptionAdmin(admin.ModelAdmin):
     list_filter = (
         "status",
         "auto_renew",
+        "user__plan",
     )
 
     search_fields = (
@@ -73,7 +50,8 @@ class SubscriptionAdmin(admin.ModelAdmin):
     )
 
     @admin.display(
-        description="Plan actual"
+        description="Plan actual",
+        ordering="user__plan__name"
     )
     def get_plan(self, obj):
 

@@ -1,13 +1,13 @@
 .shared-file-page {
-  --shared-bg: #101010;
-  --shared-text: #f2f0f5;
-  --shared-muted: #898590;
-  --shared-purple: #715be9;
+  --shared-bg: var(--gray-8);
+  --shared-text: var(--purple-95);
+  --shared-muted: var(--gray-55);
+  --shared-purple: var(--purple-64);
   min-height: 100svh;
   display: flex;
   flex-direction: column;
   color: var(--shared-text);
-  background: radial-gradient(ellipse at 50% 38%, rgba(92, 72, 180, .12), transparent 52%), var(--shared-bg);
+  background: radial-gradient(ellipse at 50% 38%, var(--purple-49-a12), transparent 52%), var(--shared-bg);
   font-family: inherit;
 }
 
@@ -17,22 +17,26 @@
   display: flex;
   align-items: center;
   gap: 24px;
-  border-bottom: 1px solid #252525;
-  background: rgba(19, 19, 19, .88);
+  border-bottom: 1px solid var(--gray-15);
+  background: var(--gray-7-a88);
 }
 
 .shared-file__brand {
   flex: 0 0 auto;
-  color: #9b89ff;
+  color: var(--purple-77-2);
   font-size: 21px;
   font-weight: 750;
   letter-spacing: -.04em;
 }
 
+.shared-file__theme {
+  margin-left: auto;
+}
+
 .shared-file__filename {
   min-width: 0;
   overflow: hidden;
-  color: #e9e6ee;
+  color: var(--purple-92);
   font-size: 15px;
   font-weight: 600;
   text-overflow: ellipsis;
@@ -55,10 +59,10 @@
   align-items: center;
   justify-content: center;
   gap: 27px;
-  border: 1px solid #35323e;
+  border: 1px solid var(--gray-24);
   border-radius: 20px;
-  background: linear-gradient(145deg, rgba(31, 29, 37, .97), rgba(24, 23, 27, .98));
-  box-shadow: 0 24px 75px rgba(0, 0, 0, .34);
+  background: linear-gradient(145deg, var(--gray-13-a97), var(--gray-10-a98));
+  box-shadow: 0 24px 75px var(--shadow-gray-0-a34);
 }
 
 .shared-file__card--preview {
@@ -76,9 +80,9 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  border: 1px solid #302d36;
+  border: 1px solid var(--gray-19);
   border-radius: 12px;
-  background: #141316;
+  background: var(--gray-8);
 }
 
 .shared-file__preview--png img {
@@ -98,7 +102,7 @@
 
 .shared-file__preview--mp3 {
   min-height: 250px;
-  background: radial-gradient(ellipse at center, rgba(113, 91, 233, .13), transparent 65%), #141316;
+  background: radial-gradient(ellipse at center, var(--purple-63-a15), transparent 65%), var(--gray-8);
 }
 
 .shared-file__preview--mp3 audio {
@@ -110,10 +114,10 @@
   height: 86px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(145, 124, 245, .2);
+  border: 1px solid var(--purple-72-a20);
   border-radius: 23px;
-  color: #b8aaff;
-  background: rgba(113, 91, 233, .11);
+  color: var(--purple-84);
+  background: var(--purple-64-a11);
 }
 
 .shared-file__countdown {
@@ -152,7 +156,7 @@
 }
 
 .shared-file__countdown strong {
-  color: #f1eef8;
+  color: var(--purple-95);
   font-size: clamp(22px, 5vw, 29px);
   font-variant-numeric: tabular-nums;
   font-weight: 650;
@@ -166,9 +170,9 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  border: 1px solid #816cf0;
+  border: 1px solid var(--purple-69);
   border-radius: 10px;
-  color: #fff;
+  color: var(--on-accent);
   background: var(--shared-purple);
   font-size: 14px;
   font-weight: 650;
@@ -177,12 +181,12 @@
 }
 
 .shared-file__download:hover {
-  background: #806bf0;
+  background: var(--purple-69);
   transform: translateY(-1px);
 }
 
 .shared-file__expired {
-  color: #c3beca;
+  color: var(--gray-77);
   font-size: 15px;
   text-align: center;
 }

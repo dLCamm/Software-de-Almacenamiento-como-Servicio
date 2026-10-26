@@ -105,7 +105,7 @@ class UserPlanRegistrationTests(TestCase):
     def test_inactive_paid_plan_selection_is_rejected_as_validation_error(self):
         from users.models import Plan
 
-        Plan.objects.filter(code=Plan.Code.PRO).update(is_active=False)
+        Plan.objects.filter(code="pro").update(is_active=False)
 
         response = self.register("inactive-plan@example.com", "pro")
 

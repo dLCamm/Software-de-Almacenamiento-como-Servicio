@@ -415,7 +415,7 @@ Para consultar validaciones o lógica interna en el repositorio:
 
 ## 7. Administración, Auditoría y Estadísticas (`/api/admin/`)
 
-Todos los endpoints de esta sección requieren autenticación JWT y un usuario con `is_staff=true`. Un usuario con `role=ADMIN` pero `is_staff=false` no obtiene acceso. Los endpoints son de solo lectura.
+Todos los endpoints de esta sección requieren autenticación JWT y un usuario con `role=ADMIN`, igual que los demás endpoints administrativos. El valor `is_staff` de Django no es requisito. Los endpoints son de solo lectura.
 
 ### 7.1. Consultar eventos de auditoría
 - **Ruta:** `GET /api/admin/audit/`

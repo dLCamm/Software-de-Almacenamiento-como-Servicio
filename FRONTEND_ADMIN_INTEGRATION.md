@@ -10,7 +10,7 @@ Todas las rutas requieren un JWT válido:
 Authorization: Bearer <access_token>
 ```
 
-El usuario debe tener `is_staff=true`. El rol `ADMIN` por sí solo no concede acceso.
+El usuario debe tener el rol `ADMIN`, en concordancia con las rutas administrativas existentes. `is_staff` no es requisito.
 
 - Sin autenticación válida: `401 Unauthorized`.
 - Usuario autenticado sin `is_staff`: `403 Forbidden`.

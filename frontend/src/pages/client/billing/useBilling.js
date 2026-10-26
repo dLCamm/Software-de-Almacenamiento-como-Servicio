@@ -30,15 +30,17 @@ function validateCard(card) {
  * Orquesta el flujo de facturación usando adaptadores inyectados por la página.
  * Las dependencias tienen que exponer los métodos de billingApi, accountApi y storageApi.
  */
-export default function useBilling({ billingApi, accountApi, storageApi }) {
+export default function useBilling({ billingApi, accountApi, storageApi, activeTab = 'summary', onChangeTab = () => {} }) {
+  // La sección activa vive en la URL (la decide BillingPage); aquí solo se pide cambiarla.
+  const setActiveTab = onChangeTab
   const [plans, setPlans] = useState([])
   const [history, setHistory] = useState([])
   const [profile, setProfile] = useState(null)
   const [usage, setUsage] = useState(null)
+  const [subscription, setSubscription] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
-  const [activeTab, setActiveTab] = useState('summary')
   const [selectedPlanId, setSelectedPlanId] = useState(null)
   const [checkoutStep, setCheckoutStep] = useState(1)
   const [paymentMethod, setPaymentMethod] = useState('CARD')
@@ -56,11 +58,12 @@ export default function useBilling({ billingApi, accountApi, storageApi }) {
         accountApi.getProfile(),
         storageApi.getStorageUsage(),
         billingApi.getPaymentHistory(),
+        billingApi.getCurrentPlan(),
       ])
 
       if (!active) return
       const failures = []
-      const [plansResult, profileResult, usageResult, historyResult] = results
+      const [plansResult, profileResult, usageResult, historyResult, currentResult] = results
 
       if (plansResult.status === 'fulfilled') setPlans(toArray(plansResult.value))
       else failures.push(errorMessage(plansResult.reason))
@@ -70,7 +73,7 @@ export default function useBilling({ billingApi, accountApi, storageApi }) {
         setProfile(nextProfile)
         const planCode = nextProfile?.plan?.code?.toLowerCase()
         const currentPlan = toArray(plansResult.status === 'fulfilled' ? plansResult.value : [])
-          .find((plan) => plan.slug?.toLowerCase() === planCode)
+          .find((plan) => plan.code?.toLowerCase() === planCode)
         if (currentPlan) setSelectedPlanId(currentPlan.id)
       } else failures.push(errorMessage(profileResult.reason))
 
@@ -79,6 +82,9 @@ export default function useBilling({ billingApi, accountApi, storageApi }) {
 
       if (historyResult.status === 'fulfilled') setHistory(toArray(historyResult.value))
       else failures.push(errorMessage(historyResult.reason))
+
+      // Si este endpoint falla no se muestra error: el resumen simplemente no muestra la fecha.
+      setSubscription(currentResult.status === 'fulfilled' ? currentResult.value?.subscription ?? null : null)
 
       setError(failures.join(' '))
       setLoading(false)
@@ -90,11 +96,11 @@ export default function useBilling({ billingApi, accountApi, storageApi }) {
 
   const currentPlan = useMemo(() => {
     const code = profile?.plan?.code?.toLowerCase()
-    return plans.find((plan) => plan.slug?.toLowerCase() === code) ?? null
+    return plans.find((plan) => plan.code?.toLowerCase() === code) ?? null
   }, [plans, profile])
   const selectedPlan = useMemo(() => plans.find((plan) => String(plan.id) === String(selectedPlanId)) ?? null, [plans, selectedPlanId])
-  const isRenewal = Boolean(selectedPlan && currentPlan && selectedPlan.id === currentPlan.id && currentPlan.slug !== 'free')
-  const nextBillingDate = paymentResult?.new_end_date || paymentResult?.end_date || profile?.subscription?.end_date || profile?.subscription_end_date || null
+  const isRenewal = Boolean(selectedPlan && currentPlan && selectedPlan.id === currentPlan.id && currentPlan.code !== 'free')
+  const nextBillingDate = paymentResult?.new_end_date || paymentResult?.end_date || subscription?.end_date || profile?.subscription?.end_date || profile?.subscription_end_date || null
 
   function selectPlan(plan) {
     setSelectedPlanId(plan.id)
@@ -211,6 +217,7 @@ export default function useBilling({ billingApi, accountApi, storageApi }) {
     history,
     profile,
     usage,
+    subscription,
     loading,
     error,
     notice,

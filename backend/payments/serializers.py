@@ -73,3 +73,48 @@ class PaymentSerializer(serializers.ModelSerializer):
             "failure_reason",
             "created_at",
         ]
+
+class PaymentManagementSerializer(serializers.ModelSerializer):
+
+    user = serializers.SerializerMethodField()
+    plan = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Payment
+
+        fields = [
+            "id",
+            "user",
+            "plan",
+            "amount",
+            "payment_type",
+            "status",
+            "payment_method",
+            "transaction_reference",
+            "failure_reason",
+            "created_at",
+        ]
+
+    def get_user(self, obj):
+
+        return {
+            "id": obj.user.id,
+            "email": obj.user.email,
+            "first_name": obj.user.first_name,
+            "last_name": obj.user.last_name,
+            "role": obj.user.role,
+        }
+
+    def get_plan(self, obj):
+
+        if not obj.plan:
+            return None
+
+        return {
+            "id": obj.plan.id,
+            "code": obj.plan.code,
+            "name": obj.plan.name,
+            "monthly_price": str(
+                obj.plan.monthly_price
+            ),
+        }

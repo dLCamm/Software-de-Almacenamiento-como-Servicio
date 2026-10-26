@@ -16,21 +16,28 @@ class PlanSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.ModelSerializer):
 
     password = serializers.CharField(
-        write_only=True
+        write_only=True,
+        min_length=8
     )
 
     password_confirm = serializers.CharField(
         write_only=True,
         min_length=8
     )
-    plan_code = serializers.ChoiceField(
-        choices=Plan.Code.choices,
-        write_only=True,
-        default=Plan.Code.FREE,
-    )
-    plan = PlanSerializer(read_only=True)
-    pending_plan = PlanSerializer(read_only=True)
 
+    plan_code = serializers.CharField(
+        write_only=True,
+        required=False,
+        default=Plan.FREE_CODE,
+    )
+
+    plan = PlanSerializer(
+        read_only=True
+    )
+
+    pending_plan = PlanSerializer(
+        read_only=True
+    )
 
     class Meta:
         model = User
@@ -51,6 +58,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         read_only_fields = (
             "id",
             "role",
+            "plan",
+            "pending_plan",
         )
 
     def validate_email(self, value):
@@ -85,16 +94,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         except DjangoValidationError as error:
             raise serializers.ValidationError({"password": error.messages}) from error
 
-        user = User(
-            email=attrs.get("email", ""),
-            first_name=attrs.get("first_name", ""),
-            last_name=attrs.get("last_name", ""),
-        )
-        try:
-            validate_password(attrs["password"], user=user)
-        except DjangoValidationError as error:
-            raise serializers.ValidationError({"password": error.messages}) from error
-
         return attrs
 
     def create(self, validated_data):
@@ -105,7 +104,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
         password = validated_data.pop("password")
         selected_plan_code = validated_data.pop("plan_code")
-        free_plan = Plan.objects.get(code=Plan.Code.FREE)
+        free_plan = Plan.objects.get(code=Plan.FREE_CODE)
         selected_plan = Plan.objects.get(code=selected_plan_code, is_active=True)
 
         user = User.objects.create_user(
@@ -185,3 +184,180 @@ class LoginSerializer(TokenObtainPairSerializer):
         }
 
         return data
+
+
+class UserListSerializer(serializers.ModelSerializer):
+
+    plan = serializers.SerializerMethodField()
+    subscription = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "role",
+            "is_active",
+            "is_email_verified",
+            "plan",
+            "subscription",
+            "created_at",
+        ]
+
+    def get_plan(self, obj):
+
+        if not obj.plan:
+            return None
+
+        return {
+            "id": obj.plan.id,
+            "code": obj.plan.code,
+            "name": obj.plan.name,
+            "monthly_price": str(
+                obj.plan.monthly_price
+            ),
+            "storage_limit_bytes":
+                obj.plan.storage_limit_bytes,
+        }
+
+    def get_subscription(self, obj):
+
+        try:
+            subscription = obj.subscription
+
+        except Exception:
+            return None
+
+        return {
+            "status":
+                subscription.status,
+
+            "start_date":
+                subscription.start_date,
+
+            "end_date":
+                subscription.end_date,
+
+            "auto_renew":
+                subscription.auto_renew,
+        }
+
+class UserDetailSerializer(serializers.ModelSerializer):
+
+    plan = serializers.SerializerMethodField()
+    subscription = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "role",
+            "is_active",
+            "is_email_verified",
+            "plan",
+            "subscription",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_plan(self, obj):
+
+        if not obj.plan:
+            return None
+
+        return {
+            "id": obj.plan.id,
+            "code": obj.plan.code,
+            "name": obj.plan.name,
+            "monthly_price": str(
+                obj.plan.monthly_price
+            ),
+            "storage_limit_bytes":
+                obj.plan.storage_limit_bytes,
+
+            "storage_limit_gb": round(
+                obj.plan.storage_limit_bytes
+                / (1024 ** 3),
+                2
+            ),
+
+            "is_active":
+                obj.plan.is_active,
+        }
+
+    def get_subscription(self, obj):
+
+        try:
+            subscription = obj.subscription
+
+        except Exception:
+            return None
+
+        return {
+            "status":
+                subscription.status,
+
+            "start_date":
+                subscription.start_date,
+
+            "end_date":
+                subscription.end_date,
+
+            "auto_renew":
+                subscription.auto_renew,
+        }
+
+class UserAdminUpdateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+
+        fields = [
+            "first_name",
+            "last_name",
+            "email",
+            "role",
+        ]
+
+    def validate_email(self, value):
+
+        user = self.instance
+
+        if (
+            User.objects
+            .exclude(id=user.id)
+            .filter(email=value)
+            .exists()
+        ):
+            raise serializers.ValidationError(
+                "Ya existe un usuario con este correo."
+            )
+
+        return value
+
+    def validate_role(self, value):
+
+        valid_roles = [
+            User.Role.CLIENT,
+            User.Role.SUPPORT,
+            User.Role.ADMIN,
+        ]
+
+        if value not in valid_roles:
+
+            raise serializers.ValidationError(
+                "El rol seleccionado no es válido."
+            )
+
+        return value
+
+class UserStatusSerializer(serializers.Serializer):
+
+    is_active = serializers.BooleanField()
