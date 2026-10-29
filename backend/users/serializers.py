@@ -25,6 +25,12 @@ class RegisterSerializer(serializers.ModelSerializer):
         min_length=8
     )
 
+    plan_code = serializers.CharField(
+        write_only=True,
+        required=False,
+        default=Plan.FREE_CODE,
+    )
+
     plan = PlanSerializer(
         read_only=True
     )
@@ -44,6 +50,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             "role",
             "password",
             "password_confirm",
+            "plan_code",
             "plan",
             "pending_plan",
         )
@@ -54,32 +61,6 @@ class RegisterSerializer(serializers.ModelSerializer):
             "plan",
             "pending_plan",
         )
-
-    def validate(self, data):
-
-        if (
-            data["password"]
-            != data["password_confirm"]
-        ):
-            raise serializers.ValidationError({
-                "password_confirm":
-                    "Las contraseñas no coinciden."
-            })
-
-        return data
-
-    def create(self, validated_data):
-
-        validated_data.pop(
-            "password_confirm",
-            None
-        )
-
-        user = User.objects.create_user(
-            **validated_data
-        )
-
-        return user
 
     def validate_email(self, value):
         email = value.lower().strip()
@@ -102,16 +83,6 @@ class RegisterSerializer(serializers.ModelSerializer):
                 "password_confirm":
                     "Las contraseñas no coinciden."
             })
-
-        user = User(
-            email=attrs.get("email", ""),
-            first_name=attrs.get("first_name", ""),
-            last_name=attrs.get("last_name", ""),
-        )
-        try:
-            validate_password(attrs["password"], user=user)
-        except DjangoValidationError as error:
-            raise serializers.ValidationError({"password": error.messages}) from error
 
         user = User(
             email=attrs.get("email", ""),
