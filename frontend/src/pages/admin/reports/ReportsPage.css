@@ -1,0 +1,53 @@
+/* Auditoría y estadísticas (administrador). Colores: variables de src/styles/theme.css */
+
+/* ---------- Filtros ---------- */
+.admin-page .report-filters { grid-template-columns: minmax(200px, 1.4fr) minmax(160px, 1fr) auto; max-width: 860px; }
+
+/* ---------- Tabla de auditoría ---------- */
+.report-table-wrap.is-loading { opacity: .55; transition: opacity .15s; }
+.report-table td { vertical-align: top; }
+.report-date { color: var(--gray-67) !important; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.report-actor { display: block; max-width: 240px; overflow: hidden; color: var(--admin-strong); font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.report-muted { color: var(--admin-muted); font-style: italic; }
+
+.report-action { display: inline-flex; align-items: center; gap: 8px; color: var(--gray-85); font-weight: 600; white-space: nowrap; }
+.report-action i { width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; background: var(--gray-47); }
+.report-action--account i { background: var(--blue-62); }
+.report-action--money i { background: var(--green-40); }
+.report-action--warning i { background: var(--yellow-55); }
+.report-action--danger i { background: var(--red-62); }
+.report-action--neutral i { background: var(--purple-64); }
+
+.report-resource { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 6px; color: var(--gray-77); }
+.report-resource code { padding: 2px 6px; border-radius: 6px; color: var(--purple-80); background: var(--admin-panel-soft); font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; font-size: 12px; }
+
+.report-table th:last-child, .report-table td[data-label="Detalles"] { min-width: 230px; }
+.report-details { margin: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.report-details div { display: flex; gap: 5px; font-size: 13px; }
+.report-details dt { color: var(--admin-muted); }
+.report-details dt::after { content: ':'; }
+.report-details dd { margin: 0; color: var(--gray-85); font-weight: 600; white-space: nowrap; }
+
+/* ---------- Paginación ---------- */
+.report-pagination { margin-top: 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; color: var(--admin-muted); font-size: 13px; }
+.report-pagination strong { color: var(--admin-strong); font-variant-numeric: tabular-nums; }
+.report-page-size { display: inline-flex; align-items: center; gap: 8px; }
+.report-page-size select { height: 36px; padding: 0 8px; border: 1px solid var(--gray-26); border-radius: 9px; color: var(--admin-strong); background: var(--gray-8); font: inherit; }
+.report-page-buttons { display: flex; align-items: center; gap: 10px; }
+.report-page-buttons .admin-button { min-height: 38px; padding: 0 14px; }
+.report-page-buttons span { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 860px) {
+  .admin-page .report-filters { grid-template-columns: 1fr; }
+  .report-table td[data-label="Fecha"] { display: block; padding: 0 0 8px; color: var(--admin-muted) !important; font-size: 12px; }
+  .report-table td[data-label="Fecha"]::before { content: none; }
+  .report-table td[data-label="Detalles"] { align-items: flex-start; }
+  .report-table td[data-label="Detalles"] { min-width: 0; }
+  .report-details { justify-content: flex-end; text-align: right; }
+  .report-details dd { white-space: normal; }
+  .report-pagination { justify-content: center; }
+  .report-actor { max-width: 190px; }
+}
+
