@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { listAdminPlans } from '../../../api/adminPlans'
 import { listAuditEvents } from '../../../api/adminReports'
 import { AdminIcon } from '../plans/AdminIcon'
 import { AUDIT_ACTION_GROUPS, RESOURCE_TYPES, formatDateTime, formatDetails, getActionLabel, getActionTone, getResourceLabel, shortId } from './auditFormat'
@@ -23,6 +24,7 @@ export default function AuditLogPage() {
   const [data, setData] = useState({ count: 0, next: null, previous: null, results: [] })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [planNames, setPlanNames] = useState({})
 
   useEffect(() => {
     let active = true
@@ -38,6 +40,13 @@ export default function AuditLogPage() {
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [filters, page, pageSize])
+
+  // Nombres de los planes para mostrar "PRO → PREMIUM" en lugar de ids.
+  useEffect(() => {
+    listAdminPlans()
+      .then((plans) => setPlanNames(Object.fromEntries((Array.isArray(plans) ? plans : plans?.results || []).map((plan) => [plan.id, plan.name]))))
+      .catch(() => {})
+  }, [])
 
   function changeField(event) {
     setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
@@ -108,7 +117,7 @@ export default function AuditLogPage() {
                 <thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Recurso</th><th>Detalles</th></tr></thead>
                 <tbody>
                   {data.results.map((event) => {
-                    const details = formatDetails(event.details)
+                    const details = formatDetails(event.details, planNames)
                     const isSystem = event.action?.startsWith('system.')
                     return <tr key={event.id}>
                       <td data-label="Fecha" className="report-date">{formatDateTime(event.created_at)}</td>
