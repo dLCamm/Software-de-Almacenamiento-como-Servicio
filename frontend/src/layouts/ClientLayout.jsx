@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { getProfile, logout } from '../api/auth'
+import { getAdminStatistics } from '../api/adminReports'
 import { getStorageUsage } from '../api/storage'
 import { CubeLogoIcon } from '../components/icons'
 import ThemeToggle from '../components/ThemeToggle'
@@ -55,6 +56,7 @@ export default function ClientLayout() {
   const { pathname } = useLocation()
   const [profile, setProfile] = useState(null)
   const [usage, setUsage] = useState(null)
+  const [systemStorage, setSystemStorage] = useState(null)
   const [open, setOpen] = useState(false)
 
   // Cualquier pantalla que consulte el uso (subir, borrar, restaurar, pagar…) actualiza esta barra.
@@ -70,6 +72,18 @@ export default function ClientLayout() {
   useEffect(() => {
     getStorageUsage().catch(() => {})
   }, [pathname])
+
+  // El administrador no tiene un plan propio: su recuadro muestra el almacenamiento de todo el sistema.
+  // Se recalcula al cambiar de página y cada vez que cambia el uso (subir, borrar, restaurar…).
+  const isAdmin = profile?.role === 'ADMIN'
+  useEffect(() => {
+    if (!isAdmin) return undefined
+    let active = true
+    getAdminStatistics()
+      .then((stats) => { if (active) setSystemStorage({ ...stats?.almacenamiento, usuarios: stats?.usuarios?.total }) })
+      .catch(() => {})
+    return () => { active = false }
+  }, [isAdmin, pathname, usage])
 
   function handleLogout() {
     logout()
@@ -107,11 +121,16 @@ export default function ClientLayout() {
             </div>)}
       </nav>
 
-      <div className="client-nav__storage">
+      {isAdmin
+        ? <NavLink to="/app/admin/estadisticas" onClick={() => setOpen(false)} className="client-nav__storage client-nav__storage--system" title="Ver estadísticas del sistema">
+            <div className="client-nav__storage-head"><span>Uso del sistema</span><strong>{systemStorage ? formatBytes(Number(systemStorage.usado_bytes || 0)) : '—'}</strong></div>
+            <small>{systemStorage ? `${Number(systemStorage.archivos_activos_y_en_papelera || 0).toLocaleString('es-GT')} archivos · ${Number(systemStorage.usuarios || 0).toLocaleString('es-GT')} usuarios` : 'Cargando…'}</small>
+          </NavLink>
+        : <div className="client-nav__storage">
         <div className="client-nav__storage-head"><span>Almacenamiento</span><strong>{formatBytes(usage?.usado_bytes)} / {formatBytes(usage?.maximo_bytes)}</strong></div>
         <div className="client-nav__storage-track" role="img" aria-label={`${percent.toFixed(2)} por ciento utilizado`}><span style={{ width: `${percent}%` }} /></div>
         <small>{formatBytes(usage?.disponible_bytes)} disponibles</small>
-      </div>
+      </div>}
 
       <div className="client-nav__footer">
         <ThemeToggle variant="row" className="client-nav__link" />
