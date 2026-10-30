@@ -5,6 +5,7 @@ import { formatDateTime, formatDetails, getActionLabel, getActionTone, getResour
 import '../plans/AdminPlansPage.css'
 import './ReportsPage.css'
 
+const PAGE_SIZES = [25, 50, 100]
 
 function errorText(error) {
   if (error?.status === 403) return 'Tu cuenta no tiene permiso para ver la auditoría. Solo los administradores pueden consultarla.'
@@ -13,13 +14,15 @@ function errorText(error) {
 }
 
 export default function AuditLogPage() {
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(25)
   const [data, setData] = useState({ count: 0, next: null, previous: null, results: [] })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
   useEffect(() => {
     let active = true
-    listAuditEvents({ page_size: 50 })
+    listAuditEvents({ page, page_size: pageSize })
       .then((response) => {
         if (!active) return
         // Acepta respuesta paginada ({ count, results }) o una lista simple.
@@ -30,8 +33,17 @@ export default function AuditLogPage() {
       .catch((loadError) => { if (active) setError(errorText(loadError)) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [])
+  }, [page, pageSize])
 
+  function goToPage(nextPage) {
+    setLoading(true)
+    setPage(nextPage)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const totalPages = Math.max(1, Math.ceil(data.count / pageSize))
+  const first = data.count ? (page - 1) * pageSize + 1 : 0
+  const last = Math.min(page * pageSize, data.count)
 
   return <main className="admin-page">
     <header className="admin-header">
@@ -49,7 +61,8 @@ export default function AuditLogPage() {
         ? <div className="admin-empty"><span className="admin-spinner" />Cargando eventos…</div>
         : !data.results.length
           ? !error && <div className="admin-empty"><AdminIcon name="layers" size={34} /><h2>Aún no hay eventos</h2><p>Aquí aparecerán los registros, inicios de sesión, operaciones de archivos y pagos.</p></div>
-          : <div className="admin-table-wrap report-table-wrap">
+          : <>
+            <div className={`admin-table-wrap report-table-wrap${loading ? ' is-loading' : ''}`}>
               <table className="admin-table report-table">
                 <thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Recurso</th><th>Detalles</th></tr></thead>
                 <tbody>
@@ -70,7 +83,22 @@ export default function AuditLogPage() {
                   })}
                 </tbody>
               </table>
-            </div>}
+            </div>
+
+            <nav className="report-pagination" aria-label="Paginación de eventos">
+              <span>Mostrando <strong>{first.toLocaleString('es-GT')}–{last.toLocaleString('es-GT')}</strong> de {data.count.toLocaleString('es-GT')}</span>
+              <label className="report-page-size">Por página
+                <select value={pageSize} onChange={(event) => { setLoading(true); setPage(1); setPageSize(Number(event.target.value)) }}>
+                  {PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}
+                </select>
+              </label>
+              <div className="report-page-buttons">
+                <button type="button" className="admin-button admin-button--secondary" onClick={() => goToPage(page - 1)} disabled={!data.previous || loading}>Anterior</button>
+                <span>Página {page} de {totalPages}</span>
+                <button type="button" className="admin-button admin-button--secondary" onClick={() => goToPage(page + 1)} disabled={!data.next || loading}>Siguiente</button>
+              </div>
+            </nav>
+          </>}
     </div>
   </main>
 }
