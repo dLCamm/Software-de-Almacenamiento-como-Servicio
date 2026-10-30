@@ -10,6 +10,7 @@ import StorageBar from './dashboard/components/StorageBar'
 import { getFileKind } from './dashboard/fileTypes'
 import { formatBytes, formatDateTime, getTrashDaysRemaining } from './dashboard/formatters'
 import useDashboard from './dashboard/useDashboard'
+import useSystemStorage from '../../utils/systemStorage'
 import './DashboardPage.css'
 
 function FileSkeletonGrid({ layout }) {
@@ -38,6 +39,9 @@ export default function DashboardPage() {
 
   // DashboardPage actúa como punto de composición e inyecta el adaptador API.
   const dashboard = useDashboard(storageApi)
+  const isAdmin = account?.role === 'ADMIN'
+  // Para el administrador, la barra de arriba muestra el mismo uso del sistema que la barra lateral.
+  const systemStorage = useSystemStorage(isAdmin, dashboard.usage?.usado_bytes)
 
   useEffect(() => {
     let active = true
@@ -83,7 +87,7 @@ export default function DashboardPage() {
     </div>}
     {accountError && <div className="dashboard-alert dashboard-alert--error" role="alert">{accountError}</div>}
 
-    <StorageBar usage={dashboard.usage} onUpgrade={() => navigate('/app/client/billing')} isAdmin={account?.role === 'ADMIN'} onSystemStorage={() => navigate('/app/admin/estadisticas')} />
+    <StorageBar usage={dashboard.usage} onUpgrade={() => navigate('/app/client/billing')} isAdmin={isAdmin} systemStorage={systemStorage} onSystemStorage={() => navigate('/app/admin/estadisticas')} />
 
     <section className="folder-content" aria-label="Contenido de la unidad">
       <div className="folder-heading">{dashboard.showTrash ? <span className="breadcrumb-current">PAPELERA</span> : <><button type="button" className={dashboard.currentFolder ? 'breadcrumb-root' : 'breadcrumb-root is-current'} onClick={dashboard.goToRoot}>MI UNIDAD</button>{dashboard.currentFolder && <><span className="breadcrumb-separator">/</span><span className="breadcrumb-current">{dashboard.currentFolder.name}</span></>}</>}</div>
