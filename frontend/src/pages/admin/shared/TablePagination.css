@@ -1,0 +1,12 @@
+/* Paginación compartida de las tablas de administración. Colores: src/styles/theme.css */
+.table-pagination { margin-top: 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; color: var(--admin-muted); font-size: 13px; }
+.table-pagination strong { color: var(--admin-strong); font-variant-numeric: tabular-nums; }
+.table-pagination__size { display: inline-flex; align-items: center; gap: 8px; }
+.table-pagination__size select { height: 36px; padding: 0 8px; border: 1px solid var(--gray-26); border-radius: 9px; color: var(--admin-strong); background: var(--gray-8); font: inherit; }
+.table-pagination__buttons { display: flex; align-items: center; gap: 10px; }
+.table-pagination__buttons .admin-button { min-height: 38px; padding: 0 14px; }
+.table-pagination__buttons span { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 860px) {
+  .table-pagination { justify-content: center; }
+}

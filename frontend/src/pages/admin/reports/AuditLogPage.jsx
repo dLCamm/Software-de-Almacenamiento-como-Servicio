@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { listAdminPlans } from '../../../api/adminPlans'
 import { listAuditEvents } from '../../../api/adminReports'
 import { AdminIcon } from '../plans/AdminIcon'
+import TablePagination from '../shared/TablePagination'
 import { AUDIT_ACTION_GROUPS, RESOURCE_TYPES, formatDateTime, formatDetails, getActionLabel, getActionTone, getResourceLabel, shortId } from './auditFormat'
 import '../plans/AdminPlansPage.css'
 import '../management/ManagementPage.css'
@@ -72,9 +73,6 @@ export default function AuditLogPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const totalPages = Math.max(1, Math.ceil(data.count / pageSize))
-  const first = data.count ? (page - 1) * pageSize + 1 : 0
-  const last = Math.min(page * pageSize, data.count)
   const hasFilters = Object.keys(filters).length > 0
 
   return <main className="admin-page">
@@ -135,19 +133,8 @@ export default function AuditLogPage() {
               </table>
             </div>
 
-            <nav className="report-pagination" aria-label="Paginación de eventos">
-              <span>Mostrando <strong>{first.toLocaleString('es-GT')}–{last.toLocaleString('es-GT')}</strong> de {data.count.toLocaleString('es-GT')}</span>
-              <label className="report-page-size">Por página
-                <select value={pageSize} onChange={(event) => { setLoading(true); setPage(1); setPageSize(Number(event.target.value)) }}>
-                  {PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}
-                </select>
-              </label>
-              <div className="report-page-buttons">
-                <button type="button" className="admin-button admin-button--secondary" onClick={() => goToPage(page - 1)} disabled={!data.previous || loading}>Anterior</button>
-                <span>Página {page} de {totalPages}</span>
-                <button type="button" className="admin-button admin-button--secondary" onClick={() => goToPage(page + 1)} disabled={!data.next || loading}>Siguiente</button>
-              </div>
-            </nav>
+            <TablePagination page={page} pageSize={pageSize} total={data.count} sizes={PAGE_SIZES} disabled={loading} label="Paginación de eventos"
+              onPageChange={goToPage} onPageSizeChange={(size) => { setLoading(true); setPage(1); setPageSize(size) }} />
           </>}
     </div>
   </main>

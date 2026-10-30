@@ -29,13 +29,6 @@
 .report-details dd { margin: 0; color: var(--gray-85); font-weight: 600; white-space: nowrap; }
 
 /* ---------- Paginación ---------- */
-.report-pagination { margin-top: 16px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; color: var(--admin-muted); font-size: 13px; }
-.report-pagination strong { color: var(--admin-strong); font-variant-numeric: tabular-nums; }
-.report-page-size { display: inline-flex; align-items: center; gap: 8px; }
-.report-page-size select { height: 36px; padding: 0 8px; border: 1px solid var(--gray-26); border-radius: 9px; color: var(--admin-strong); background: var(--gray-8); font: inherit; }
-.report-page-buttons { display: flex; align-items: center; gap: 10px; }
-.report-page-buttons .admin-button { min-height: 38px; padding: 0 14px; }
-.report-page-buttons span { white-space: nowrap; font-variant-numeric: tabular-nums; }
 
 /* ---------- Estadísticas: cifras ---------- */
 .stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
@@ -91,7 +84,6 @@
   .report-table td[data-label="Detalles"] { min-width: 0; }
   .report-details { justify-content: flex-end; text-align: right; }
   .report-details dd { white-space: normal; }
-  .report-pagination { justify-content: center; }
   .bar-list__row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'label value' 'track track'; gap: 4px 10px; }
   .bar-list__label { grid-area: label; }
   .bar-list__value { grid-area: value; flex-direction: row; align-items: baseline; gap: 6px; }
