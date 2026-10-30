@@ -83,7 +83,7 @@ export default function DashboardPage() {
     </div>}
     {accountError && <div className="dashboard-alert dashboard-alert--error" role="alert">{accountError}</div>}
 
-    <StorageBar usage={dashboard.usage} onUpgrade={() => navigate('/app/client/billing')} />
+    <StorageBar usage={dashboard.usage} onUpgrade={() => navigate('/app/client/billing')} isAdmin={account?.role === 'ADMIN'} onSystemStorage={() => navigate('/app/admin/estadisticas')} />
 
     <section className="folder-content" aria-label="Contenido de la unidad">
       <div className="folder-heading">{dashboard.showTrash ? <span className="breadcrumb-current">PAPELERA</span> : <><button type="button" className={dashboard.currentFolder ? 'breadcrumb-root' : 'breadcrumb-root is-current'} onClick={dashboard.goToRoot}>MI UNIDAD</button>{dashboard.currentFolder && <><span className="breadcrumb-separator">/</span><span className="breadcrumb-current">{dashboard.currentFolder.name}</span></>}</>}</div>
