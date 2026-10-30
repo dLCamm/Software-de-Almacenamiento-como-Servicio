@@ -44,6 +44,8 @@ const NAV_ITEMS = [
       { to: '/app/admin/usuarios', label: 'Usuarios' },
       { to: '/app/admin/pagos', label: 'Pagos' },
       { to: '/app/admin/planes', label: 'Planes', roles: ['ADMIN'] },
+      { to: '/app/admin/estadisticas', label: 'Estadísticas', roles: ['ADMIN'] },
+      { to: '/app/admin/auditoria', label: 'Auditoría', roles: ['ADMIN'] },
     ],
   },
 ]
