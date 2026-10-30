@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { listAuditEvents } from '../../../api/adminReports'
 import { AdminIcon } from '../plans/AdminIcon'
-import { formatDateTime, formatDetails, getActionLabel, getActionTone, getResourceLabel, shortId } from './auditFormat'
+import { AUDIT_ACTION_GROUPS, RESOURCE_TYPES, formatDateTime, formatDetails, getActionLabel, getActionTone, getResourceLabel, shortId } from './auditFormat'
 import '../plans/AdminPlansPage.css'
+import '../management/ManagementPage.css'
 import './ReportsPage.css'
 
 const PAGE_SIZES = [25, 50, 100]
+const emptyForm = { action: '', resource_type: '' }
 
 function errorText(error) {
   if (error?.status === 403) return 'Tu cuenta no tiene permiso para ver la auditoría. Solo los administradores pueden consultarla.'
@@ -14,6 +16,8 @@ function errorText(error) {
 }
 
 export default function AuditLogPage() {
+  const [form, setForm] = useState(emptyForm)
+  const [filters, setFilters] = useState({})
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(25)
   const [data, setData] = useState({ count: 0, next: null, previous: null, results: [] })
@@ -22,7 +26,7 @@ export default function AuditLogPage() {
 
   useEffect(() => {
     let active = true
-    listAuditEvents({ page, page_size: pageSize })
+    listAuditEvents({ ...filters, page, page_size: pageSize })
       .then((response) => {
         if (!active) return
         // Acepta respuesta paginada ({ count, results }) o una lista simple.
@@ -33,7 +37,25 @@ export default function AuditLogPage() {
       .catch((loadError) => { if (active) setError(errorText(loadError)) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [page, pageSize])
+  }, [filters, page, pageSize])
+
+  function changeField(event) {
+    setForm((current) => ({ ...current, [event.target.name]: event.target.value }))
+  }
+
+  function applyFilters(event) {
+    event.preventDefault()
+    setLoading(true)
+    setPage(1)
+    setFilters(Object.fromEntries(Object.entries(form).filter(([, value]) => value !== '')))
+  }
+
+  function clearFilters() {
+    setLoading(true)
+    setForm(emptyForm)
+    setPage(1)
+    setFilters({})
+  }
 
   function goToPage(nextPage) {
     setLoading(true)
@@ -44,23 +66,42 @@ export default function AuditLogPage() {
   const totalPages = Math.max(1, Math.ceil(data.count / pageSize))
   const first = data.count ? (page - 1) * pageSize + 1 : 0
   const last = Math.min(page * pageSize, data.count)
+  const hasFilters = Object.keys(filters).length > 0
 
   return <main className="admin-page">
     <header className="admin-header">
       <div>
         <span className="admin-header__crumb">Administración</span>
         <h1>Auditoría</h1>
-        <p>{loading && !data.results.length ? 'Cargando eventos…' : `${data.count.toLocaleString('es-GT')} ${data.count === 1 ? 'evento registrado' : 'eventos registrados'}`}</p>
+        <p>{loading && !data.results.length ? 'Cargando eventos…' : `${data.count.toLocaleString('es-GT')} ${data.count === 1 ? 'evento registrado' : 'eventos registrados'}${hasFilters ? ' con estos filtros' : ''}`}</p>
       </div>
     </header>
 
     <div className="admin-content">
+      <form className="management-filters report-filters" onSubmit={applyFilters}>
+        <label className="admin-field"><span>Acción</span>
+          <select name="action" value={form.action} onChange={changeField}>
+            <option value="">Todas</option>
+            {AUDIT_ACTION_GROUPS.map((group) => <optgroup key={group.label} label={group.label}>
+              {group.actions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </optgroup>)}
+          </select>
+        </label>
+        <label className="admin-field"><span>Tipo de recurso</span>
+          <select name="resource_type" value={form.resource_type} onChange={changeField}>
+            <option value="">Todos</option>
+            {RESOURCE_TYPES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          </select>
+        </label>
+        <div className="management-filter-actions"><button className="admin-button admin-button--primary" type="submit">Filtrar</button><button className="admin-button admin-button--secondary" type="button" onClick={clearFilters} disabled={!hasFilters && !form.action && !form.resource_type}>Limpiar</button></div>
+      </form>
+
       {error && <div className="admin-alert admin-alert--error" role="alert"><span>{error}</span></div>}
 
       {loading && !data.results.length
         ? <div className="admin-empty"><span className="admin-spinner" />Cargando eventos…</div>
         : !data.results.length
-          ? !error && <div className="admin-empty"><AdminIcon name="layers" size={34} /><h2>Aún no hay eventos</h2><p>Aquí aparecerán los registros, inicios de sesión, operaciones de archivos y pagos.</p></div>
+          ? !error && <div className="admin-empty"><AdminIcon name="layers" size={34} /><h2>{hasFilters ? 'No hay eventos con estos filtros' : 'Aún no hay eventos'}</h2><p>{hasFilters ? 'Prueba con otra acción o tipo de recurso.' : 'Aquí aparecerán los registros, inicios de sesión, operaciones de archivos y pagos.'}</p></div>
           : <>
             <div className={`admin-table-wrap report-table-wrap${loading ? ' is-loading' : ''}`}>
               <table className="admin-table report-table">
