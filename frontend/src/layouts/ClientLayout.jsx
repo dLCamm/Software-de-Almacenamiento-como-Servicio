@@ -25,11 +25,12 @@ function NavIcon({ name, size = 20 }) {
   return <svg className="client-nav__icon" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>
 }
 
-// Opciones de la barra lateral. `roles` limita quién las ve (undefined = todos).
+// Opciones de la barra lateral. `roles` limita quién las ve (undefined = todos); `hiddenFor` las oculta a esos roles.
 // `ready: false` muestra el enlace deshabilitado hasta que exista la página.
 // `children` son sub-opciones que se despliegan cuando estás dentro de esa sección.
 const NAV_ITEMS = [
-  { to: '/app/client', label: 'Mis Archivos', icon: 'files', end: true },
+  // El administrador no tiene unidad propia: él administra, no guarda archivos.
+  { to: '/app/client', label: 'Mis Archivos', icon: 'files', end: true, hiddenFor: ['ADMIN'] },
   {
     to: '/app/client/billing', label: 'Planes y Facturación', icon: 'billing',
     children: [
@@ -84,7 +85,7 @@ export default function ClientLayout() {
 
   const role = profile?.role
   const isInside = (item) => item.end ? pathname === item.to : pathname === item.to || pathname.startsWith(`${item.to}/`)
-  const items = NAV_ITEMS.filter((item) => !item.roles || item.roles.includes(role))
+  const items = NAV_ITEMS.filter((item) => (!item.roles || item.roles.includes(role)) && !item.hiddenFor?.includes(role))
   const percent = getUsagePercent(usage)
 
   return <div className={`client-layout ${open ? 'is-nav-open' : ''}`}>
