@@ -16,6 +16,7 @@ import UserFilesRoute from './routes/UserFilesRoute'
 import ClientLayout from './layouts/ClientLayout'
 import AuditLogPage from './pages/admin/reports/AuditLogPage'
 import StatisticsPage from './pages/admin/reports/StatisticsPage'
+import AdminHomePage from './pages/admin/home/AdminHomePage'
 
 
 export default function App() {
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/app/client" element={<UserFilesRoute><DashboardPageClient /></UserFilesRoute>}/>
         <Route path="/app/client/billing/:section?" element={<BillingPage />}/>
         <Route path="/app/admin" element={<Navigate to="/app/admin/usuarios" replace />}/>
+        <Route path="/app/admin/inicio" element={<AdminRoute><AdminHomePage /></AdminRoute>}/>
         <Route path="/app/admin/planes" element={<AdminRoute><AdminPlansPage /></AdminRoute>}/>
         <Route path="/app/admin/estadisticas" element={<AdminRoute><StatisticsPage /></AdminRoute>}/>
         <Route path="/app/admin/auditoria" element={<AdminRoute><AuditLogPage /></AdminRoute>}/>

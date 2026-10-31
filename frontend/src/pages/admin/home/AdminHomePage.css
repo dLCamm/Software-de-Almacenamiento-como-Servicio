@@ -1,0 +1,3 @@
+/* Inicio del administrador. Colores: variables de src/styles/theme.css */
+.admin-home__identity { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.admin-home__role { padding: 3px 10px; border: 1px solid var(--purple-69-a50); border-radius: 999px; color: var(--purple-75); background: var(--purple-69-a14); font-size: 12px; font-weight: 700; letter-spacing: .01em; }
