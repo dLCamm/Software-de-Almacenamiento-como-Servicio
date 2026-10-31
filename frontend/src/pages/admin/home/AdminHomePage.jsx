@@ -10,6 +10,15 @@ import './AdminHomePage.css'
 const formatNumber = (value) => Number(value || 0).toLocaleString('es-GT')
 const formatAmount = (value) => Number(value || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
+// Accesos rápidos a cada sección de Administración.
+const SECTIONS = [
+  { to: '/app/admin/usuarios', title: 'Usuarios', text: 'Busca cuentas, revisa su plan y actívalas o desactívalas.' },
+  { to: '/app/admin/pagos', title: 'Pagos', text: 'Historial global de transacciones con filtros por estado y tipo.' },
+  { to: '/app/admin/planes', title: 'Planes', text: 'Crea, edita y ordena los planes que ven los clientes.' },
+  { to: '/app/admin/estadisticas', title: 'Estadísticas', text: 'Almacenamiento por tipo de archivo y usuarios por rol.' },
+  { to: '/app/admin/auditoria', title: 'Auditoría', text: 'Registro de inicios de sesión, operaciones de archivos y pagos.' },
+]
+
 function displayName(profile) {
   return [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || profile?.email || 'Administrador'
 }
@@ -78,6 +87,16 @@ export default function AdminHomePage() {
           <div className="stat-tile__meta"><span>de {formatNumber(Number(payments.aprobados || 0) + Number(payments.rechazados || 0))} procesados</span></div>
         </section>
       </div>}
+
+      <section className="admin-home__sections" aria-labelledby="admin-home-sections">
+        <h2 id="admin-home-sections">Secciones</h2>
+        <div className="admin-home__links">
+          {SECTIONS.map((section) => <Link key={section.to} className="admin-home__link" to={section.to}>
+            <strong>{section.title}<span aria-hidden="true">→</span></strong>
+            <span>{section.text}</span>
+          </Link>)}
+        </div>
+      </section>
     </div>
   </main>
 }
