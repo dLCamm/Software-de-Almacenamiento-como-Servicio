@@ -4,7 +4,7 @@ import { getProfile } from '../api/auth'
 
 /**
  * "Mis Archivos" es solo para clientes y soporte. El administrador no tiene unidad propia,
- * así que si entra a /app/client lo mandamos a su panel de Administración.
+ * así que si entra a /app/client lo mandamos a su Inicio de Administración.
  */
 export default function UserFilesRoute({ children }) {
   const [status, setStatus] = useState('checking')
@@ -19,6 +19,6 @@ export default function UserFilesRoute({ children }) {
   }, [])
 
   if (status === 'checking') return null
-  if (status === 'admin') return <Navigate to="/app/admin" replace />
+  if (status === 'admin') return <Navigate to="/app/admin/inicio" replace />
   return children
 }

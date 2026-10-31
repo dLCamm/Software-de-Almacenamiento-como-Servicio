@@ -21,7 +21,7 @@ export default function AuthPage() {
 
   // El administrador entra directo a su panel; los demás, a Mis Archivos.
   function handleAuthenticated(data) {
-    navigate(data?.user?.role === 'ADMIN' ? '/app/admin' : '/app/client')
+    navigate(data?.user?.role === 'ADMIN' ? '/app/admin/inicio' : '/app/client')
   }
 
   return (

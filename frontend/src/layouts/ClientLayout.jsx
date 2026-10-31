@@ -43,6 +43,7 @@ const NAV_ITEMS = [
   {
     to: '/app/admin', label: 'Administración', icon: 'admin', roles: ['ADMIN', 'SUPPORT'],
     children: [
+      { to: '/app/admin/inicio', label: 'Inicio', roles: ['ADMIN'] },
       { to: '/app/admin/usuarios', label: 'Usuarios' },
       { to: '/app/admin/pagos', label: 'Pagos' },
       { to: '/app/admin/planes', label: 'Planes', roles: ['ADMIN'] },

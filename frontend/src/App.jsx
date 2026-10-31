@@ -13,6 +13,7 @@ import ManagedUsersPage from './pages/admin/management/ManagedUsersPage'
 import ManagedPaymentsPage from './pages/admin/management/ManagedPaymentsPage'
 import StaffRoute from './routes/StaffRoute'
 import UserFilesRoute from './routes/UserFilesRoute'
+import AdminIndexRoute from './routes/AdminIndexRoute'
 import ClientLayout from './layouts/ClientLayout'
 import AuditLogPage from './pages/admin/reports/AuditLogPage'
 import StatisticsPage from './pages/admin/reports/StatisticsPage'
@@ -31,7 +32,7 @@ export default function App() {
       <Route element={<ProtectedRoute><ClientLayout /></ProtectedRoute>}>
         <Route path="/app/client" element={<UserFilesRoute><DashboardPageClient /></UserFilesRoute>}/>
         <Route path="/app/client/billing/:section?" element={<BillingPage />}/>
-        <Route path="/app/admin" element={<Navigate to="/app/admin/usuarios" replace />}/>
+        <Route path="/app/admin" element={<AdminIndexRoute />}/>
         <Route path="/app/admin/inicio" element={<AdminRoute><AdminHomePage /></AdminRoute>}/>
         <Route path="/app/admin/planes" element={<AdminRoute><AdminPlansPage /></AdminRoute>}/>
         <Route path="/app/admin/estadisticas" element={<AdminRoute><StatisticsPage /></AdminRoute>}/>
