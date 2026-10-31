@@ -51,6 +51,11 @@ class FileUploadInputSerializer(serializers.Serializer):
     )
 
 
+class FileRenameSerializer(serializers.Serializer):
+    """Validador para renombrar archivos."""
+    nuevo_nombre = serializers.CharField(max_length=255, required=True, trim_whitespace=True)
+
+
 class ShareLinkInputSerializer(serializers.Serializer):
     expiracion_segundos = serializers.IntegerField(
         required=False,

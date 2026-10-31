@@ -39,6 +39,11 @@ class FileNotFoundServiceError(FileServiceError):
     pass
 
 
+class FileDuplicateError(FileServiceError):
+    """Lanzada cuando el nuevo nombre del archivo entra en conflicto con otro archivo del usuario."""
+    pass
+
+
 class FileService:
     """
     Servicio orquestador para la gestión y ciclo de vida de archivos (RF-06, RF-07, RF-09, RF-10).
@@ -193,6 +198,56 @@ class FileService:
             raise FileNotFoundServiceError("El archivo no existe o no tiene permisos para compartirlo.")
 
         return backend.get_presigned_url(archivo.object_key, expiry_seconds=expiry_seconds)
+
+    @classmethod
+    def rename_file(
+        cls,
+        user,
+        file_id: Union[str, UUID],
+        new_name: str,
+    ) -> Archivo:
+        """Renombra un archivo activo y perteneciente al usuario."""
+        clean_name = (new_name or "").strip()
+        if not clean_name:
+            raise FileServiceError("El nombre del archivo no puede estar vacío.")
+
+        try:
+            archivo = Archivo.objects.get(
+                id=file_id,
+                usuario=user,
+                estado=EstadoElemento.ACTIVO,
+            )
+        except Archivo.DoesNotExist as exc:
+            raise FileNotFoundServiceError(
+                "El archivo especificado no existe o no le pertenece."
+            ) from exc
+
+        if (
+            os.path.basename(clean_name) != clean_name
+            or any(ord(character) < 32 for character in clean_name)
+        ):
+            raise FileServiceError("El nombre del archivo contiene caracteres no permitidos.")
+
+        _, new_extension = os.path.splitext(clean_name)
+        if new_extension.lstrip(".").lower() != archivo.extension.lower():
+            raise FileServiceError("Conserva la extensión original del archivo.")
+
+        if archivo.nombre_original != clean_name:
+            duplicate_qs = Archivo.objects.filter(
+                usuario=user,
+                estado=EstadoElemento.ACTIVO,
+                carpeta_id=archivo.carpeta_id,
+                nombre_original__iexact=clean_name,
+            ).exclude(id=archivo.id)
+            if duplicate_qs.exists():
+                raise FileDuplicateError(
+                    f"Ya existe un archivo con el nombre '{clean_name}' en esta ubicación."
+                )
+
+        archivo.nombre_original = clean_name
+        archivo.save(update_fields=["nombre_original"])
+        logger.info("Archivo ID %s renombrado a %s.", file_id, clean_name)
+        return archivo
 
     @classmethod
     def delete_file(

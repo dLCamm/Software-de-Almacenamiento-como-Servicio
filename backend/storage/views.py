@@ -10,6 +10,7 @@ from core.audit import record_audit_event
 from storage.models import Archivo, Carpeta, EstadoElemento
 from storage.serializers import (
     FileDetailSerializer,
+    FileRenameSerializer,
     FileUploadInputSerializer,
     FolderCreateSerializer,
     FolderRenameSerializer,
@@ -19,6 +20,7 @@ from storage.serializers import (
     TrashItemSerializer,
 )
 from storage.services.file_service import (
+    FileDuplicateError,
     FileNotFoundServiceError,
     FileService,
     FileServiceError,
@@ -146,6 +148,33 @@ class FileDetailView(AuthenticatedStorageAPIView):
             return Response(serializer.data, status=status.HTTP_200_OK)
         except Archivo.DoesNotExist:
             return Response({"error": "Archivo no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+
+    def patch(self, request, file_id, *args, **kwargs):
+        serializer = FileRenameSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        user = request.user
+        try:
+            archivo = FileService.rename_file(
+                user=user,
+                file_id=file_id,
+                new_name=serializer.validated_data['nuevo_nombre'],
+            )
+            record_audit_event(
+                actor=user,
+                action='file.rename',
+                resource_type='file',
+                resource_id=archivo.id,
+                details={"nuevo_nombre": archivo.nombre_original},
+            )
+            return Response(FileDetailSerializer(archivo).data, status=status.HTTP_200_OK)
+        except FileDuplicateError as e:
+            return Response({"error": "Conflicto de nombre", "detalle": str(e)}, status=status.HTTP_409_CONFLICT)
+        except FileNotFoundServiceError:
+            return Response({"error": "Archivo no encontrado."}, status=status.HTTP_404_NOT_FOUND)
+        except FileServiceError as e:
+            return Response({"error": "Error al renombrar archivo", "detalle": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, file_id, *args, **kwargs):
         user = request.user

@@ -194,6 +194,7 @@ Para consultar validaciones o lógica interna en el repositorio:
   - `carpeta_id` *(UUID string, Opcional)*: ID de la carpeta destino. Si se omite, se guarda en la raíz.
   - `es_temporal` *(Boolean, Opcional, Default: `false`)*: Marca si el archivo expirará automáticamente.
   - `tiempo_vida_dias` *(Integer, Opcional, Default: `14`)*: Días de validez (1 a 365) si es temporal. El sistema elimina el archivo vencido en la tarea de limpieza diaria. Si se mueve a papelera antes de vencer, se conserva según el periodo de retención de la papelera.
+- El endpoint procesa un archivo por solicitud. Para subir varios desde el frontend, se envía una solicitud por archivo; los éxitos se conservan aunque falle otra carga.
 - **Respuestas:**
   - `201 Created`:
     ```json
@@ -239,6 +240,22 @@ Para consultar validaciones o lógica interna en el repositorio:
 - **Respuestas:**
   - `200 OK`: Objeto con metadatos del archivo.
   - `404 Not Found`: Si el archivo no existe o pertenece a otro usuario.
+
+#### Renombrar Archivo
+- **Ruta:** `PATCH /api/storage/files/<uuid:file_id>/`
+- **Autenticación:** Requerida.
+- **Request Body (JSON):**
+  ```json
+  {
+    "nuevo_nombre": "informe_final.pdf"
+  }
+  ```
+- El nombre debe conservar la extensión original. No se puede usar un nombre ya activo en la misma carpeta.
+- **Respuestas:**
+  - `200 OK`: Metadatos actualizados del archivo.
+  - `400 Bad Request`: Nombre inválido o extensión distinta a la original.
+  - `404 Not Found`: El archivo no existe, no pertenece al usuario o no está activo.
+  - `409 Conflict`: Ya existe un archivo activo con ese nombre en la misma ubicación.
 
 ---
 
