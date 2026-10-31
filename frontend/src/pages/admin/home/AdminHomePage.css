@@ -13,3 +13,8 @@
   .admin-home__storage { padding: 20px; }
   .admin-home__storage .admin-button { width: 100%; }
 }
+
+/* Resumen rápido debajo del uso del sistema */
+.admin-home__summary { margin-top: 18px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.admin-home__summary .stat-tile__value { font-size: 26px; }
+@media (max-width: 860px) { .admin-home__summary { grid-template-columns: 1fr; } }

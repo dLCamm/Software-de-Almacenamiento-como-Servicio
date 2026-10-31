@@ -4,9 +4,11 @@ import { getAdminStatistics } from '../../../api/adminReports'
 import { getProfile } from '../../../api/auth'
 import { formatBytes } from '../../client/dashboard/formatters'
 import '../plans/AdminPlansPage.css'
+import '../reports/ReportsPage.css'
 import './AdminHomePage.css'
 
 const formatNumber = (value) => Number(value || 0).toLocaleString('es-GT')
+const formatAmount = (value) => Number(value || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
 function displayName(profile) {
   return [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') || profile?.email || 'Administrador'
@@ -29,6 +31,8 @@ export default function AdminHomePage() {
 
   const storage = stats?.almacenamiento || {}
   const users = stats?.usuarios || {}
+  const income = stats?.ingresos || {}
+  const payments = stats?.pagos || {}
 
   return <main className="admin-page admin-home">
     <header className="admin-header">
@@ -56,6 +60,24 @@ export default function AdminHomePage() {
         </div>
         <Link className="admin-button admin-button--primary" to="/app/admin/estadisticas">Ver estadísticas</Link>
       </section>
+
+      {stats && <div className="stat-grid admin-home__summary">
+        <section className="stat-tile">
+          <span className="stat-tile__label">Usuarios</span>
+          <strong className="stat-tile__value">{formatNumber(users.total)}</strong>
+          <div className="stat-tile__meta"><span>{formatNumber(users.clientes)} clientes · {formatNumber(users.clientes_activos)} activos</span></div>
+        </section>
+        <section className="stat-tile">
+          <span className="stat-tile__label">Ingresos aprobados</span>
+          <strong className="stat-tile__value">{formatAmount(income.total_aprobado)}</strong>
+          <div className="stat-tile__meta"><span>{formatNumber(income.pagos_aprobados)} {Number(income.pagos_aprobados) === 1 ? 'pago aprobado' : 'pagos aprobados'}</span></div>
+        </section>
+        <section className="stat-tile">
+          <span className="stat-tile__label">Pagos rechazados</span>
+          <strong className="stat-tile__value">{formatNumber(payments.rechazados)}</strong>
+          <div className="stat-tile__meta"><span>de {formatNumber(Number(payments.aprobados || 0) + Number(payments.rechazados || 0))} procesados</span></div>
+        </section>
+      </div>}
     </div>
   </main>
 }
