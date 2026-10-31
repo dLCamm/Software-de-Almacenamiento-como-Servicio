@@ -19,8 +19,9 @@ export default function AuthPage() {
   const requestedPlan = new URLSearchParams(location.search).get('plan')
   const selectedPlan = ['free', 'pro', 'business'].includes(requestedPlan) ? requestedPlan : 'free'
 
-  function handleAuthenticated() {
-    navigate('/app/client')
+  // El administrador entra directo a su panel; los demás, a Mis Archivos.
+  function handleAuthenticated(data) {
+    navigate(data?.user?.role === 'ADMIN' ? '/app/admin' : '/app/client')
   }
 
   return (
