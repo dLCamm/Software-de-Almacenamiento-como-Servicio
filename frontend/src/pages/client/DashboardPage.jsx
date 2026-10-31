@@ -7,7 +7,7 @@ import FileCard from './dashboard/components/FileCard'
 import FolderCard from './dashboard/components/FolderCard'
 import Icon from './dashboard/components/Icon'
 import StorageBar from './dashboard/components/StorageBar'
-import { getFileKind } from './dashboard/fileTypes'
+import { SUPPORTED_FILE_TYPES, getFileKind } from './dashboard/fileTypes'
 import { formatBytes, formatDateTime, getTrashDaysRemaining } from './dashboard/formatters'
 import useDashboard from './dashboard/useDashboard'
 import './DashboardPage.css'
@@ -65,7 +65,9 @@ export default function DashboardPage() {
 
   return <main className="dashboard-page" onClick={() => dashboard.setOpenMenu('')} onDragOver={(event) => { event.preventDefault(); if (!dashboard.showTrash && event.dataTransfer?.types.includes('Files')) setDragging(true) }} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false) }} onDrop={handleDrop}>
     <header className="dashboard-toolbar">
-      {!dashboard.showTrash && <label className="drive-search"><Icon name="search" /><input type="search" value={dashboard.search} onChange={(event) => dashboard.setSearch(event.target.value)} placeholder="Buscar archivos y carpetas..." aria-label="Buscar archivos y carpetas" /></label>}
+      {!dashboard.showTrash && <><label className="drive-search"><Icon name="search" /><input type="search" value={dashboard.search} onChange={(event) => dashboard.setSearch(event.target.value)} placeholder="Buscar archivos y carpetas..." aria-label="Buscar archivos y carpetas" /></label>
+      <label className="drive-filter"><span>Tipo</span><select value={dashboard.extensionFilter} onChange={(event) => dashboard.setExtensionFilter(event.target.value)} aria-label="Filtrar por tipo de archivo"><option value="">Todos</option>{Object.entries(SUPPORTED_FILE_TYPES).map(([extension, config]) => <option key={extension} value={extension}>{config.label}</option>)}</select></label></>}
+      {!dashboard.showTrash && <div className="upload-options"><label className="checkbox-inline"><input type="checkbox" checked={dashboard.uploadTemporary} onChange={(event) => dashboard.setUploadTemporary(event.target.checked)} />Subida temporal</label>{dashboard.uploadTemporary && <label className="ttl-field">Días<input type="number" min="1" max="365" value={dashboard.uploadTtlDays} onChange={(event) => dashboard.setUploadTtlDays(Math.min(365, Math.max(1, Number(event.target.value) || 14)))} /></label>}</div>}
       <div className="toolbar-actions">
         {dashboard.showTrash ? <button className="toolbar-button toolbar-button--secondary" type="button" onClick={dashboard.closeTrash}><Icon name="back" />Volver a mi unidad</button> : <>
         <button className="toolbar-button toolbar-button--primary" type="button" onClick={() => uploadInput.current?.click()} disabled={dashboard.uploading}><Icon name="upload" />{dashboard.uploading ? 'Subiendo…' : 'Subir archivo'}</button>
@@ -74,7 +76,7 @@ export default function DashboardPage() {
         <button className="toolbar-button toolbar-button--secondary" type="button" onClick={dashboard.openTrash}><Icon name="trash" /><span>Papelera</span></button>
         </>}
       </div>
-      {!dashboard.showTrash && <input ref={uploadInput} className="visually-hidden" type="file" accept={dashboard.acceptedFileTypes} onChange={handleFileSelection} />}
+      {!dashboard.showTrash && <input ref={uploadInput} className="visually-hidden" type="file" accept={dashboard.acceptedFileTypes} multiple onChange={handleFileSelection} />}
     </header>
 
     {account && <div className="dashboard-account">
@@ -89,6 +91,7 @@ export default function DashboardPage() {
       <div className="folder-heading">{dashboard.showTrash ? <span className="breadcrumb-current">PAPELERA</span> : <><button type="button" className={dashboard.currentFolder ? 'breadcrumb-root' : 'breadcrumb-root is-current'} onClick={dashboard.goToRoot}>MI UNIDAD</button>{dashboard.currentFolder && <><span className="breadcrumb-separator">/</span><span className="breadcrumb-current">{dashboard.currentFolder.name}</span></>}</>}</div>
       {dashboard.showTrash && <p className="trash-description">Los elementos se eliminan automáticamente después de 30 días. Puedes restaurarlos mientras permanezcan aquí.</p>}
       {dashboard.error && <div className="dashboard-alert dashboard-alert--error" role="alert"><span>{dashboard.error}</span><button type="button" onClick={dashboard.clearError} aria-label="Cerrar mensaje"><Icon name="x" size={16} /></button></div>}
+      {dashboard.uploadErrors.length > 0 && <div className="dashboard-alert dashboard-alert--error" role="alert"><span>No se pudieron subir: {dashboard.uploadErrors.join(' ')}</span><button type="button" onClick={() => dashboard.clearUploadErrors()} aria-label="Cerrar errores de carga"><Icon name="x" size={16} /></button></div>}
       {dashboard.notice && <div className="dashboard-alert dashboard-alert--success" role="status"><Icon name="check" size={17} /><span>{dashboard.notice}</span><button type="button" onClick={dashboard.clearNotice} aria-label="Cerrar mensaje"><Icon name="x" size={16} /></button></div>}
 
       {dashboard.loading && !dashboard.showTrash ? <FileSkeletonGrid layout={layout} /> : dashboard.loading ? <div className="drive-loading" role="status"><span className="loading-spinner" />Cargando papelera…</div> : dashboard.showTrash ? <div className="trash-list">
@@ -112,7 +115,7 @@ export default function DashboardPage() {
         {!dashboard.trashItems.length && <div className="empty-state"><Icon name="trash" size={44} /><h2>La papelera está vacía</h2><p>Los archivos y carpetas que elimines aparecerán aquí durante 30 días.</p></div>}
       </div> : <div className={`drive-grid ${layout === 'list' ? 'drive-grid--list' : ''}`}>
         {dashboard.visibleFolders.map((folder) => <FolderCard key={folder.id} folder={folder} layout={layout} onOpen={dashboard.openFolder} menuOpen={dashboard.openMenu === `folder:${folder.id}`} onMenu={() => dashboard.toggleMenu(`folder:${folder.id}`)} onRename={(item) => dashboard.showFolderDialog('rename', item)} onDelete={dashboard.deleteFolder} />)}
-        {dashboard.files.map((file) => <FileCard key={file.id} file={file} layout={layout} onDownload={dashboard.downloadFile} menuOpen={dashboard.openMenu === `file:${file.id}`} onMenu={() => dashboard.toggleMenu(`file:${file.id}`)} onShare={dashboard.shareFile} onDelete={dashboard.deleteFile} />)}
+        {dashboard.files.map((file) => <FileCard key={file.id} file={file} layout={layout} onDownload={dashboard.downloadFile} menuOpen={dashboard.openMenu === `file:${file.id}`} onMenu={() => dashboard.toggleMenu(`file:${file.id}`)} onShare={dashboard.shareFile} onRename={(item) => dashboard.showFileDialog('rename-file', item)} onDelete={dashboard.deleteFile} />)}
         {!dashboard.visibleFolders.length && !dashboard.files.length && <div className="empty-state"><span className="empty-state__watermark">{dashboard.search ? 'Sin resultados' : 'La carpeta está vacía'}</span><Icon name="folder" size={44} /><h2>{dashboard.search ? 'No encontramos coincidencias' : 'La carpeta está vacía'}</h2><p>{dashboard.search ? 'Prueba con otro nombre de archivo o carpeta.' : 'Arrastra un archivo aquí o crea una carpeta para comenzar.'}</p>{!dashboard.search && <button className="empty-state__button" type="button" onClick={() => uploadInput.current?.click()}><Icon name="upload" size={17} />Subir archivo</button>}</div>}
       </div>}
     </section>
@@ -120,6 +123,6 @@ export default function DashboardPage() {
     <footer className="dashboard-footer"><span>Kubo · Tu almacenamiento en la nube</span></footer>
 
     {dragging && <div className="drop-overlay" aria-live="polite"><div className="drop-overlay__card"><span className="drop-overlay__icon"><Icon name="upload" size={32} /></span><strong>Suelta el archivo para subirlo</strong><span>PDF, MP3, DOC, DOCX o PNG</span></div></div>}
-    <DashboardModal dialog={dashboard.dialog} name={dashboard.dialogName} setName={dashboard.setDialogName} onClose={dashboard.closeDialog} onSubmit={dashboard.saveFolder} busy={dashboard.dialogBusy} onCopy={dashboard.copyShareLink} copied={dashboard.copied} />
+    <DashboardModal dialog={dashboard.dialog} name={dashboard.dialogName} setName={dashboard.setDialogName} onClose={dashboard.closeDialog} onSubmit={dashboard.dialog?.type === 'rename-file' ? dashboard.saveFile : dashboard.saveFolder} busy={dashboard.dialogBusy} onCopy={dashboard.copyShareLink} copied={dashboard.copied} />
   </main>
 }

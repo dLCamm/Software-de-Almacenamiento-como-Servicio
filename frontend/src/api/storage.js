@@ -10,10 +10,11 @@ function withQuery(path, params) {
   return suffix ? `${path}?${suffix}` : path
 }
 
-export function listFiles({ folderId, query } = {}) {
+export function listFiles({ folderId, query, formato } = {}) {
   return apiRequest(withQuery('/api/storage/files/', {
     carpeta_id: folderId ?? 'root',
     q: query?.trim(),
+    formato: formato?.trim(),
   }), { auth: true })
 }
 
@@ -47,10 +48,12 @@ export function restoreFolder(folderId) {
   })
 }
 
-export function uploadFile(file, folderId = null) {
+export function uploadFile(file, folderId = null, { isTemporary = false, ttlDays = 14 } = {}) {
   const formData = new FormData()
   formData.append('archivo', file)
   if (folderId) formData.append('carpeta_id', folderId)
+  formData.append('es_temporal', String(Boolean(isTemporary)))
+  formData.append('tiempo_vida_dias', String(Math.min(365, Math.max(1, Number(ttlDays) || 14))))
   return apiRequest('/api/storage/files/upload/', {
     method: 'POST',
     body: formData,
@@ -68,6 +71,14 @@ export function createFolder(name, parentId = null) {
 
 export function renameFolder(folderId, name) {
   return apiRequest(`/api/storage/folders/${folderId}/`, {
+    method: 'PATCH',
+    body: { nuevo_nombre: name },
+    auth: true,
+  })
+}
+
+export function renameFile(fileId, name) {
+  return apiRequest(`/api/storage/files/${fileId}/`, {
     method: 'PATCH',
     body: { nuevo_nombre: name },
     auth: true,

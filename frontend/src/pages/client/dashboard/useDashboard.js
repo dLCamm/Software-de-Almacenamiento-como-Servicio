@@ -1,5 +1,9 @@
 import { useEffect, useState } from 'react'
-import { ACCEPTED_FILE_TYPES, getFileExtension, SUPPORTED_EXTENSIONS } from './fileTypes'
+import {
+  ACCEPTED_FILE_TYPES,
+  getFileExtension,
+  SUPPORTED_EXTENSIONS,
+} from './fileTypes'
 
 function getErrorMessage(error) {
   return error?.message || 'Ocurrió un error al comunicarse con el servidor.'
@@ -18,8 +22,12 @@ export default function useDashboard(storageApi) {
   const [showTrash, setShowTrash] = useState(false)
   const [usage, setUsage] = useState(null)
   const [search, setSearch] = useState('')
+  const [extensionFilter, setExtensionFilter] = useState('')
+  const [uploadTemporary, setUploadTemporary] = useState(false)
+  const [uploadTtlDays, setUploadTtlDays] = useState(14)
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
+  const [uploadErrors, setUploadErrors] = useState([])
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [refreshKey, setRefreshKey] = useState(0)
@@ -50,7 +58,7 @@ export default function useDashboard(storageApi) {
           }
         } else {
           const [nextFiles, nextFolders, nextUsage] = await Promise.all([
-            storageApi.listFiles({ folderId: currentFolderId ?? 'root', query: search }),
+            storageApi.listFiles({ folderId: currentFolderId ?? 'root', query: search, formato: extensionFilter }),
             storageApi.listFolders(currentFolderId),
             storageApi.getStorageUsage(),
           ])
@@ -67,7 +75,7 @@ export default function useDashboard(storageApi) {
       }
     }, search ? 220 : 0)
     return () => { ignored = true; window.clearTimeout(timer) }
-  }, [currentFolderId, refreshKey, search, showTrash, storageApi])
+  }, [currentFolderId, extensionFilter, refreshKey, search, showTrash, storageApi])
 
   function refresh() {
     setRefreshKey((key) => key + 1)
@@ -75,6 +83,10 @@ export default function useDashboard(storageApi) {
 
   function clearError() {
     setError('')
+  }
+
+  function clearUploadErrors() {
+    setUploadErrors([])
   }
 
   function clearNotice() {
@@ -92,6 +104,12 @@ export default function useDashboard(storageApi) {
   function showFolderDialog(type, folder = null) {
     setDialogName(folder?.nombre ?? '')
     setDialog({ type, folder })
+    setOpenMenu('')
+  }
+
+  function showFileDialog(type, file = null) {
+    setDialogName(file?.nombre_original ?? '')
+    setDialog({ type, item: file })
     setOpenMenu('')
   }
 
@@ -121,27 +139,43 @@ export default function useDashboard(storageApi) {
   }
 
   async function acceptFiles(fileList) {
+    if (uploading) return
     const selected = Array.from(fileList ?? [])
     if (!selected.length) return
-    if (selected.length > 1) {
-      setError('Sube un archivo a la vez para comprobar su formato y disponibilidad.')
-      return
+
+    const validFiles = []
+    const failures = []
+    for (const file of selected) {
+      const extension = getFileExtension(file.name)
+      if (!SUPPORTED_EXTENSIONS.has(extension)) {
+        failures.push(`${file.name}: formato no compatible.`)
+      } else {
+        validFiles.push(file)
+      }
     }
-    const file = selected[0]
-    const extension = getFileExtension(file.name)
-    if (!SUPPORTED_EXTENSIONS.has(extension)) {
-      setDialog({ type: 'rejected', fileName: file.name })
-      return
-    }
+
     setUploading(true)
+    setUploadErrors([])
     setError('')
     setNotice('')
+
+    const successes = []
     try {
-      await storageApi.uploadFile(file, currentFolderId)
-      setNotice(`${file.name} se subió correctamente.`)
-      refresh()
-    } catch (uploadError) {
-      setError(getErrorMessage(uploadError))
+      for (const file of validFiles) {
+        try {
+          await storageApi.uploadFile(file, currentFolderId, { isTemporary: uploadTemporary, ttlDays: uploadTtlDays })
+          successes.push(file.name)
+        } catch (uploadError) {
+          failures.push(`${file.name}: ${getErrorMessage(uploadError)}`)
+        }
+      }
+
+      if (successes.length) {
+        setNotice(`Se subieron ${successes.length} archivo${successes.length === 1 ? '' : 's'} correctamente.`)
+      }
+      if (failures.length) setUploadErrors(failures)
+
+      if (successes.length) refresh()
     } finally {
       setUploading(false)
     }
@@ -159,6 +193,24 @@ export default function useDashboard(storageApi) {
       setDialog(null)
       setDialogName('')
       setNotice(isRename ? 'La carpeta se renombró correctamente.' : 'La carpeta se creó correctamente.')
+      refresh()
+    } catch (requestError) {
+      setError(getErrorMessage(requestError))
+    } finally {
+      setDialogBusy(false)
+    }
+  }
+
+  async function saveFile(event) {
+    event.preventDefault()
+    if (!dialogName.trim() || !dialog?.item) return
+    setDialogBusy(true)
+    setError('')
+    try {
+      await storageApi.renameFile(dialog.item.id, dialogName.trim())
+      setDialog(null)
+      setDialogName('')
+      setNotice('El archivo se renombró correctamente.')
       refresh()
     } catch (requestError) {
       setError(getErrorMessage(requestError))
@@ -267,10 +319,18 @@ export default function useDashboard(storageApi) {
     usage,
     search,
     setSearch,
+    extensionFilter,
+    setExtensionFilter,
+    uploadTemporary,
+    setUploadTemporary,
+    uploadTtlDays,
+    setUploadTtlDays,
     loading,
     uploading,
+    uploadErrors,
     error,
     clearError,
+    clearUploadErrors,
     notice,
     clearNotice,
     openMenu,
@@ -283,6 +343,7 @@ export default function useDashboard(storageApi) {
     copied,
     acceptFiles,
     saveFolder,
+    saveFile,
     deleteFile,
     deleteFolder,
     downloadFile,
@@ -293,6 +354,7 @@ export default function useDashboard(storageApi) {
     openTrash,
     closeTrash,
     showFolderDialog,
+    showFileDialog,
     restoreTrashItem,
     deleteTrashItem,
     closeDialog,
