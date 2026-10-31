@@ -183,6 +183,34 @@ class StorageApiTestCase(TestCase):
         self.assertEqual(response.status_code, 413)
         self.storage_backend.upload_object.assert_not_called()
 
+    def test_upload_accepts_temporary_file_and_custom_expiration(self):
+        self.authenticate()
+        uploaded = SimpleUploadedFile(
+            "temporary.pdf",
+            PDF_CONTENT,
+            content_type="application/pdf",
+        )
+
+        response = self.client.post(
+            "/api/storage/files/upload/",
+            {
+                "archivo": uploaded,
+                "es_temporal": "true",
+                "tiempo_vida_dias": "30",
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        archivo = Archivo.objects.get(id=response.data["archivo"]["id"])
+        self.assertTrue(archivo.es_temporal)
+        self.assertIsNotNone(archivo.fecha_expiracion)
+        self.assertAlmostEqual(
+            (archivo.fecha_expiracion - timezone.now()).total_seconds(),
+            30 * 24 * 60 * 60,
+            delta=2,
+        )
+
     def test_download_requires_authentication(self):
         archivo = self.create_file()
 
@@ -243,6 +271,65 @@ class StorageApiTestCase(TestCase):
                 resource_id=str(archivo.id),
             ).exists()
         )
+
+    def test_file_rename_updates_name_and_creates_audit_event(self):
+        archivo = self.create_file(name="draft.pdf")
+        self.authenticate()
+
+        response = self.client.patch(
+            f"/api/storage/files/{archivo.id}/",
+            {"nuevo_nombre": "final.pdf"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["nombre_original"], "final.pdf")
+        archivo.refresh_from_db()
+        self.assertEqual(archivo.nombre_original, "final.pdf")
+        self.assertEqual(archivo.extension, "pdf")
+        self.assertTrue(
+            AuditLog.objects.filter(
+                actor=self.user,
+                action="file.rename",
+                resource_id=str(archivo.id),
+                details={"nuevo_nombre": "final.pdf"},
+            ).exists()
+        )
+
+    def test_file_rename_rejects_duplicate_name_and_extension_change(self):
+        target = self.create_file(name="draft.pdf")
+        self.create_file(name="final.pdf")
+        self.authenticate()
+
+        duplicate_response = self.client.patch(
+            f"/api/storage/files/{target.id}/",
+            {"nuevo_nombre": "final.pdf"},
+            format="json",
+        )
+        extension_response = self.client.patch(
+            f"/api/storage/files/{target.id}/",
+            {"nuevo_nombre": "draft.png"},
+            format="json",
+        )
+
+        self.assertEqual(duplicate_response.status_code, 409)
+        self.assertEqual(extension_response.status_code, 400)
+        target.refresh_from_db()
+        self.assertEqual(target.nombre_original, "draft.pdf")
+
+    def test_file_rename_enforces_ownership(self):
+        archivo = self.create_file(user=self.other_user, name="private.pdf")
+        self.authenticate()
+
+        response = self.client.patch(
+            f"/api/storage/files/{archivo.id}/",
+            {"nuevo_nombre": "changed.pdf"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 404)
+        archivo.refresh_from_db()
+        self.assertEqual(archivo.nombre_original, "private.pdf")
 
     def test_delete_cannot_move_another_users_file_to_trash(self):
         archivo = self.create_file(user=self.other_user)
