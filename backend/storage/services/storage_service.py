@@ -6,10 +6,6 @@ _storage_instance: IStorageBackend | None = None
 
 
 def get_storage_backend() -> IStorageBackend:
-    """
-    Factory / Provider para obtener la instancia del backend de almacenamiento configurado.
-    Permite aplicar Dependency Inversion (DIP) y facilita el reemplazo por mocks en tests.
-    """
     global _storage_instance
     if _storage_instance is None:
         _storage_instance = MinioStorageBackend(
@@ -23,6 +19,5 @@ def get_storage_backend() -> IStorageBackend:
 
 
 def set_storage_backend(backend: IStorageBackend | None) -> None:
-    """Permite inyectar un backend alternativo o mock durante pruebas unitarias."""
     global _storage_instance
     _storage_instance = backend

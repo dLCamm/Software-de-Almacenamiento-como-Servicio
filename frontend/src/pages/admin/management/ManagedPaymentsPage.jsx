@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { listManagedPayments } from '../../../api/management'
 import { AdminIcon } from '../plans/AdminIcon'
 import ManagementPaymentsTable from './ManagementPaymentsTable'
+import TablePagination from '../shared/TablePagination'
+import usePagedList from '../shared/usePagedList'
 import '../plans/AdminPlansPage.css'
 import './ManagementPage.css'
 
@@ -13,6 +15,7 @@ export default function ManagedPaymentsPage() {
   const [payments, setPayments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const paged = usePagedList(payments, 10)
 
   useEffect(() => {
     let active = true
@@ -31,11 +34,13 @@ export default function ManagedPaymentsPage() {
 
   function applyFilters(event) {
     event.preventDefault()
+    paged.resetPage()
     setFilters(Object.fromEntries(Object.entries(form).filter(([, value]) => value !== '')))
   }
 
   function clearFilters() {
     setForm(initialFilters)
+    paged.resetPage()
     setFilters({})
   }
 
@@ -57,7 +62,7 @@ export default function ManagedPaymentsPage() {
         ? <div className="admin-empty"><span className="admin-spinner" />Cargando pagos…</div>
         : !payments.length
           ? <div className="admin-empty"><AdminIcon name="layers" size={34} /><h2>No hay pagos para mostrar</h2><p>Ajusta los filtros para buscar otras transacciones.</p></div>
-          : <ManagementPaymentsTable payments={payments} />}
+          : <><ManagementPaymentsTable payments={paged.pageItems} /><TablePagination page={paged.page} pageSize={paged.pageSize} total={paged.total} onPageChange={paged.setPage} onPageSizeChange={paged.setPageSize} label="Paginación de pagos" /></>}
     </div>
   </main>
 }

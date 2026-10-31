@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { getProfile } from '../../../api/auth'
 import { listManagedUsers } from '../../../api/management'
 import { AdminIcon } from '../plans/AdminIcon'
+import TablePagination from '../shared/TablePagination'
+import usePagedList from '../shared/usePagedList'
 import '../plans/AdminPlansPage.css'
 import './ManagementPage.css'
 
@@ -27,6 +29,7 @@ export default function ManagedUsersPage() {
   const [filters, setFilters] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const paged = usePagedList(users, 10)
 
   useEffect(() => {
     let active = true
@@ -51,11 +54,13 @@ export default function ManagedUsersPage() {
 
   function applyFilters(event) {
     event.preventDefault()
+    paged.resetPage()
     setFilters(Object.fromEntries(Object.entries(form).filter(([, value]) => value !== '')))
   }
 
   function clearFilters() {
     setForm({ search: '', plan: '', is_active: '', role: '' })
+    paged.resetPage()
     setFilters({})
   }
 
@@ -78,10 +83,10 @@ export default function ManagedUsersPage() {
         ? <div className="admin-empty"><span className="admin-spinner" />Cargando usuarios…</div>
         : !users.length
           ? <div className="admin-empty"><AdminIcon name="layers" size={34} /><h2>No hay usuarios para mostrar</h2><p>Prueba con otros filtros o una búsqueda diferente.</p></div>
-          : <div className="admin-table-wrap">
+          : <><div className="admin-table-wrap">
             <table className="admin-table management-users-table">
               <thead><tr><th>Usuario</th><th>Rol</th><th>Plan</th><th>Estado</th><th>Registro</th><th><span className="visually-hidden">Detalle</span></th></tr></thead>
-              <tbody>{users.map((user) => <tr key={user.id}>
+              <tbody>{paged.pageItems.map((user) => <tr key={user.id}>
                 <td data-label="Usuario"><span className="management-user-name">{userName(user)}</span><small className="management-user-email">{user.email}</small></td>
                 <td data-label="Rol">{user.role}</td>
                 <td data-label="Plan">{planName(user.plan)}</td>
@@ -90,7 +95,8 @@ export default function ManagedUsersPage() {
                 <td className="admin-actions"><Link className="admin-button admin-button--secondary management-detail-button" to={`/app/admin/usuarios/${user.id}`}>Ver detalle</Link></td>
               </tr>)}</tbody>
             </table>
-          </div>}
+          </div>
+          <TablePagination page={paged.page} pageSize={paged.pageSize} total={paged.total} onPageChange={paged.setPage} onPageSizeChange={paged.setPageSize} label="Paginación de usuarios" /></>}
     </div>
   </main>
 }

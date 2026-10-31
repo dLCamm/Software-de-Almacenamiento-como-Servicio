@@ -6,6 +6,7 @@ import { CubeLogoIcon } from '../components/icons'
 import ThemeToggle from '../components/ThemeToggle'
 import { formatBytes } from '../pages/client/dashboard/formatters'
 import { getUsagePercent, subscribeStorageUsage } from '../utils/storageUsage'
+import useSystemStorage from '../utils/systemStorage'
 import './ClientLayout.css'
 
 const paths = {
@@ -44,6 +45,8 @@ const NAV_ITEMS = [
       { to: '/app/admin/usuarios', label: 'Usuarios' },
       { to: '/app/admin/pagos', label: 'Pagos' },
       { to: '/app/admin/planes', label: 'Planes', roles: ['ADMIN'] },
+      { to: '/app/admin/estadisticas', label: 'Estadísticas', roles: ['ADMIN'] },
+      { to: '/app/admin/auditoria', label: 'Auditoría', roles: ['ADMIN'] },
     ],
   },
 ]
@@ -68,6 +71,11 @@ export default function ClientLayout() {
   useEffect(() => {
     getStorageUsage().catch(() => {})
   }, [pathname])
+
+  // El administrador no tiene un plan propio: su recuadro muestra el almacenamiento de todo el sistema.
+  // Se recalcula al cambiar de página y cada vez que cambia el uso (subir, borrar, restaurar…).
+  const isAdmin = profile?.role === 'ADMIN'
+  const systemStorage = useSystemStorage(isAdmin, `${pathname}|${usage?.usado_bytes}`)
 
   function handleLogout() {
     logout()
@@ -105,11 +113,16 @@ export default function ClientLayout() {
             </div>)}
       </nav>
 
-      <div className="client-nav__storage">
+      {isAdmin
+        ? <NavLink to="/app/admin/estadisticas" onClick={() => setOpen(false)} className="client-nav__storage client-nav__storage--system" title="Ver estadísticas del sistema">
+            <div className="client-nav__storage-head"><span>Uso del sistema</span><strong>{systemStorage ? formatBytes(systemStorage.usedBytes) : '—'}</strong></div>
+            <small>{systemStorage ? `${systemStorage.files.toLocaleString('es-GT')} archivos · ${systemStorage.users.toLocaleString('es-GT')} usuarios` : 'Cargando…'}</small>
+          </NavLink>
+        : <div className="client-nav__storage">
         <div className="client-nav__storage-head"><span>Almacenamiento</span><strong>{formatBytes(usage?.usado_bytes)} / {formatBytes(usage?.maximo_bytes)}</strong></div>
         <div className="client-nav__storage-track" role="img" aria-label={`${percent.toFixed(2)} por ciento utilizado`}><span style={{ width: `${percent}%` }} /></div>
         <small>{formatBytes(usage?.disponible_bytes)} disponibles</small>
-      </div>
+      </div>}
 
       <div className="client-nav__footer">
         <ThemeToggle variant="row" className="client-nav__link" />

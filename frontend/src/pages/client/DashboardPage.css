@@ -81,6 +81,10 @@
 .storage-overview { min-height: 104px; padding: 15px 2.2%; display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: auto auto; align-items: center; column-gap: 24px; row-gap: 8px; border-bottom: 1px solid var(--gray-12); }
 .storage-track { height: 14px; grid-column: 1; grid-row: 1; overflow: hidden; border-radius: 999px; background: var(--gray-19); }
 .storage-track span { height: 100%; min-width: 0; display: block; border-radius: inherit; background: linear-gradient(90deg, var(--purple-64), var(--purple-71)); transition: width .35s; }
+/* Administrador: uso de todo el sistema en lugar de la barra del plan */
+.system-usage { min-width: 0; grid-column: 1; grid-row: 1; display: flex; align-items: baseline; gap: 12px; }
+.system-usage span { color: var(--gray-67); font-size: 14px; font-weight: 600; }
+.system-usage strong { color: var(--gray-100); font-size: 26px; font-weight: 650; letter-spacing: -.02em; }
 .storage-meta { min-width: 0; grid-column: 1; grid-row: 2; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .storage-caption { min-width: 0; color: var(--gray-47); font-size: 12px; white-space: nowrap; }
 .plan-summary { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 4px 9px; color: var(--gray-85); font-size: 11px; }
