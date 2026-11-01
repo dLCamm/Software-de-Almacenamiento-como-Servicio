@@ -123,6 +123,6 @@ export default function DashboardPage() {
     <footer className="dashboard-footer"><span>Kubo · Tu almacenamiento en la nube</span></footer>
 
     {dragging && <div className="drop-overlay" aria-live="polite"><div className="drop-overlay__card"><span className="drop-overlay__icon"><Icon name="upload" size={32} /></span><strong>Suelta el archivo para subirlo</strong><span>PDF, MP3, DOC, DOCX o PNG</span></div></div>}
-    <DashboardModal dialog={dashboard.dialog} name={dashboard.dialogName} setName={dashboard.setDialogName} onClose={dashboard.closeDialog} onSubmit={dashboard.dialog?.type === 'rename-file' ? dashboard.saveFile : dashboard.saveFolder} busy={dashboard.dialogBusy} onCopy={dashboard.copyShareLink} copied={dashboard.copied} />
+    <DashboardModal dialog={dashboard.dialog} name={dashboard.dialogName} setName={dashboard.setDialogName} onClose={dashboard.closeDialog} onSubmit={dashboard.dialog?.type === 'rename-file' ? dashboard.saveFile : dashboard.saveFolder} onConfirm={dashboard.confirmDialog} busy={dashboard.dialogBusy} onCopy={dashboard.copyShareLink} copied={dashboard.copied} />
   </main>
 }

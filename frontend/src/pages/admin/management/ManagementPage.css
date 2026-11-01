@@ -53,6 +53,7 @@
 .management-table-link small { display: block; margin-top: 4px; color: var(--admin-muted); font-size: 12px; font-weight: 400; }
 .management-payment-amount { color: var(--admin-strong); white-space: nowrap; }
 .management-badge.is-danger { color: var(--red-85); background: var(--red-33-a18); }
+.management-status-confirm-icon--activating { color: var(--green-78); background: var(--green-32-a13); }
 .management-payment-filters { grid-template-columns: minmax(190px, 2fr) repeat(3, minmax(115px, 1fr)); }
 .management-payment-filters .management-search { grid-column: 1 / -1; }
 .management-payment-filters .management-filter-actions { grid-column: 1 / -1; }

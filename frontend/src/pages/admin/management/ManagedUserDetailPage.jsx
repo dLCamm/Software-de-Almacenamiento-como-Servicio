@@ -32,6 +32,7 @@ export default function ManagedUserDetailPage() {
   const [notice, setNotice] = useState('')
   const [editing, setEditing] = useState(false)
   const [changingStatus, setChangingStatus] = useState(false)
+  const [confirmingStatus, setConfirmingStatus] = useState(false)
 
   const load = useCallback(async () => {
     setError('')
@@ -65,10 +66,13 @@ export default function ManagedUserDetailPage() {
     profile.role === 'ADMIN' || (profile.role === 'SUPPORT' && user.role === 'CLIENT')
   )
 
-  async function toggleStatus() {
+  function toggleStatus() {
+    setConfirmingStatus(true)
+  }
+
+  async function confirmStatusChange() {
+    if (!user || changingStatus) return
     const nextStatus = !user.is_active
-    const action = nextStatus ? 'activar' : 'desactivar'
-    if (!window.confirm(`¿Quieres ${action} la cuenta de ${displayName(user)}?`)) return
     setChangingStatus(true)
     setError('')
     setNotice('')
@@ -76,8 +80,10 @@ export default function ManagedUserDetailPage() {
       const result = await updateManagedUserStatus(user.id, nextStatus)
       setUser((current) => ({ ...current, is_active: result?.user?.is_active ?? nextStatus }))
       setNotice(result?.detail || `Usuario ${nextStatus ? 'activado' : 'desactivado'} correctamente.`)
+      setConfirmingStatus(false)
     } catch (statusError) {
       setError(statusError.message || 'No se pudo cambiar el estado de la cuenta.')
+      setConfirmingStatus(false)
     } finally {
       setChangingStatus(false)
     }
@@ -128,5 +134,19 @@ export default function ManagedUserDetailPage() {
     </div>
 
     {editing && user && <UserEditDialog user={user} onClose={() => setEditing(false)} onSaved={load} />}
+
+    {confirmingStatus && user && <div className="admin-dialog-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget && !changingStatus) setConfirmingStatus(false) }}>
+      <div className="admin-dialog admin-dialog--confirm" role="alertdialog" aria-labelledby="status-confirm-title" aria-describedby="status-confirm-text">
+        <div className="admin-dialog__body">
+          <span className={`admin-confirm-icon${user.is_active ? '' : ' management-status-confirm-icon--activating'}`}><AdminIcon name={user.is_active ? 'x' : 'check'} size={26} /></span>
+          <h2 id="status-confirm-title">¿{user.is_active ? 'Desactivar' : 'Activar'} la cuenta de {displayName(user)}?</h2>
+          <p id="status-confirm-text">{user.is_active ? 'La persona no podrá iniciar sesión mientras su cuenta esté desactivada. Puedes volver a activarla después.' : 'La persona podrá volver a iniciar sesión con su cuenta.'}</p>
+        </div>
+        <footer className="admin-dialog__footer">
+          <button type="button" className="admin-button admin-button--secondary" onClick={() => setConfirmingStatus(false)} disabled={changingStatus}>Cancelar</button>
+          <button type="button" className={`admin-button ${user.is_active ? 'admin-button--danger' : 'admin-button--primary'}`} onClick={confirmStatusChange} disabled={changingStatus}>{changingStatus ? 'Actualizando…' : user.is_active ? 'Desactivar cuenta' : 'Activar cuenta'}</button>
+        </footer>
+      </div>
+    </div>}
   </main>
 }

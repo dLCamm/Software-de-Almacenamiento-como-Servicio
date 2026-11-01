@@ -98,6 +98,7 @@ export default function useDashboard(storageApi) {
   }
 
   function closeDialog() {
+    if (dialogBusy) return
     setDialog(null)
   }
 
@@ -219,27 +220,59 @@ export default function useDashboard(storageApi) {
     }
   }
 
-  async function deleteFile(file) {
+  function deleteFile(file) {
     setOpenMenu('')
-    if (!window.confirm(`¿Mover “${file.nombre_original}” a la papelera?`)) return
-    try {
-      await storageApi.deleteFile(file.id)
-      setNotice('El archivo se movió a la papelera por 30 días.')
-      refresh()
-    } catch (requestError) {
-      setError(getErrorMessage(requestError))
-    }
+    setNotice('')
+    setDialog({
+      type: 'confirm',
+      action: 'delete-file',
+      item: file,
+      title: 'Mover archivo a la papelera',
+      message: `¿Quieres mover “${file.nombre_original}” a la papelera? Podrás restaurarlo durante 30 días.`,
+      confirmLabel: 'Mover a la papelera',
+    })
   }
 
-  async function deleteFolder(folder) {
+  function deleteFolder(folder) {
     setOpenMenu('')
-    if (!window.confirm(`¿Mover la carpeta “${folder.nombre}” a la papelera?`)) return
+    setNotice('')
+    setDialog({
+      type: 'confirm',
+      action: 'delete-folder',
+      item: folder,
+      title: 'Mover carpeta a la papelera',
+      message: `¿Quieres mover “${folder.nombre}” y su contenido a la papelera? Podrás restaurarlos durante 30 días.`,
+      confirmLabel: 'Mover a la papelera',
+    })
+  }
+
+  async function confirmDialog() {
+    if (dialog?.type !== 'confirm' || dialogBusy) return
+
+    setDialogBusy(true)
+    setError('')
     try {
-      await storageApi.deleteFolder(folder.id)
-      setNotice('La carpeta y su contenido se movieron a la papelera por 30 días.')
+      if (dialog.action === 'delete-file') {
+        await storageApi.deleteFile(dialog.item.id)
+        setNotice('El archivo se movió a la papelera por 30 días.')
+      } else if (dialog.action === 'delete-folder') {
+        await storageApi.deleteFolder(dialog.item.id)
+        setNotice('La carpeta y su contenido se movieron a la papelera por 30 días.')
+      } else if (dialog.action === 'delete-trash-item') {
+        if (dialog.item.tipo === 'archivo') await storageApi.deleteFile(dialog.item.id, true)
+        else await storageApi.deleteFolder(dialog.item.id, true)
+        setNotice(`${dialog.item.nombre} se eliminó definitivamente.`)
+      } else {
+        throw new Error('La acción de confirmación no es válida.')
+      }
+
+      setDialog(null)
       refresh()
     } catch (requestError) {
+      setDialog(null)
       setError(getErrorMessage(requestError))
+    } finally {
+      setDialogBusy(false)
     }
   }
 
@@ -257,15 +290,15 @@ export default function useDashboard(storageApi) {
   async function deleteTrashItem(item) {
     const expiration = Date.parse(item.fecha_eliminacion)
     if (!Number.isFinite(expiration) || expiration > Date.now()) return
-    if (!window.confirm(`¿Eliminar definitivamente “${item.nombre}”? Esta acción no se puede deshacer.`)) return
-    try {
-      if (item.tipo === 'archivo') await storageApi.deleteFile(item.id, true)
-      else await storageApi.deleteFolder(item.id, true)
-      setNotice(`${item.nombre} se eliminó definitivamente.`)
-      refresh()
-    } catch (requestError) {
-      setError(getErrorMessage(requestError))
-    }
+    setNotice('')
+    setDialog({
+      type: 'confirm',
+      action: 'delete-trash-item',
+      item,
+      title: 'Eliminar definitivamente',
+      message: `¿Eliminar “${item.nombre}” definitivamente? Esta acción no se puede deshacer.`,
+      confirmLabel: 'Eliminar definitivamente',
+    })
   }
 
   async function downloadFile(file) {
@@ -346,6 +379,7 @@ export default function useDashboard(storageApi) {
     saveFile,
     deleteFile,
     deleteFolder,
+    confirmDialog,
     downloadFile,
     shareFile,
     copyShareLink,
