@@ -12,9 +12,12 @@ import ManagedUserDetailPage from './pages/admin/management/ManagedUserDetailPag
 import ManagedUsersPage from './pages/admin/management/ManagedUsersPage'
 import ManagedPaymentsPage from './pages/admin/management/ManagedPaymentsPage'
 import StaffRoute from './routes/StaffRoute'
+import UserFilesRoute from './routes/UserFilesRoute'
+import AdminIndexRoute from './routes/AdminIndexRoute'
 import ClientLayout from './layouts/ClientLayout'
 import AuditLogPage from './pages/admin/reports/AuditLogPage'
 import StatisticsPage from './pages/admin/reports/StatisticsPage'
+import AdminHomePage from './pages/admin/home/AdminHomePage'
 
 
 export default function App() {
@@ -25,11 +28,15 @@ export default function App() {
       <Route path="/login" element={<AuthPage />}/>
       <Route path="/register" element={<AuthPage />}/>
       <Route path="/recover-password" element={<AuthPage />}/>
+      <Route path="/reset-password" element={<AuthPage />}/>
+      <Route path="/verify-email" element={<AuthPage />}/>
+      <Route path="/resend-verification" element={<AuthPage />}/>
       {/* Todas las páginas dentro de ClientLayout comparten la barra lateral */}
       <Route element={<ProtectedRoute><ClientLayout /></ProtectedRoute>}>
-        <Route path="/app/client" element={<DashboardPageClient />}/>
+        <Route path="/app/client" element={<UserFilesRoute><DashboardPageClient /></UserFilesRoute>}/>
         <Route path="/app/client/billing/:section?" element={<BillingPage />}/>
-        <Route path="/app/admin" element={<Navigate to="/app/admin/usuarios" replace />}/>
+        <Route path="/app/admin" element={<AdminIndexRoute />}/>
+        <Route path="/app/admin/inicio" element={<AdminRoute><AdminHomePage /></AdminRoute>}/>
         <Route path="/app/admin/planes" element={<AdminRoute><AdminPlansPage /></AdminRoute>}/>
         <Route path="/app/admin/estadisticas" element={<AdminRoute><StatisticsPage /></AdminRoute>}/>
         <Route path="/app/admin/auditoria" element={<AdminRoute><AuditLogPage /></AdminRoute>}/>

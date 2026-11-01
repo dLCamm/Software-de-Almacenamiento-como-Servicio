@@ -1,4 +1,5 @@
 from django.test import TestCase
+from django.core.cache import cache
 from rest_framework.test import APIClient
 from core.models import AuditLog
 from users.models import User
@@ -6,6 +7,7 @@ from users.models import User
 
 class UserPlanRegistrationTests(TestCase):
     def setUp(self):
+        cache.clear()
         self.client = APIClient()
 
     def register(self, email, plan_code=None):
@@ -36,6 +38,7 @@ class UserPlanRegistrationTests(TestCase):
 
     def test_successful_login_is_audited(self):
         self.register("login-audit@example.com")
+        User.objects.filter(email="login-audit@example.com").update(is_email_verified=True)
 
         response = self.client.post(
             "/api/auth/login/",

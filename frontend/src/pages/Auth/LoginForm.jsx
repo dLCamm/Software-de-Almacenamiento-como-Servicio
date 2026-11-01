@@ -9,6 +9,8 @@ export default function LoginForm({
   onForgotPassword,
   onGoToRegister,
   onAuthenticated,
+  onResendVerification,
+  notice,
 }) {
   const [form, setForm] = useState({
     email: '',
@@ -19,6 +21,7 @@ export default function LoginForm({
   const [errors, setErrors] = useState({})
   const [formError, setFormError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [needsVerification, setNeedsVerification] = useState(false)
 
 
   function updateField(field, value) {
@@ -55,6 +58,7 @@ export default function LoginForm({
     e.preventDefault()
 
     setFormError('')
+    setNeedsVerification(false)
 
     if (!validate()) return
 
@@ -71,6 +75,7 @@ export default function LoginForm({
       onAuthenticated?.(data)
 
     } catch (err) {
+      setNeedsVerification(err.data?.code === 'email_not_verified')
       setFormError(
         err.message || 'No fue posible iniciar sesión.'
       )
@@ -88,6 +93,7 @@ export default function LoginForm({
       <p className="auth-panel__subtitle">
         Ingresa tus credenciales para acceder
       </p>
+      {notice && <p className="auth-form__success" role="status">{notice}</p>}
 
 
       <form
@@ -98,6 +104,8 @@ export default function LoginForm({
 
         <FormField
           icon={MailIcon}
+          type="email"
+          aria-label="Correo electrónico"
           placeholder="correo@ejemplo.com"
           autoComplete="email"
           value={form.email}
@@ -151,9 +159,14 @@ export default function LoginForm({
 
 
         {formError && (
-          <p className="auth-form__error">
+          <p className="auth-form__error" role="alert">
             {formError}
           </p>
+        )}
+        {needsVerification && (
+          <button type="button" className="link-button" onClick={() => onResendVerification(form.email.trim())}>
+            Enviar enlace de verificación
+          </button>
         )}
 
 

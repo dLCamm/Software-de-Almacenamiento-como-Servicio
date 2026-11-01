@@ -56,7 +56,7 @@ export default function UserEditDialog({ user, onClose, onSaved }) {
           <div className="admin-form-grid">
             <label className="admin-field"><span>Nombre</span><input name="first_name" value={form.first_name} onChange={changeField} autoComplete="given-name" /></label>
             <label className="admin-field"><span>Apellido</span><input name="last_name" value={form.last_name} onChange={changeField} autoComplete="family-name" /></label>
-            <label className="admin-field"><span>Correo electrónico</span><input name="email" type="email" value={form.email} onChange={changeField} autoComplete="email" /></label>
+            <label className="admin-field"><span>Correo electrónico</span><input name="email" type="email" value={form.email} onChange={changeField} autoComplete="email" /><small>Si cambias el correo, el usuario deberá verificar la nueva dirección antes de volver a entrar.</small></label>
             <label className="admin-field"><span>Rol</span><select name="role" value={form.role} onChange={changeField}><option value="CLIENT">Cliente</option><option value="SUPPORT">Soporte</option><option value="ADMIN">Administrador</option></select></label>
           </div>
           {error && <div className="admin-alert admin-alert--error" role="alert">{error}</div>}

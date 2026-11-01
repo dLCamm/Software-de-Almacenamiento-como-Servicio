@@ -6,9 +6,7 @@
 // - POST /api/auth/token/refresh/ → { refresh } → { access }
 // - GET  /api/auth/me/        → requiere header Authorization: Bearer <access>
 //
-// Nota: el backend todavía NO tiene endpoint de recuperación de contraseña
-// (no existe /api/auth/password-reset/ en users/urls.py). La función
-// requestPasswordReset() queda lista para conectarse en cuanto se agregue.
+// Los flujos de verificación y recuperación son públicos y no envían JWT.
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '')
 
@@ -63,6 +61,7 @@ export async function apiRequest(path, options = {}) {
       ? Object.entries(data).find(([key]) => !['detail', 'error', 'detalle'].includes(key))
       : null
     const message =
+      (res.status === 429 ? 'Has realizado demasiados intentos. Espera un momento antes de volver a intentarlo.' : null) ||
       data?.detail ||
       (data?.error && data?.detalle ? `${data.error}: ${data.detalle}` : null) ||
       data?.detalle || data?.error ||
@@ -118,9 +117,29 @@ export function getProfile() {
   return apiRequest('/api/auth/me/', { method: 'GET', auth: true })
 }
 
-// Aún no implementado en el backend — ver nota arriba.
 export function requestPasswordReset({ email }) {
   return apiRequest('/api/auth/password-reset/', {
+    method: 'POST',
+    body: { email },
+  })
+}
+
+export function confirmPasswordReset({ uid, token, password, confirmPassword }) {
+  return apiRequest('/api/auth/password-reset/confirm/', {
+    method: 'POST',
+    body: { uid, token, password, password_confirm: confirmPassword },
+  })
+}
+
+export function verifyEmail({ uid, token }) {
+  return apiRequest('/api/auth/verify-email/', {
+    method: 'POST',
+    body: { uid, token },
+  })
+}
+
+export function resendVerification({ email }) {
+  return apiRequest('/api/auth/resend-verification/', {
     method: 'POST',
     body: { email },
   })

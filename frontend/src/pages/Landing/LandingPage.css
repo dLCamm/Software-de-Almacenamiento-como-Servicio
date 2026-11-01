@@ -18,7 +18,13 @@
     'Segoe UI',
     Roboto,
     sans-serif;
-  overflow-x: hidden;
+  /* clip (y no hidden) para no romper la barra fija: hidden convierte a .landing en contenedor de scroll y el sticky deja de funcionar. */
+  overflow-x: clip;
+}
+
+/* Al saltar a una sección desde el menú, que no quede tapada por la barra fija. */
+.landing section[id] {
+  scroll-margin-top: 88px;
 }
 
 .landing a {
