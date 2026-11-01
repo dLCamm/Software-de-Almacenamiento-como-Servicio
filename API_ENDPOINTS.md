@@ -58,6 +58,25 @@ Para consultar validaciones o lógica interna en el repositorio:
 
 ## 3. Endpoints de Autenticación (`/api/auth/`)
 
+### Verificación de correo y recuperación
+
+El registro envía un correo y requiere verificación antes de iniciar sesión.
+Su respuesta incluye `detail` y `verification_email_sent`. Si falla el envío, la cuenta
+se conserva y se puede solicitar un reenvío. El login de una cuenta sin verificar,
+con contraseña correcta, devuelve `403` con `code: "email_not_verified"`.
+
+| Ruta pública (POST) | JSON requerido |
+| --- | --- |
+| `/api/auth/resend-verification/` | `email` |
+| `/api/auth/verify-email/` | `uid`, `token` |
+| `/api/auth/password-reset/` | `email` |
+| `/api/auth/password-reset/confirm/` | `uid`, `token`, `password`, `password_confirm` |
+
+Las solicitudes de correo devuelven `200` con un mensaje genérico. Los enlaces vencen
+en 30 minutos por defecto, son de un solo uso y los inválidos devuelven `400`.
+Los límites de solicitudes devuelven `429`. La recuperación invalida los JWT anteriores;
+no inicia sesión automáticamente. Consulta [configuración y pruebas](docs/AUTENTICACION_CORREO.md).
+
 ### 3.1. Registro de Usuario
 - **Ruta:** `POST /api/auth/register/`
 - **Autenticación:** Pública.

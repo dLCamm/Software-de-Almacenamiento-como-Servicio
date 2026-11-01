@@ -1,8 +1,10 @@
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
 from .models import Plan, User
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from .authentication import VerifiedJWTAuthentication
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
 from plans.models import Subscription
 from django.utils import timezone
 
@@ -17,11 +19,13 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     password = serializers.CharField(
         write_only=True,
+        trim_whitespace=False,
         min_length=8
     )
 
     password_confirm = serializers.CharField(
         write_only=True,
+        trim_whitespace=False,
         min_length=8
     )
 
@@ -65,7 +69,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     def validate_email(self, value):
         email = value.lower().strip()
 
-        if User.objects.filter(email=email).exists():
+        if User.objects.filter(email__iexact=email).exists():
             raise serializers.ValidationError(
                 "Ya existe una cuenta con este correo electrónico."
             )
@@ -159,6 +163,11 @@ class LoginSerializer(TokenObtainPairSerializer):
 
     @classmethod
     def get_token(cls, user):
+        if not user.is_email_verified:
+            raise PermissionDenied({
+                "detail": "Verifica tu correo electrónico antes de iniciar sesión.",
+                "code": "email_not_verified",
+            })
         token = super().get_token(user)
 
         token["email"] = user.email
@@ -167,6 +176,12 @@ class LoginSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
+        email = attrs["email"].strip()
+        # Conservar compatibilidad con cuentas antiguas que usaban mayúsculas.
+        try:
+            attrs["email"] = User.objects.get(email__iexact=email).email
+        except (User.DoesNotExist, User.MultipleObjectsReturned):
+            attrs["email"] = email.lower()
         data = super().validate(attrs)
 
         data["user"] = {
@@ -175,6 +190,7 @@ class LoginSerializer(TokenObtainPairSerializer):
             "last_name": self.user.last_name,
             "email": self.user.email,
             "role": self.user.role,
+            "is_email_verified": self.user.is_email_verified,
             "plan": PlanSerializer(self.user.plan).data,
             "pending_plan": (
                 PlanSerializer(self.user.pending_plan).data
@@ -184,6 +200,35 @@ class LoginSerializer(TokenObtainPairSerializer):
         }
 
         return data
+
+
+class VerifiedTokenRefreshSerializer(TokenRefreshSerializer):
+    def validate(self, attrs):
+        refresh = self.token_class(attrs["refresh"])
+        VerifiedJWTAuthentication().get_user(refresh)
+        return super().validate(attrs)
+
+
+class AccountEmailSerializer(serializers.Serializer):
+    email = serializers.EmailField(max_length=254)
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+
+class AccountTokenSerializer(serializers.Serializer):
+    uid = serializers.CharField(max_length=64)
+    token = serializers.CharField(max_length=128)
+
+
+class PasswordResetConfirmSerializer(AccountTokenSerializer):
+    password = serializers.CharField(write_only=True, trim_whitespace=False, min_length=8)
+    password_confirm = serializers.CharField(write_only=True, trim_whitespace=False, min_length=8)
+
+    def validate(self, attrs):
+        if attrs["password"] != attrs["password_confirm"]:
+            raise serializers.ValidationError({"password_confirm": "Las contraseñas no coinciden."})
+        return attrs
 
 
 class UserListSerializer(serializers.ModelSerializer):
@@ -329,11 +374,12 @@ class UserAdminUpdateSerializer(serializers.ModelSerializer):
     def validate_email(self, value):
 
         user = self.instance
+        value = value.strip().lower()
 
         if (
             User.objects
             .exclude(id=user.id)
-            .filter(email=value)
+            .filter(email__iexact=value)
             .exists()
         ):
             raise serializers.ValidationError(
@@ -341,6 +387,11 @@ class UserAdminUpdateSerializer(serializers.ModelSerializer):
             )
 
         return value
+
+    def update(self, instance, validated_data):
+        if "email" in validated_data and validated_data["email"] != instance.email:
+            validated_data["is_email_verified"] = False
+        return super().update(instance, validated_data)
 
     def validate_role(self, value):
 

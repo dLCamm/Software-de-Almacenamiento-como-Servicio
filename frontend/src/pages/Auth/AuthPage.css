@@ -255,6 +255,15 @@
   font-size: 13px;
 }
 
+.auth-form__success {
+  padding: 12px 14px;
+  border: 1px solid var(--success);
+  border-radius: 10px;
+  color: var(--success);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .auth-form__row {
   display: flex;
   align-items: center;

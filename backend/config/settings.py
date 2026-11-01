@@ -157,9 +157,24 @@ STATIC_URL = 'static/'
 
 MAILERS = {
     'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+        'BACKEND': os.getenv("MAIL_BACKEND", "django.core.mail.backends.console.EmailBackend"),
     },
 }
+if MAILERS["default"]["BACKEND"] == "django.core.mail.backends.smtp.EmailBackend":
+    MAILERS["default"]["OPTIONS"] = {
+        "host": os.getenv("EMAIL_HOST", "localhost"),
+        "port": int(os.getenv("EMAIL_PORT", "587")),
+        "username": os.getenv("EMAIL_HOST_USER", ""),
+        "password": os.getenv("EMAIL_HOST_PASSWORD", ""),
+        "use_tls": os.getenv("EMAIL_USE_TLS", "True").lower() == "true",
+        "use_ssl": os.getenv("EMAIL_USE_SSL", "False").lower() == "true",
+        "timeout": 10,
+    }
+
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Kubo <no-reply@localhost>")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+# Ambos enlaces de cuenta duran 30 minutos por defecto.
+PASSWORD_RESET_TIMEOUT = int(os.getenv("PASSWORD_RESET_TIMEOUT", "1800"))
 
 CORS_ALLOWED_ORIGINS = [
     origin.strip()
@@ -174,8 +189,12 @@ AUTH_USER_MODEL = "users.User"
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "users.authentication.VerifiedJWTAuthentication",
     ),
+    "DEFAULT_THROTTLE_RATES": {
+        "auth_email_ip": "30/hour",
+        "auth_email_recipient": "5/hour",
+    },
 }
 
 SIMPLE_JWT = {
@@ -183,6 +202,8 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
 
     "AUTH_HEADER_TYPES": ("Bearer",),
+    "CHECK_REVOKE_TOKEN": True,
+    "TOKEN_REFRESH_SERIALIZER": "users.serializers.VerifiedTokenRefreshSerializer",
 }
 # Configuración de Almacenamiento MinIO (S3 Compatible)
 MINIO_ENDPOINT = os.getenv("MINIO_ENDPOINT", "localhost:9000")

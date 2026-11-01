@@ -18,12 +18,30 @@ from .serializers import (
     UserStatusSerializer,
 )
 from .permissions import IsAdminOrSupport, IsAdministrator
+from .emails import send_account_email
+from .throttles import AuthEmailIPThrottle, AuthEmailRecipientThrottle
 
 # Para Registrarse
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+    throttle_classes = [AuthEmailIPThrottle, AuthEmailRecipientThrottle]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        sent = send_account_email(serializer.instance, verification=True)
+        data = dict(serializer.data)
+        data["verification_email_sent"] = sent
+        data["detail"] = (
+            "Cuenta creada. Revisa tu correo para verificarla antes de iniciar sesión."
+            if sent else
+            "Cuenta creada, pero no pudimos enviar el correo. Solicita un nuevo enlace de verificación."
+        )
+        return Response(data, status=status.HTTP_201_CREATED, headers=self.get_success_headers(data))
 
     def perform_create(self, serializer):
         with transaction.atomic():

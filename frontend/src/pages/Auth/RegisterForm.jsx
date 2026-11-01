@@ -6,7 +6,7 @@ import { register } from '../../api/auth'
 const REQUIREMENTS = [
   { id: 'length', label: 'Mínimo 8 caracteres', test: (v) => v.length >= 8 },
   { id: 'upper', label: 'Una letra mayúscula', test: (v) => /[A-Z]/.test(v) },
-  { id: 'symbol', label: 'Un número o símbolo', test: (v) => /[0-9!@#$%^&*_\-]/.test(v) },
+  { id: 'symbol', label: 'Un número o símbolo', test: (v) => /[0-9!@#$%^&*_-]/.test(v) },
 ]
 
 const initialForm = {
@@ -25,7 +25,7 @@ const PLAN_OPTIONS = [
   { code: 'business', label: 'BUSINESS — 500 GB, Q399/mes' },
 ]
 
-export default function RegisterForm({ onSwitchTab, selectedPlan = 'free' }) {
+export default function RegisterForm({ onSwitchTab, onResendVerification, selectedPlan = 'free' }) {
   const [form, setForm] = useState(() => ({ ...initialForm, planCode: selectedPlan }))
   const [errors, setErrors] = useState({})
   const [formError, setFormError] = useState('')
@@ -81,8 +81,9 @@ export default function RegisterForm({ onSwitchTab, selectedPlan = 'free' }) {
       <div className="auth-panel">
         <h2>Cuenta creada</h2>
         <p className="auth-panel__subtitle">
-          Tu cuenta se creó con el plan {registration.plan?.name || 'FREE'}. Ya puedes iniciar sesión.
+          {registration.detail}
         </p>
+        <p className="auth-panel__subtitle">Revisa la bandeja de entrada y spam de {registration.email}.</p>
         {registration.pending_plan && (
           <p className="auth-panel__subtitle">
             Solicitaste {registration.pending_plan.name}. Se activará únicamente después de confirmar el pago; mientras tanto conservas los 5 GB del plan FREE.
@@ -90,6 +91,9 @@ export default function RegisterForm({ onSwitchTab, selectedPlan = 'free' }) {
         )}
         <button type="button" className="btn btn--primary btn--block" onClick={() => onSwitchTab('login')}>
           Ir a iniciar sesión
+        </button>
+        <button type="button" className="link-button back-link" onClick={() => onResendVerification(registration.email)}>
+          Reenviar correo de verificación
         </button>
       </div>
     )
@@ -121,6 +125,8 @@ export default function RegisterForm({ onSwitchTab, selectedPlan = 'free' }) {
 
         <FormField
           icon={MailIcon}
+          type="email"
+          aria-label="Correo electrónico"
           placeholder="Correo electrónico"
           autoComplete="email"
           value={form.email}

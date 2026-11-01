@@ -28,6 +28,9 @@ export default function App() {
       <Route path="/login" element={<AuthPage />}/>
       <Route path="/register" element={<AuthPage />}/>
       <Route path="/recover-password" element={<AuthPage />}/>
+      <Route path="/reset-password" element={<AuthPage />}/>
+      <Route path="/verify-email" element={<AuthPage />}/>
+      <Route path="/resend-verification" element={<AuthPage />}/>
       {/* Todas las páginas dentro de ClientLayout comparten la barra lateral */}
       <Route element={<ProtectedRoute><ClientLayout /></ProtectedRoute>}>
         <Route path="/app/client" element={<UserFilesRoute><DashboardPageClient /></UserFilesRoute>}/>

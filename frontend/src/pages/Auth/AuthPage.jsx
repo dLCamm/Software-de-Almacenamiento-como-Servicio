@@ -4,6 +4,8 @@ import { CubeLogoIcon } from '../../components/icons'
 import LoginForm from './LoginForm'
 import RegisterForm from './RegisterForm'
 import RecoverForm from './RecoverForm'
+import ResetPasswordForm from './ResetPasswordForm'
+import VerifyEmailForm from './VerifyEmailForm'
 
 import ThemeToggle from '../../components/ThemeToggle'
 import './AuthPage.css'
@@ -16,12 +18,24 @@ export default function AuthPage() {
   const isLogin = location.pathname === '/login'
   const isRegister = location.pathname === '/register'
   const isRecover = location.pathname === '/recover-password'
+  const isReset = location.pathname === '/reset-password'
+  const isVerify = location.pathname === '/verify-email'
+  const isResend = location.pathname === '/resend-verification'
+  const params = new URLSearchParams(location.search)
   const requestedPlan = new URLSearchParams(location.search).get('plan')
   const selectedPlan = ['free', 'pro', 'business'].includes(requestedPlan) ? requestedPlan : 'free'
 
   // El administrador entra directo a su panel; los demás, a Mis Archivos.
   function handleAuthenticated(data) {
     navigate(data?.user?.role === 'ADMIN' ? '/app/admin/inicio' : '/app/client')
+  }
+
+  function handleCompleted(message) {
+    navigate('/login', { replace: true, state: { notice: message } })
+  }
+
+  function goToVerification(email = '') {
+    navigate('/resend-verification', { state: { email } })
   }
 
   return (
@@ -50,7 +64,7 @@ export default function AuthPage() {
       <div className="auth-card">
 
         {/* Solo mostrar tabs en Login y Registro */}
-        {!isRecover && (
+        {(isLogin || isRegister) && (
           <nav
             className="auth-tabs"
             role="tablist"
@@ -88,6 +102,8 @@ export default function AuthPage() {
               onGoToRegister={() => navigate('/register')}
               onForgotPassword={() => navigate('/recover-password')}
               onAuthenticated={handleAuthenticated}
+              onResendVerification={goToVerification}
+              notice={location.state?.notice}
             />
           )}
 
@@ -96,6 +112,7 @@ export default function AuthPage() {
             <RegisterForm
               selectedPlan={selectedPlan}
               onSwitchTab={() => navigate('/login')}
+              onResendVerification={goToVerification}
             />
           )}
 
@@ -103,6 +120,35 @@ export default function AuthPage() {
           {isRecover && (
             <RecoverForm
               onGoToLogin={() => navigate('/login')}
+            />
+          )}
+
+          {isResend && (
+            <RecoverForm
+              key="verification"
+              verification
+              initialEmail={location.state?.email || ''}
+              onGoToLogin={() => navigate('/login')}
+            />
+          )}
+
+          {isReset && (
+            <ResetPasswordForm
+              key={location.search}
+              uid={params.get('uid')}
+              token={params.get('token')}
+              onCompleted={handleCompleted}
+              onRequestNew={() => navigate('/recover-password', { replace: true })}
+            />
+          )}
+
+          {isVerify && (
+            <VerifyEmailForm
+              key={location.search}
+              uid={params.get('uid')}
+              token={params.get('token')}
+              onCompleted={handleCompleted}
+              onRequestNew={() => navigate('/resend-verification', { replace: true })}
             />
           )}
 
