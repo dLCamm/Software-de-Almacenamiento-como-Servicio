@@ -10,6 +10,15 @@ export function listManagedUsers(filters = {}) {
   return apiRequest(`/api/auth/management/users/${suffix}`, { auth: true })
 }
 
+/** Crea una cuenta de soporte desde una sesión de administrador. */
+export function createSupportUser(user) {
+  return apiRequest('/api/auth/management/support/', {
+    method: 'POST',
+    body: user,
+    auth: true,
+  })
+}
+
 /** Consulta el perfil administrativo y la suscripción de una cuenta. */
 export function getManagedUser(userId) {
   return apiRequest(`/api/auth/management/${userId}/`, { auth: true })

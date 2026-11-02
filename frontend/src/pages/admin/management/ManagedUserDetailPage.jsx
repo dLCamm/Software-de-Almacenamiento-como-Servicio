@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
-import { getProfile } from '../../../api/auth'
+import { useEffect, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
+import { getProfile, logout } from '../../../api/auth'
 import { getManagedUser, updateManagedUserStatus } from '../../../api/management'
 import { AdminIcon } from '../plans/AdminIcon'
 import UserEditDialog from './UserEditDialog'
@@ -25,6 +25,7 @@ function displayName(user) {
 
 export default function ManagedUserDetailPage() {
   const { userId } = useParams()
+  const navigate = useNavigate()
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -32,18 +33,6 @@ export default function ManagedUserDetailPage() {
   const [notice, setNotice] = useState('')
   const [editing, setEditing] = useState(false)
   const [changingStatus, setChangingStatus] = useState(false)
-
-  const load = useCallback(async () => {
-    setError('')
-    try {
-      const data = await getManagedUser(userId)
-      setUser(data)
-      return data
-    } catch (loadError) {
-      setError(loadError.message || 'No se pudo cargar la información del usuario.')
-      return null
-    }
-  }, [userId])
 
   useEffect(() => {
     let active = true
@@ -64,6 +53,22 @@ export default function ManagedUserDetailPage() {
   const canChangeStatus = user && profile && profile.id !== user.id && (
     profile.role === 'ADMIN' || (profile.role === 'SUPPORT' && user.role === 'CLIENT')
   )
+
+  function handleSaved(result) {
+    const updated = result.user
+    setUser(updated)
+    setError('')
+    setNotice(result.detail)
+    if (profile?.id === updated.id) {
+      setProfile(updated)
+      if (!updated.is_email_verified) {
+        logout()
+        navigate('/login', { replace: true, state: { notice: 'Datos guardados. Verifica tu nuevo correo antes de iniciar sesión.' } })
+      } else if (updated.role !== 'ADMIN') {
+        navigate(updated.role === 'SUPPORT' ? '/app/admin/usuarios' : '/app/client', { replace: true })
+      }
+    }
+  }
 
   async function toggleStatus() {
     const nextStatus = !user.is_active
@@ -109,7 +114,7 @@ export default function ManagedUserDetailPage() {
               <dl className="management-data-list"><div><dt>Rol</dt><dd>{user.role}</dd></div><div><dt>Correo verificado</dt><dd>{user.is_email_verified ? 'Sí' : 'No'}</dd></div><div><dt>Cuenta creada</dt><dd>{formatDate(user.created_at)}</dd></div><div><dt>Última actualización</dt><dd>{formatDate(user.updated_at)}</dd></div></dl>
             </article>
 
-            <article className="management-card">
+            {user.role === 'CLIENT' ? <><article className="management-card">
               <span className="management-card__eyebrow">Plan actual</span>
               <h2>{user.plan?.name || 'Sin plan'}</h2>
               <p className="management-card__code">{user.plan?.code || '—'}</p>
@@ -123,10 +128,15 @@ export default function ManagedUserDetailPage() {
                 <dl className="management-data-list"><div><dt>Inicio</dt><dd>{formatDate(subscription.start_date)}</dd></div><div><dt>Finalización</dt><dd>{formatDate(subscription.end_date)}</dd></div><div><dt>Renovación automática</dt><dd>{subscription.auto_renew ? 'Activada' : 'Desactivada'}</dd></div></dl>
               </> : <p className="management-muted">Este usuario no tiene una suscripción registrada.</p>}
             </article>
+            </> : <article className="management-card">
+              <span className="management-card__eyebrow">Cuenta interna</span>
+              <h2>{user.role === 'ADMIN' ? 'Administrador' : 'Soporte'}</h2>
+              <p className="management-muted">Esta cuenta no tiene plan, suscripción ni almacenamiento personal. Sus permisos corresponden a su rol de gestión.</p>
+            </article>}
           </section>
         </>}
     </div>
 
-    {editing && user && <UserEditDialog user={user} onClose={() => setEditing(false)} onSaved={load} />}
+    {editing && user && <UserEditDialog user={user} onClose={() => setEditing(false)} onSaved={handleSaved} />}
   </main>
 }

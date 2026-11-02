@@ -117,6 +117,18 @@ export function getProfile() {
   return apiRequest('/api/auth/me/', { method: 'GET', auth: true })
 }
 
+export function updateProfile(changes) {
+  return apiRequest('/api/auth/me/', { method: 'PATCH', body: changes, auth: true })
+}
+
+export function changePassword({ currentPassword, password, confirmPassword }) {
+  return apiRequest('/api/auth/password-change/', {
+    method: 'POST',
+    body: { current_password: currentPassword, password, password_confirm: confirmPassword },
+    auth: true,
+  })
+}
+
 export function requestPasswordReset({ email }) {
   return apiRequest('/api/auth/password-reset/', {
     method: 'POST',

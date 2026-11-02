@@ -2,6 +2,11 @@ import { useCallback, useEffect, useState } from 'react'
 
 const GB = 1024 ** 3
 
+export const PLAN_FEATURES = [
+  { code: 'temporary_files', label: 'Archivos temporales', description: 'Permite subir archivos que se eliminan al vencer el plazo elegido.' },
+  { code: 'share_links', label: 'Compartir enlaces', description: 'Permite generar enlaces de descarga para compartir archivos.' },
+]
+
 function errorMessage(error) {
   return error?.message || 'No se pudo completar la operación.'
 }
@@ -21,23 +26,27 @@ export function toPlanPayload(form) {
     storage_limit_gb: Number(form.storageGb),
     monthly_price: Number(form.price).toFixed(2),
     is_active: form.isActive,
-    benefits: form.benefits
+    benefits: [...form.benefits
       .map((benefit) => benefit.description.trim())
       .filter(Boolean)
-      .map((description, index) => ({ description, order: index + 1 })),
+      .map((description) => ({ description, feature: '' })),
+      ...PLAN_FEATURES.filter(({ code }) => form.features[code])
+        .map(({ code, label }) => ({ description: label, feature: code })),
+    ].map((benefit, index) => ({ ...benefit, order: index + 1 })),
   }
 }
 
 /** Formulario a partir de un plan existente (o vacío para uno nuevo). */
 export function toPlanForm(plan) {
-  if (!plan) return { code: '', name: '', price: '', storageGb: '', isActive: true, benefits: [{ key: 1, description: '' }] }
-  const benefits = (plan.benefits || []).slice().sort((a, b) => a.order - b.order)
+  if (!plan) return { code: '', name: '', price: '', storageGb: '', isActive: true, features: { temporary_files: false, share_links: false }, benefits: [{ key: 1, description: '' }] }
+  const benefits = (plan.benefits || []).filter((benefit) => !benefit.feature).sort((a, b) => a.order - b.order)
   return {
     code: plan.code || '',
     name: plan.name || '',
     price: String(Number(plan.monthly_price ?? 0)),
     storageGb: String(getPlanStorageGb(plan)),
     isActive: plan.is_active !== false,
+    features: Object.fromEntries(PLAN_FEATURES.map(({ code }) => [code, Boolean(plan.features?.[code])])),
     benefits: benefits.length ? benefits.map((benefit, index) => ({ key: benefit.id ?? index + 1, description: benefit.description })) : [{ key: 1, description: '' }],
   }
 }
@@ -47,9 +56,12 @@ export function validatePlanForm(form) {
   if (!/^[a-z0-9-]+$/.test(form.code.trim().toLowerCase())) return 'El código solo puede tener letras minúsculas, números y guiones (ej. premium).'
   const price = Number(form.price)
   if (form.price === '' || !Number.isFinite(price) || price < 0) return 'El precio debe ser 0 o mayor.'
+  if (form.code.trim().toLowerCase() === 'free' && (price !== 0 || !form.isActive)) return 'El plan FREE debe ser gratuito y permanecer activo.'
+  const hasFeatures = Object.values(form.features).some(Boolean)
+  if (hasFeatures && (price <= 0 || form.code.trim().toLowerCase() === 'free')) return 'Los archivos temporales y los enlaces compartidos requieren un plan con precio mayor a 0.'
   const storage = Number(form.storageGb)
   if (form.storageGb === '' || !Number.isFinite(storage) || storage <= 0) return 'El almacenamiento debe ser mayor a 0 GB.'
-  if (!form.benefits.some((benefit) => benefit.description.trim())) return 'Agrega al menos un beneficio.'
+  if (!hasFeatures && !form.benefits.some((benefit) => benefit.description.trim())) return 'Agrega al menos un beneficio.'
   return ''
 }
 

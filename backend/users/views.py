@@ -11,6 +11,8 @@ from .models import User
 from .serializers import (
     LoginSerializer,
     RegisterSerializer,
+    ProfileUpdateSerializer,
+    SupportUserCreateSerializer,
     UserAdminUpdateSerializer,
     UserDetailSerializer,
     UserListSerializer,
@@ -75,6 +77,20 @@ class CurrentUserView(APIView):
         serializer = UserSerializer(request.user)
 
         return Response(serializer.data)
+
+    def patch(self, request):
+        serializer = ProfileUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        with transaction.atomic():
+            user = User.objects.select_for_update().get(pk=request.user.pk)
+            for field, value in serializer.validated_data.items():
+                setattr(user, field, value)
+            user.save(update_fields=[*serializer.validated_data, "updated_at"])
+            record_audit_event(
+                actor=user, action="auth.profile_updated", resource_type="user", resource_id=user.pk,
+                details={"fields": sorted(serializer.validated_data)},
+            )
+        return Response({"detail": "Tus datos se actualizaron correctamente.", "user": UserSerializer(user).data})
 
 
 class UserManagementListView(ListAPIView):
@@ -180,6 +196,30 @@ class UserManagementListView(ListAPIView):
         return queryset
 
 
+class SupportUserCreateView(APIView):
+    permission_classes = [IsAdministrator]
+
+    def post(self, request):
+        serializer = SupportUserCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        with transaction.atomic():
+            user = serializer.save()
+            record_audit_event(
+                actor=request.user,
+                action="user.support_created",
+                resource_type="user",
+                resource_id=user.pk,
+                details={"role": user.role},
+            )
+        return Response(
+            {
+                "detail": "Usuario de soporte creado. Ya puede iniciar sesión con su correo y contraseña.",
+                "user": UserDetailSerializer(user).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
 class UserManagementDetailView(APIView):
 
     permission_classes = [
@@ -267,17 +307,24 @@ class UserManagementUpdateView(APIView):
             raise_exception=True
         )
 
-        serializer.save()
+        previous_role = user.role
+        with transaction.atomic():
+            user = serializer.save()
+            record_audit_event(
+                actor=request.user,
+                action="user.updated",
+                resource_type="user",
+                resource_id=user.pk,
+                details={
+                    "fields": sorted(serializer.validated_data),
+                    "from_role": previous_role,
+                    "to_role": user.role,
+                },
+            )
 
         return Response(
-            {
-                "detail":
-                    "Usuario actualizado correctamente.",
-
-                "user":
-                    serializer.data,
-            },
-            status=status.HTTP_200_OK
+            {"detail": "Usuario actualizado correctamente.", "user": UserDetailSerializer(user).data},
+            status=status.HTTP_200_OK,
         )
 
 class UserStatusView(APIView):

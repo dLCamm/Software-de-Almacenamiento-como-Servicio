@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { toPlanForm } from './useAdminPlans'
+import { PLAN_FEATURES, toPlanForm } from './useAdminPlans'
 import { AdminIcon } from './AdminIcon'
 
 function slugify(value) {
@@ -78,11 +78,11 @@ export default function PlanFormDialog({ plan, onClose, onSave }) {
         <div className="admin-form-grid">
           <label className="admin-field">
             <span>Nombre</span>
-            <input ref={nameInput} value={form.name} onChange={(event) => update('name', event.target.value)} placeholder="Ej. PREMIUM" maxLength={60} required />
+            <input ref={nameInput} value={form.name} onChange={(event) => update('name', event.target.value)} placeholder="Ej. PREMIUM" maxLength={50} required />
           </label>
           <label className="admin-field">
             <span>Código</span>
-            <input value={form.code} onChange={(event) => { setCodeTouched(true); update('code', event.target.value.toLowerCase()) }} placeholder="ej. premium" maxLength={40} required />
+            <input value={form.code} disabled={plan?.code === 'free'} onChange={(event) => { setCodeTouched(true); update('code', event.target.value.toLowerCase()) }} placeholder="ej. premium" maxLength={50} required />
             <small>Identificador interno: minúsculas, números y guiones.</small>
           </label>
           <label className="admin-field">
@@ -96,16 +96,25 @@ export default function PlanFormDialog({ plan, onClose, onSave }) {
         </div>
 
         <label className="admin-switch">
-          <input type="checkbox" checked={form.isActive} onChange={(event) => update('isActive', event.target.checked)} />
+          <input type="checkbox" checked={form.isActive} disabled={plan?.code === 'free'} onChange={(event) => update('isActive', event.target.checked)} />
           <span className="admin-switch__track" aria-hidden="true" />
           <span><strong>Plan activo</strong><small>Los planes inactivos no se muestran a los clientes.</small></span>
         </label>
 
+        <fieldset className="admin-benefits admin-plan-features">
+          <legend>Funciones incluidas <small>Se habilitan después del pago y mientras la suscripción esté vigente. Requieren un precio mayor a Q0.</small></legend>
+          {PLAN_FEATURES.map(({ code, label, description }) => <label className="admin-switch" key={code}>
+            <input type="checkbox" checked={form.features[code]} disabled={form.code.trim().toLowerCase() === 'free' || (!(Number(form.price) > 0) && !form.features[code])} onChange={(event) => update('features', { ...form.features, [code]: event.target.checked })} />
+            <span className="admin-switch__track" aria-hidden="true" />
+            <span><strong>{label}</strong><small>{description}</small></span>
+          </label>)}
+        </fieldset>
+
         <fieldset className="admin-benefits">
-          <legend>Beneficios <small>En este orden se muestran en la tarjeta del plan.</small></legend>
+          <legend>Descripción de beneficios <small>Estos textos aparecen en la tarjeta. Para habilitar archivos temporales o enlaces, usa los controles de arriba.</small></legend>
           {form.benefits.map((benefit, index) => <div className="admin-benefit" key={benefit.key}>
             <span className="admin-benefit__number">{index + 1}</span>
-            <input value={benefit.description} onChange={(event) => updateBenefit(benefit.key, event.target.value)} placeholder="Ej. Soporte prioritario" aria-label={`Beneficio ${index + 1}`} maxLength={120} />
+            <input value={benefit.description} onChange={(event) => updateBenefit(benefit.key, event.target.value)} placeholder="Ej. Gestión de carpetas" aria-label={`Beneficio ${index + 1}`} maxLength={150} />
             <button type="button" className="admin-icon-button" onClick={() => moveBenefit(index, -1)} disabled={index === 0} aria-label="Subir beneficio"><AdminIcon name="up" size={16} /></button>
             <button type="button" className="admin-icon-button" onClick={() => moveBenefit(index, 1)} disabled={index === form.benefits.length - 1} aria-label="Bajar beneficio"><AdminIcon name="down" size={16} /></button>
             <button type="button" className="admin-icon-button admin-icon-button--danger" onClick={() => removeBenefit(benefit.key)} aria-label="Quitar beneficio"><AdminIcon name="trash" size={16} /></button>

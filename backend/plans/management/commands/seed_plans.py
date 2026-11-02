@@ -1,95 +1,40 @@
 from django.core.management.base import BaseCommand
+from django.db import transaction
 
-from plans.models import Plan, PlanBenefit
+from plans.models import PlanBenefit
+from users.models import Plan
 
 
 class Command(BaseCommand):
-    help = "Crea los planes iniciales del sistema"
+    help = "Crea los planes iniciales sin sobrescribir planes ya configurados"
 
+    @transaction.atomic
     def handle(self, *args, **options):
-
-        plans_data = [
-            {
-                "name": "FREE",
-                "slug": "free",
-                "price": 0,
-                "storage_gb": 5,
-                "description": "Para comenzar a almacenar tus archivos.",
-                "is_popular": False,
-                "benefits": [
-                    "5 GB de almacenamiento",
-                    "Gestión de archivos",
-                    "Gestión de carpetas",
-                ],
-            },
-            {
-                "name": "PRO",
-                "slug": "pro",
-                "price": 149,
-                "storage_gb": 50,
-                "description": "Más espacio para tus archivos y proyectos.",
-                "is_popular": True,
-                "benefits": [
-                    "50 GB de almacenamiento",
-                    "Gestión de archivos",
-                    "Gestión de carpetas",
-                    "Compartir archivos",
-                    "Archivos temporales",
-                ],
-            },
-            {
-                "name": "BUSINESS",
-                "slug": "business",
-                "price": 399,
-                "storage_gb": 500,
-                "description": "Almacenamiento para grandes necesidades.",
-                "is_popular": False,
-                "benefits": [
-                    "500 GB de almacenamiento",
-                    "Gestión de archivos",
-                    "Gestión de carpetas",
-                    "Compartir archivos",
-                    "Archivos temporales",
-                    "Mayor capacidad de almacenamiento",
-                ],
-            },
-        ]
-
-        for plan_data in plans_data:
-
-            benefits = plan_data.pop("benefits")
-
-            plan, created = Plan.objects.update_or_create(
-                slug=plan_data["slug"],
-                defaults=plan_data
+        for code, name, storage_gb, price in (
+            ("free", "FREE", 5, 0),
+            ("pro", "PRO", 50, 149),
+            ("business", "BUSINESS", 500, 399),
+        ):
+            plan, created = Plan.objects.get_or_create(
+                code=code,
+                defaults={
+                    "name": name,
+                    "storage_limit_bytes": storage_gb * 1024 ** 3,
+                    "monthly_price": price,
+                    "is_active": True,
+                },
             )
-
-            PlanBenefit.objects.filter(
-                plan=plan
-            ).delete()
-
-            for index, benefit in enumerate(benefits):
-                PlanBenefit.objects.create(
-                    plan=plan,
-                    description=benefit,
-                    order=index
-                )
-
-            if created:
-                self.stdout.write(
-                    self.style.SUCCESS(
-                        f"Plan {plan.name} creado"
+            # Las migraciones crean estos planes. Completar sus textos una sola vez.
+            if created or not plan.benefits.filter(feature="").exists():
+                for order, description in enumerate((
+                    f"{plan.storage_limit_bytes / 1024 ** 3:g} GB de almacenamiento",
+                    "Gestión de archivos",
+                    "Gestión de carpetas",
+                )):
+                    PlanBenefit.objects.create(plan=plan, description=description, order=order)
+            if created and price > 0:
+                for order, feature in enumerate(PlanBenefit.Feature, start=3):
+                    PlanBenefit.objects.create(
+                        plan=plan, feature=feature, description=feature.label, order=order,
                     )
-                )
-            else:
-                self.stdout.write(
-                    self.style.WARNING(
-                        f"Plan {plan.name} actualizado"
-                    )
-                )
-
-        self.stdout.write(
-            self.style.SUCCESS(
-                "Planes cargados correctamente."
-            )
-        )
+            self.stdout.write(self.style.SUCCESS(f"Plan {plan.name} disponible"))

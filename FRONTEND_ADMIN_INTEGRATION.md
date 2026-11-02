@@ -17,6 +17,44 @@ El usuario debe tener el rol `ADMIN`, en concordancia con las rutas administrati
 
 ## Endpoints
 
+### Cuentas internas sin plan
+
+Solo `CLIENT` tiene plan y acceso al almacenamiento y la facturación personales. `ADMIN` y `SUPPORT` reciben `plan: null`, `pending_plan: null` y, en las vistas de gestión, `subscription: null`. Conservan los endpoints administrativos autorizados por su rol, incluida la gestión de planes para administradores y la consulta de pagos de clientes.
+
+Las cuentas internas reciben `403` en `/api/storage/*`, `/api/plans/current/`, `/api/subscription/current/` y en los endpoints personales de pagos (`change-plan`, `renew`, `history`). No se procesa ningún cobro. El catálogo público `/api/plans/` sigue disponible. El frontend oculta Mis Archivos, Planes y Facturación y la cuota personal; sus rutas redirigen al panel correspondiente.
+
+Al promover un cliente a soporte o administrador se retiran su plan y plan pendiente, y se cancela su suscripción y su renovación automática. Los archivos y pagos históricos se conservan. Al convertir una cuenta interna en cliente comienza con FREE y sin beneficios de pago. La restricción `user_plan_matches_role` protege la relación entre rol y plan también en la base de datos.
+
+Aplicar `users.0004_internal_accounts_without_plans` con `python manage.py migrate` para actualizar las cuentas internas existentes. No se crean suscripciones para nuevas cuentas internas.
+
+### Crear un usuario de soporte
+
+`POST /api/auth/management/support/` requiere una sesión con rol `ADMIN`. Recibe `first_name`, `last_name`, `email`, `password` y `password_confirm`. Valida identidad, correo único sin distinguir mayúsculas y las reglas de contraseña de Django.
+
+Devuelve `201` con `{ "detail": "…", "user": { ... } }`, utilizando el mismo formato del detalle administrativo. La cuenta se crea siempre con rol `SUPPORT`, activa y con el correo autorizado por el administrador (`is_email_verified=true`) para permitir el inicio de sesión inmediato. No tiene plan ni suscripción; no recibe privilegios de Django Admin, grupos ni permisos administrativos. La contraseña se almacena mediante hash, no se devuelve y no se envía por correo. Los campos de privilegios del cliente no se aceptan como configuración.
+
+Solo el administrador ve **Crear usuario de soporte** en Gestión de usuarios. Al terminar, la lista se actualiza y se limpian los filtros para mostrar la cuenta nueva. Los clientes y soporte reciben `403` si intentan crear cuentas; una solicitud sin autenticación recibe `401`. El alta queda registrada como `user.support_created`, con el administrador como actor y la cuenta nueva como recurso.
+
+### Editar usuarios y cambiar roles
+
+`PATCH /api/auth/management/{id}/edit/` permite al administrador editar nombre, apellido, correo y rol de clientes, soporte y administradores. Devuelve `{ "detail": "…", "user": { ... } }` con el perfil administrativo completo, incluido el plan resultante y la suscripción. El formulario usa esa respuesta para actualizar la pantalla sin depender de una segunda consulta. Los cambios quedan auditados como `user.updated`.
+
+Si el administrador cambia su propio rol, la interfaz lo envía a la sección correspondiente a sus nuevos permisos. Si cambia su propio correo, la sesión se cierra y se informa que debe verificar la nueva dirección. Así una edición guardada no se muestra como fallida por una consulta posterior sin permisos.
+
+### Beneficios de planes
+
+`POST /api/admin/plans/` y `PUT/PATCH /api/admin/plans/{id}/` aceptan beneficios con `description`, `order` y `feature`:
+
+- `feature: "temporary_files"`: habilita las subidas temporales.
+- `feature: "share_links"`: habilita la generación de enlaces compartidos.
+- `feature: ""` (predeterminado): texto informativo que no otorga permisos.
+
+Cada función puede aparecer una sola vez por plan y requiere `monthly_price > 0`. La API normaliza su descripción. Para quitar una función, enviar la lista `benefits` completa sin ella. Omitir `benefits` al actualizar conserva la configuración existente. No se puede convertir un plan con estas funciones en gratuito sin quitarlas en la misma actualización.
+
+`GET /api/plans/` y el CRUD administrativo incluyen `features: { "temporary_files": boolean, "share_links": boolean }` con las funciones del catálogo. `GET /api/storage/usage/`, `/api/plans/current/` y `/api/subscription/current/` incluyen `features` en la raíz con los permisos efectivos del usuario. La interfaz usa estos permisos; el servidor vuelve a validarlos en cada operación. Un plan pendiente no otorga permisos. Las suscripciones sin fecha de fin, futuras, vencidas o canceladas tampoco habilitan funciones de pago. Desactivar un plan lo oculta del catálogo y conserva los beneficios de suscripciones vigentes.
+
+Aplicar `python manage.py migrate` desde `backend` antes de iniciar la versión actualizada. La migración `plans.0005_planbenefit_feature` vincula los beneficios existentes, configura PRO/BUSINESS y retira los anuncios de funciones de pago de planes gratuitos. `seed_plans` usa el catálogo de `users.Plan` y conserva la configuración administrativa existente.
+
 ### Auditoría
 
 ```http

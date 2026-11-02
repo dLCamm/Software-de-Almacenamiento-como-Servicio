@@ -10,6 +10,10 @@ from django.core.files.uploadedfile import UploadedFile
 from django.db import models, transaction
 from django.utils import timezone
 
+from plans.entitlements import PlanFeatureUnavailable, get_user_features, require_feature
+from plans.models import PlanBenefit
+from users.models import User
+
 from storage.interfaces.storage_backend import (
     IStorageBackend,
     StorageError,
@@ -73,6 +77,8 @@ class FileService:
         3. Carga binaria en MinIO.
         4. Inserción atómica en PostgreSQL con rollback compensatorio en caso de error.
         """
+        if is_temporary:
+            require_feature(user, PlanBenefit.Feature.TEMPORARY_FILES)
         backend = storage_backend or get_storage_backend()
 
         # 1. Validación de Formato y Tamaño (RF-07)
@@ -187,6 +193,7 @@ class FileService:
         storage_backend: Optional[IStorageBackend] = None,
     ) -> str:
         """Genera un enlace prefirmado directo hacia MinIO (RF-11)."""
+        require_feature(user, PlanBenefit.Feature.SHARE_LINKS)
         backend = storage_backend or get_storage_backend()
         try:
             archivo = Archivo.objects.get(
@@ -269,6 +276,8 @@ class FileService:
     @classmethod
     def get_user_storage_usage(cls, user) -> dict:
         """Calcula el uso actual de almacenamiento del usuario (RF-09)."""
+        if user.role != User.Role.CLIENT or user.plan_id is None:
+            raise PlanFeatureUnavailable("El almacenamiento personal es exclusivo de clientes.")
         total_used = Archivo.objects.filter(
             usuario=user,
             estado__in=(EstadoElemento.ACTIVO, EstadoElemento.PAPELERA),
@@ -288,6 +297,7 @@ class FileService:
             "plan_precio_mensual": plan.monthly_price,
             "plan_pendiente_codigo": user.pending_plan.code if user.pending_plan else None,
             "plan_pendiente_nombre": user.pending_plan.name if user.pending_plan else None,
+            "features": get_user_features(user),
         }
 
     @classmethod

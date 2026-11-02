@@ -191,7 +191,7 @@ class LoginSerializer(TokenObtainPairSerializer):
             "email": self.user.email,
             "role": self.user.role,
             "is_email_verified": self.user.is_email_verified,
-            "plan": PlanSerializer(self.user.plan).data,
+            "plan": PlanSerializer(self.user.plan).data if self.user.plan else None,
             "pending_plan": (
                 PlanSerializer(self.user.pending_plan).data
                 if self.user.pending_plan
@@ -214,6 +214,38 @@ class AccountEmailSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         return value.strip().lower()
+
+
+class ProfileUpdateSerializer(serializers.Serializer):
+    first_name = serializers.CharField(max_length=150, allow_blank=True, required=False)
+    last_name = serializers.CharField(max_length=150, allow_blank=True, required=False)
+
+    def validate(self, attrs):
+        if set(self.initial_data) - set(self.fields):
+            raise serializers.ValidationError({"detail": "Desde configuración solo puedes editar tu nombre y apellido."})
+        if not attrs:
+            raise serializers.ValidationError({"detail": "Envía el nombre o el apellido que deseas cambiar."})
+        return attrs
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    current_password = serializers.CharField(write_only=True, trim_whitespace=False)
+    password = serializers.CharField(write_only=True, trim_whitespace=False, min_length=8)
+    password_confirm = serializers.CharField(write_only=True, trim_whitespace=False, min_length=8)
+
+    def validate(self, attrs):
+        user = self.context["user"]
+        if not user.check_password(attrs["current_password"]):
+            raise serializers.ValidationError({"current_password": "La contraseña actual es incorrecta."})
+        if attrs["password"] != attrs["password_confirm"]:
+            raise serializers.ValidationError({"password_confirm": "Las contraseñas nuevas no coinciden."})
+        if attrs["password"] == attrs["current_password"]:
+            raise serializers.ValidationError({"password": "La nueva contraseña debe ser diferente de la actual."})
+        try:
+            validate_password(attrs["password"], user=user)
+        except DjangoValidationError as error:
+            raise serializers.ValidationError({"password": error.messages}) from error
+        return attrs
 
 
 class AccountTokenSerializer(serializers.Serializer):
@@ -269,7 +301,8 @@ class UserListSerializer(serializers.ModelSerializer):
         }
 
     def get_subscription(self, obj):
-
+        if obj.role != User.Role.CLIENT:
+            return None
         try:
             subscription = obj.subscription
 
@@ -338,7 +371,8 @@ class UserDetailSerializer(serializers.ModelSerializer):
         }
 
     def get_subscription(self, obj):
-
+        if obj.role != User.Role.CLIENT:
+            return None
         try:
             subscription = obj.subscription
 
@@ -358,6 +392,47 @@ class UserDetailSerializer(serializers.ModelSerializer):
             "auto_renew":
                 subscription.auto_renew,
         }
+
+class SupportUserCreateSerializer(serializers.Serializer):
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150)
+    email = serializers.EmailField(max_length=254)
+    password = serializers.CharField(write_only=True, trim_whitespace=False, min_length=8)
+    password_confirm = serializers.CharField(write_only=True, trim_whitespace=False, min_length=8)
+
+    def validate_email(self, value):
+        email = value.strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise serializers.ValidationError("Ya existe un usuario con este correo.")
+        return email
+
+    def validate(self, attrs):
+        if attrs["password"] != attrs["password_confirm"]:
+            raise serializers.ValidationError({"password_confirm": "Las contraseñas no coinciden."})
+        candidate = User(
+            email=attrs["email"],
+            first_name=attrs["first_name"],
+            last_name=attrs["last_name"],
+        )
+        try:
+            validate_password(attrs["password"], user=candidate)
+        except DjangoValidationError as error:
+            raise serializers.ValidationError({"password": error.messages}) from error
+        return attrs
+
+    def create(self, validated_data):
+        validated_data.pop("password_confirm")
+        # Alta interna autorizada por ADMIN: acceso inmediato, sin privilegios Django.
+        user = User.objects.create_user(
+            **validated_data,
+            role=User.Role.SUPPORT,
+            is_active=True,
+            is_email_verified=True,
+            is_staff=False,
+            is_superuser=False,
+        )
+        return user
+
 
 class UserAdminUpdateSerializer(serializers.ModelSerializer):
 

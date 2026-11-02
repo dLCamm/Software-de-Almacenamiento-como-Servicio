@@ -36,6 +36,8 @@ export default function useDashboard(storageApi) {
   const [dialogName, setDialogName] = useState('')
   const [dialogBusy, setDialogBusy] = useState(false)
   const [copied, setCopied] = useState(false)
+  const canUploadTemporary = usage?.features?.temporary_files === true
+  const canShareLinks = usage?.features?.share_links === true
 
   const currentFolder = folderStack.at(-1) ?? null
   const currentFolderId = currentFolder?.id ?? null
@@ -55,6 +57,7 @@ export default function useDashboard(storageApi) {
           if (!ignored) {
             setTrashItems(Array.isArray(nextTrashItems) ? nextTrashItems : [])
             setUsage(nextUsage)
+            if (!nextUsage?.features?.temporary_files) setUploadTemporary(false)
           }
         } else {
           const [nextFiles, nextFolders, nextUsage] = await Promise.all([
@@ -66,10 +69,14 @@ export default function useDashboard(storageApi) {
             setFiles(Array.isArray(nextFiles) ? nextFiles : [])
             setFolders(Array.isArray(nextFolders) ? nextFolders : [])
             setUsage(nextUsage)
+            if (!nextUsage?.features?.temporary_files) setUploadTemporary(false)
           }
         }
       } catch (requestError) {
-        if (!ignored) setError(getErrorMessage(requestError))
+        if (!ignored) {
+          setUsage(null)
+          setError(getErrorMessage(requestError))
+        }
       } finally {
         if (!ignored) setLoading(false)
       }
@@ -80,6 +87,12 @@ export default function useDashboard(storageApi) {
   function refresh() {
     setRefreshKey((key) => key + 1)
   }
+
+  useEffect(() => {
+    const refreshOnFocus = () => setRefreshKey((key) => key + 1)
+    window.addEventListener('focus', refreshOnFocus)
+    return () => window.removeEventListener('focus', refreshOnFocus)
+  }, [])
 
   function clearError() {
     setError('')
@@ -140,6 +153,11 @@ export default function useDashboard(storageApi) {
 
   async function acceptFiles(fileList) {
     if (uploading) return
+    if (uploadTemporary && !canUploadTemporary) {
+      setError('Tu suscripción actual no incluye archivos temporales. Revisa tu plan antes de subirlos.')
+      refresh()
+      return
+    }
     const selected = Array.from(fileList ?? [])
     if (!selected.length) return
 
@@ -167,6 +185,7 @@ export default function useDashboard(storageApi) {
           successes.push(file.name)
         } catch (uploadError) {
           failures.push(`${file.name}: ${getErrorMessage(uploadError)}`)
+          if (uploadError?.data?.code === 'plan_feature_unavailable') refresh()
         }
       }
 
@@ -287,6 +306,10 @@ export default function useDashboard(storageApi) {
 
   async function shareFile(file) {
     setOpenMenu('')
+    if (!canShareLinks) {
+      setError('Tu suscripción actual no incluye enlaces compartidos.')
+      return
+    }
     try {
       const result = await storageApi.shareFile(file.id)
       setCopied(false)
@@ -297,6 +320,7 @@ export default function useDashboard(storageApi) {
       })
     } catch (requestError) {
       setError(getErrorMessage(requestError))
+      if (requestError?.data?.code === 'plan_feature_unavailable') refresh()
     }
   }
 
@@ -317,6 +341,8 @@ export default function useDashboard(storageApi) {
     trashItems,
     showTrash,
     usage,
+    canUploadTemporary,
+    canShareLinks,
     search,
     setSearch,
     extensionFilter,

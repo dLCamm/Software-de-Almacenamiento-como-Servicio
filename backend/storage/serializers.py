@@ -108,6 +108,7 @@ class StorageUsageSerializer(serializers.Serializer):
     plan_precio_mensual = serializers.DecimalField(max_digits=8, decimal_places=2)
     plan_pendiente_codigo = serializers.CharField(allow_null=True)
     plan_pendiente_nombre = serializers.CharField(allow_null=True)
+    features = serializers.DictField(child=serializers.BooleanField())
 
 
 class TrashItemSerializer(serializers.Serializer):
