@@ -21,6 +21,7 @@ class InternalAccountMigrationTests(TransactionTestCase):
         Archivo = old.get_model("storage", "Archivo")
         Plan.objects.get_or_create(code="free", defaults={"name": "FREE", "storage_limit_bytes": 1024**3, "monthly_price": 0})
         pro, _ = Plan.objects.get_or_create(code="pro", defaults={"name": "PRO", "storage_limit_bytes": 50 * 1024**3, "monthly_price": 149})
+        legacy = User.objects.create(email="legacy-client@example.com", role="client", plan=pro)
         accounts = {}
         for role in ("ADMIN", "SUPPORT", "CLIENT"):
             user = User.objects.create(email=f"migration-{role}@example.com", role=role, plan=pro, pending_plan=pro)
@@ -34,6 +35,9 @@ class InternalAccountMigrationTests(TransactionTestCase):
         new = executor.loader.project_state(latest).apps
         User = new.get_model("users", "User")
         Subscription = new.get_model("plans", "Subscription")
+        legacy = User.objects.get(pk=legacy.pk)
+        self.assertEqual(legacy.role, "CLIENT")
+        self.assertEqual(legacy.plan_id, pro.pk)
         for role in ("ADMIN", "SUPPORT"):
             user = User.objects.get(pk=accounts[role])
             self.assertIsNone(user.plan_id)

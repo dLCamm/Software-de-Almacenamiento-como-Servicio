@@ -127,7 +127,7 @@ export default function ClientLayout() {
 
       <div className="client-nav__footer">
         <ThemeToggle variant="row" className="client-nav__link" />
-        <span className="client-nav__link is-disabled" aria-disabled="true" title="Próximamente"><NavIcon name="settings" /><span>Configuración</span></span>
+        <NavLink to="/app/configuracion" onClick={() => setOpen(false)} className={({ isActive }) => `client-nav__link ${isActive ? 'is-active' : ''}`}><NavIcon name="settings" /><span>Configuración</span></NavLink>
         <button className="client-nav__link" type="button" onClick={handleLogout}><NavIcon name="logout" /><span>Cerrar sesión</span></button>
       </div>
     </aside>

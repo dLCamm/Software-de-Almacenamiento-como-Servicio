@@ -202,6 +202,31 @@ no inicia sesión automáticamente. Consulta [configuración y pruebas](docs/AUT
 
 ---
 
+### 3.5. Configuración de la cuenta
+
+La pantalla `/app/configuracion` está disponible desde la barra lateral para clientes,
+soporte y administradores. Ambos endpoints requieren autenticación y solo afectan
+a la cuenta del token recibido.
+
+| Método | Ruta | JSON requerido |
+| --- | --- | --- |
+| `PATCH` | `/api/auth/me/` | `first_name` y/o `last_name` |
+| `POST` | `/api/auth/password-change/` | `current_password`, `password`, `password_confirm` |
+
+- El perfil acepta nombres de hasta 150 caracteres, permite vaciarlos y rechaza
+  campos adicionales. Devuelve `200` con `{ "detail": "…", "user": { … } }`.
+- El cambio de contraseña comprueba la contraseña actual, la confirmación y la
+  política de seguridad. La nueva contraseña debe ser distinta de la actual.
+  Devuelve `200` con `detail` e invalida los tokens de acceso y refresco anteriores;
+  el frontend cierra la sesión y muestra el mensaje en el inicio de sesión.
+- Las validaciones devuelven `400`; la falta de autenticación, `401`. El cambio de
+  contraseña permite hasta 10 solicitudes por hora por usuario y después devuelve `429`.
+- Los eventos `auth.profile_updated` y `auth.password_changed` quedan en auditoría,
+  sin registrar contraseñas. Estas operaciones conservan el rol y el plan de la cuenta.
+- La preferencia de tema claro u oscuro se guarda localmente en el navegador.
+
+---
+
 ## 4. Endpoints de Almacenamiento: Archivos (`/api/storage/files/`)
 
 ### 4.1. Subir Archivo

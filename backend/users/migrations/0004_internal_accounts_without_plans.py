@@ -1,4 +1,5 @@
 from django.db import migrations, models
+from django.db.models.functions import Trim, Upper
 import django.db.models.deletion
 from django.utils import timezone
 
@@ -7,6 +8,10 @@ def detach_internal_plans(apps, schema_editor):
     User = apps.get_model("users", "User")
     Subscription = apps.get_model("plans", "Subscription")
     alias = schema_editor.connection.alias
+    # Cuentas antiguas pueden usar "client"; conservar el rol y normalizar su código.
+    User.objects.using(alias).annotate(normalized_role=Upper(Trim("role"))).filter(
+        normalized_role__in=["CLIENT", "ADMIN", "SUPPORT"],
+    ).update(role=Upper(Trim("role")))
     internal = User.objects.using(alias).filter(role__in=["ADMIN", "SUPPORT"])
     internal.update(plan=None, pending_plan=None)
     Subscription.objects.using(alias).filter(user_id__in=internal.values("pk")).update(

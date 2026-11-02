@@ -216,6 +216,38 @@ class AccountEmailSerializer(serializers.Serializer):
         return value.strip().lower()
 
 
+class ProfileUpdateSerializer(serializers.Serializer):
+    first_name = serializers.CharField(max_length=150, allow_blank=True, required=False)
+    last_name = serializers.CharField(max_length=150, allow_blank=True, required=False)
+
+    def validate(self, attrs):
+        if set(self.initial_data) - set(self.fields):
+            raise serializers.ValidationError({"detail": "Desde configuración solo puedes editar tu nombre y apellido."})
+        if not attrs:
+            raise serializers.ValidationError({"detail": "Envía el nombre o el apellido que deseas cambiar."})
+        return attrs
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    current_password = serializers.CharField(write_only=True, trim_whitespace=False)
+    password = serializers.CharField(write_only=True, trim_whitespace=False, min_length=8)
+    password_confirm = serializers.CharField(write_only=True, trim_whitespace=False, min_length=8)
+
+    def validate(self, attrs):
+        user = self.context["user"]
+        if not user.check_password(attrs["current_password"]):
+            raise serializers.ValidationError({"current_password": "La contraseña actual es incorrecta."})
+        if attrs["password"] != attrs["password_confirm"]:
+            raise serializers.ValidationError({"password_confirm": "Las contraseñas nuevas no coinciden."})
+        if attrs["password"] == attrs["current_password"]:
+            raise serializers.ValidationError({"password": "La nueva contraseña debe ser diferente de la actual."})
+        try:
+            validate_password(attrs["password"], user=user)
+        except DjangoValidationError as error:
+            raise serializers.ValidationError({"password": error.messages}) from error
+        return attrs
+
+
 class AccountTokenSerializer(serializers.Serializer):
     uid = serializers.CharField(max_length=64)
     token = serializers.CharField(max_length=128)

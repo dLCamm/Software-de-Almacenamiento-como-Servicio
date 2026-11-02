@@ -13,6 +13,8 @@ from plans.models import Subscription
 from storage.models import Archivo
 from storage.services.file_service import FileService
 from users.models import Plan, User
+from core.models import AuditLog
+from users.serializers import LoginSerializer
 
 
 class InternalAccountTests(TestCase):
@@ -146,3 +148,76 @@ class InternalAccountTests(TestCase):
         self.assertEqual(self.client.get("/api/admin/plans/").status_code, 200)
         self.assertEqual(self.client.get("/api/admin/statistics/").status_code, 200)
         self.assertEqual(self.client.get("/api/admin/audit/").status_code, 200)
+
+    def test_admin_can_edit_support_and_admin_profiles_without_a_plan(self):
+        self.client.force_authenticate(self.admin)
+        for user in (self.support, self.admin):
+            with self.subTest(role=user.role):
+                response = self.client.patch(f"/api/auth/management/{user.pk}/edit/", {
+                    "first_name": "Nombre actualizado", "last_name": "Apellido actualizado",
+                }, format="json")
+                self.assertEqual(response.status_code, 200, response.data)
+                self.assertEqual(response.data["user"]["id"], user.pk)
+                self.assertIsNone(response.data["user"]["plan"])
+                self.assertIsNone(response.data["user"]["subscription"])
+                user.refresh_from_db()
+                self.assertEqual(user.first_name, "Nombre actualizado")
+                self.assertEqual(user.last_name, "Apellido actualizado")
+                self.assertTrue(user.is_email_verified)
+                self.assertIsNone(user.plan)
+        self.assertEqual(AuditLog.objects.filter(action="user.updated", actor=self.admin).count(), 2)
+
+    def test_admin_can_change_between_all_user_roles(self):
+        self.client.force_authenticate(self.admin)
+        for source_role in User.Role.values:
+            for destination_role in User.Role.values:
+                with self.subTest(source=source_role, destination=destination_role):
+                    user = User.objects.create_user(f"{source_role}-{destination_role}@example.com", role=source_role, plan=self.pro)
+                    response = self.client.patch(f"/api/auth/management/{user.pk}/edit/", {"role": destination_role}, format="json")
+                    self.assertEqual(response.status_code, 200, response.data)
+                    user.refresh_from_db()
+                    self.assertEqual(user.role, destination_role)
+                    self.assertEqual(response.data["user"]["role"], destination_role)
+                    if destination_role == "CLIENT":
+                        self.assertEqual(user.plan, self.pro if source_role == "CLIENT" else self.free)
+                        self.assertEqual(response.data["user"]["plan"]["id"], user.plan_id)
+                    else:
+                        self.assertIsNone(user.plan_id)
+                        self.assertIsNone(response.data["user"]["plan"])
+                        self.assertIsNone(response.data["user"]["subscription"])
+
+    def test_editing_email_and_invalid_edits_return_clear_results(self):
+        self.client.force_authenticate(self.admin)
+        url = f"/api/auth/management/{self.support.pk}/edit/"
+        for payload, field in (({"email": self.admin.email.upper()}, "email"), ({"role": "invalid"}, "role")):
+            response = self.client.patch(url, payload, format="json")
+            self.assertEqual(response.status_code, 400)
+            self.assertIn(field, response.data)
+        response = self.client.patch(url, {"email": "Changed-Support@Example.com"}, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["user"]["email"], "changed-support@example.com")
+        self.assertFalse(response.data["user"]["is_email_verified"])
+        self.support.refresh_from_db()
+        self.assertIsNone(self.support.plan)
+
+    def test_support_and_clients_cannot_edit_users_or_roles(self):
+        url = f"/api/auth/management/{self.admin.pk}/edit/"
+        for user in (self.support, self.customer):
+            self.client.force_authenticate(user)
+            response = self.client.patch(url, {"role": "SUPPORT"}, format="json")
+            self.assertEqual(response.status_code, 403)
+        self.client.force_authenticate(None)
+        self.assertEqual(self.client.patch(url, {"role": "SUPPORT"}, format="json").status_code, 401)
+        self.admin.refresh_from_db()
+        self.assertEqual(self.admin.role, "ADMIN")
+
+    def test_self_role_change_returns_saved_profile_and_old_token_obeys_new_role(self):
+        token = LoginSerializer.get_token(self.admin)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {token.access_token}")
+        response = self.client.patch(f"/api/auth/management/{self.admin.pk}/edit/", {"role": "SUPPORT"}, format="json")
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertEqual(response.data["user"]["role"], "SUPPORT")
+        self.assertEqual(response.data["user"]["id"], self.admin.pk)
+        self.assertEqual(self.client.get("/api/auth/management/users/").status_code, 200)
+        self.assertEqual(self.client.get(f"/api/auth/management/{self.admin.pk}/").status_code, 403)
+        self.assertEqual(self.client.get("/api/admin/plans/").status_code, 403)

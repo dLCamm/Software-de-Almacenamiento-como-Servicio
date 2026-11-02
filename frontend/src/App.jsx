@@ -18,6 +18,7 @@ import ClientLayout from './layouts/ClientLayout'
 import AuditLogPage from './pages/admin/reports/AuditLogPage'
 import StatisticsPage from './pages/admin/reports/StatisticsPage'
 import AdminHomePage from './pages/admin/home/AdminHomePage'
+import SettingsPage from './pages/settings/SettingsPage'
 
 
 export default function App() {
@@ -33,6 +34,7 @@ export default function App() {
       <Route path="/resend-verification" element={<AuthPage />}/>
       {/* Todas las páginas dentro de ClientLayout comparten la barra lateral */}
       <Route element={<ProtectedRoute><ClientLayout /></ProtectedRoute>}>
+        <Route path="/app/configuracion" element={<SettingsPage />}/>
         <Route path="/app/client" element={<ClientRoute><DashboardPageClient /></ClientRoute>}/>
         <Route path="/app/client/billing/:section?" element={<ClientRoute><BillingPage /></ClientRoute>}/>
         <Route path="/app/admin" element={<AdminIndexRoute />}/>

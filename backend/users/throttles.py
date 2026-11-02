@@ -1,7 +1,11 @@
 from collections.abc import Mapping
 
 from django.utils.crypto import salted_hmac
-from rest_framework.throttling import SimpleRateThrottle
+from rest_framework.throttling import SimpleRateThrottle, UserRateThrottle
+
+
+class PasswordChangeThrottle(UserRateThrottle):
+    scope = "password_change"
 
 
 class AuthEmailIPThrottle(SimpleRateThrottle):

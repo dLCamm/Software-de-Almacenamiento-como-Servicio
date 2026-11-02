@@ -10,12 +10,28 @@ from rest_framework.views import APIView
 from core.audit import record_audit_event
 from .emails import send_account_email
 from .models import User
-from .serializers import AccountEmailSerializer, AccountTokenSerializer, PasswordResetConfirmSerializer
-from .throttles import AuthEmailIPThrottle, AuthEmailRecipientThrottle
+from .serializers import AccountEmailSerializer, AccountTokenSerializer, PasswordChangeSerializer, PasswordResetConfirmSerializer
+from .throttles import AuthEmailIPThrottle, AuthEmailRecipientThrottle, PasswordChangeThrottle
 from .tokens import email_verification_token, password_recovery_token
 
 
 INVALID_LINK = "El enlace no es válido o ha vencido. Solicita uno nuevo."
+
+
+class PasswordChangeView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [PasswordChangeThrottle]
+
+    def post(self, request):
+        with transaction.atomic():
+            user = User.objects.select_for_update().get(pk=request.user.pk)
+            serializer = PasswordChangeSerializer(data=request.data, context={"user": user})
+            serializer.is_valid(raise_exception=True)
+            user.set_password(serializer.validated_data["password"])
+            user.save(update_fields=["password", "updated_at"])
+            record_audit_event(actor=user, action="auth.password_changed", resource_type="user", resource_id=user.pk)
+        # CHECK_REVOKE_TOKEN invalida los JWT anteriores al cambiar el hash.
+        return Response({"detail": "Contraseña actualizada. Las sesiones anteriores se cerraron. Inicia sesión con tu nueva contraseña."})
 
 
 def user_for_token(data, generator):

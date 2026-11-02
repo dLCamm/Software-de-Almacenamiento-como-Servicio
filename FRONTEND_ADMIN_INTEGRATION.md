@@ -35,6 +35,12 @@ Devuelve `201` con `{ "detail": "…", "user": { ... } }`, utilizando el mismo f
 
 Solo el administrador ve **Crear usuario de soporte** en Gestión de usuarios. Al terminar, la lista se actualiza y se limpian los filtros para mostrar la cuenta nueva. Los clientes y soporte reciben `403` si intentan crear cuentas; una solicitud sin autenticación recibe `401`. El alta queda registrada como `user.support_created`, con el administrador como actor y la cuenta nueva como recurso.
 
+### Editar usuarios y cambiar roles
+
+`PATCH /api/auth/management/{id}/edit/` permite al administrador editar nombre, apellido, correo y rol de clientes, soporte y administradores. Devuelve `{ "detail": "…", "user": { ... } }` con el perfil administrativo completo, incluido el plan resultante y la suscripción. El formulario usa esa respuesta para actualizar la pantalla sin depender de una segunda consulta. Los cambios quedan auditados como `user.updated`.
+
+Si el administrador cambia su propio rol, la interfaz lo envía a la sección correspondiente a sus nuevos permisos. Si cambia su propio correo, la sesión se cierra y se informa que debe verificar la nueva dirección. Así una edición guardada no se muestra como fallida por una consulta posterior sin permisos.
+
 ### Beneficios de planes
 
 `POST /api/admin/plans/` y `PUT/PATCH /api/admin/plans/{id}/` aceptan beneficios con `description`, `order` y `feature`:
