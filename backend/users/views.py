@@ -11,6 +11,7 @@ from .models import User
 from .serializers import (
     LoginSerializer,
     RegisterSerializer,
+    SupportUserCreateSerializer,
     UserAdminUpdateSerializer,
     UserDetailSerializer,
     UserListSerializer,
@@ -178,6 +179,30 @@ class UserManagementListView(ListAPIView):
             )
 
         return queryset
+
+
+class SupportUserCreateView(APIView):
+    permission_classes = [IsAdministrator]
+
+    def post(self, request):
+        serializer = SupportUserCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        with transaction.atomic():
+            user = serializer.save()
+            record_audit_event(
+                actor=request.user,
+                action="user.support_created",
+                resource_type="user",
+                resource_id=user.pk,
+                details={"role": user.role},
+            )
+        return Response(
+            {
+                "detail": "Usuario de soporte creado. Ya puede iniciar sesión con su correo y contraseña.",
+                "user": UserDetailSerializer(user).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class UserManagementDetailView(APIView):

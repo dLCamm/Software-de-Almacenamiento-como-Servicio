@@ -3,6 +3,7 @@ import { formatBytes } from '../../client/dashboard/formatters'
 /** Acciones que registra el backend, agrupadas para el filtro. */
 export const AUDIT_ACTION_GROUPS = [
   { label: 'Cuenta', actions: [['auth.register', 'Registro'], ['auth.login', 'Inicio de sesión'], ['auth.email_verified', 'Correo verificado'], ['auth.password_reset', 'Contraseña restablecida']] },
+  { label: 'Usuarios', actions: [['user.support_created', 'Creó un usuario de soporte']] },
   {
     label: 'Archivos',
     actions: [

@@ -17,6 +17,14 @@ El usuario debe tener el rol `ADMIN`, en concordancia con las rutas administrati
 
 ## Endpoints
 
+### Crear un usuario de soporte
+
+`POST /api/auth/management/support/` requiere una sesión con rol `ADMIN`. Recibe `first_name`, `last_name`, `email`, `password` y `password_confirm`. Valida identidad, correo único sin distinguir mayúsculas y las reglas de contraseña de Django.
+
+Devuelve `201` con `{ "detail": "…", "user": { ... } }`, utilizando el mismo formato del detalle administrativo. La cuenta se crea siempre con rol `SUPPORT`, activa y con el correo autorizado por el administrador (`is_email_verified=true`) para permitir el inicio de sesión inmediato. Se le asigna FREE; no recibe privilegios de Django Admin, grupos ni permisos administrativos. La contraseña se almacena mediante hash, no se devuelve y no se envía por correo. Los campos de privilegios del cliente no se aceptan como configuración.
+
+Solo el administrador ve **Crear usuario de soporte** en Gestión de usuarios. Al terminar, la lista se actualiza y se limpian los filtros para mostrar la cuenta nueva. Los clientes y soporte reciben `403` si intentan crear cuentas; una solicitud sin autenticación recibe `401`. El alta queda registrada como `user.support_created`, con el administrador como actor y la cuenta nueva como recurso.
+
 ### Beneficios de planes
 
 `POST /api/admin/plans/` y `PUT/PATCH /api/admin/plans/{id}/` aceptan beneficios con `description`, `order` y `feature`:

@@ -5,6 +5,7 @@ import { listManagedUsers } from '../../../api/management'
 import { AdminIcon } from '../plans/AdminIcon'
 import TablePagination from '../shared/TablePagination'
 import usePagedList from '../shared/usePagedList'
+import SupportUserCreateDialog from './SupportUserCreateDialog'
 import '../plans/AdminPlansPage.css'
 import './ManagementPage.css'
 
@@ -29,6 +30,8 @@ export default function ManagedUsersPage() {
   const [filters, setFilters] = useState({})
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [creatingSupport, setCreatingSupport] = useState(false)
+  const [notice, setNotice] = useState('')
   const paged = usePagedList(users, 10)
 
   useEffect(() => {
@@ -64,13 +67,23 @@ export default function ManagedUsersPage() {
     setFilters({})
   }
 
+  function supportCreated(result) {
+    setCreatingSupport(false)
+    setNotice(result.detail)
+    setUsers((current) => [result.user, ...current.filter((user) => user.id !== result.user.id)])
+    // Quitar filtros que podrían ocultar la cuenta recién creada.
+    clearFilters()
+  }
+
   return <main className="admin-page">
     <header className="admin-header">
       <div><span className="admin-header__crumb">Administración</span><h1>Gestión de usuarios</h1><p>{loading ? 'Cargando cuentas…' : `${users.length} ${users.length === 1 ? 'cuenta encontrada' : 'cuentas encontradas'}`}</p></div>
+      {profile?.role === 'ADMIN' && <button className="admin-button admin-button--primary" type="button" onClick={() => { setNotice(''); setCreatingSupport(true) }}><AdminIcon name="plus" />Crear usuario de soporte</button>}
     </header>
 
     <div className="admin-content">
       {error && <div className="admin-alert admin-alert--error" role="alert"><span>{error}</span></div>}
+      {notice && <div className="admin-alert admin-alert--success" role="status"><span>{notice}</span><button type="button" onClick={() => setNotice('')} aria-label="Cerrar mensaje">×</button></div>}
       <form className="management-filters" onSubmit={applyFilters}>
         <label className="admin-field management-search"><span>Buscar usuario</span><input name="search" value={form.search} onChange={changeField} placeholder="Nombre o correo" /></label>
         <label className="admin-field"><span>Plan</span><select name="plan" value={form.plan} onChange={changeField}><option value="">Todos</option><option value="free">Free</option><option value="pro">Pro</option><option value="business">Business</option><option value="premium">Premium</option></select></label>
@@ -98,5 +111,6 @@ export default function ManagedUsersPage() {
           </div>
           <TablePagination page={paged.page} pageSize={paged.pageSize} total={paged.total} onPageChange={paged.setPage} onPageSizeChange={paged.setPageSize} label="Paginación de usuarios" /></>}
     </div>
+    {creatingSupport && profile?.role === 'ADMIN' && <SupportUserCreateDialog onClose={() => setCreatingSupport(false)} onCreated={supportCreated} />}
   </main>
 }

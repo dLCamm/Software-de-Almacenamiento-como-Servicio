@@ -359,6 +359,48 @@ class UserDetailSerializer(serializers.ModelSerializer):
                 subscription.auto_renew,
         }
 
+class SupportUserCreateSerializer(serializers.Serializer):
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150)
+    email = serializers.EmailField(max_length=254)
+    password = serializers.CharField(write_only=True, trim_whitespace=False, min_length=8)
+    password_confirm = serializers.CharField(write_only=True, trim_whitespace=False, min_length=8)
+
+    def validate_email(self, value):
+        email = value.strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise serializers.ValidationError("Ya existe un usuario con este correo.")
+        return email
+
+    def validate(self, attrs):
+        if attrs["password"] != attrs["password_confirm"]:
+            raise serializers.ValidationError({"password_confirm": "Las contraseñas no coinciden."})
+        candidate = User(
+            email=attrs["email"],
+            first_name=attrs["first_name"],
+            last_name=attrs["last_name"],
+        )
+        try:
+            validate_password(attrs["password"], user=candidate)
+        except DjangoValidationError as error:
+            raise serializers.ValidationError({"password": error.messages}) from error
+        return attrs
+
+    def create(self, validated_data):
+        validated_data.pop("password_confirm")
+        # Alta interna autorizada por ADMIN: acceso inmediato, sin privilegios Django.
+        user = User.objects.create_user(
+            **validated_data,
+            role=User.Role.SUPPORT,
+            is_active=True,
+            is_email_verified=True,
+            is_staff=False,
+            is_superuser=False,
+        )
+        Subscription.objects.create(user=user, status="ACTIVE", end_date=None, auto_renew=False)
+        return user
+
+
 class UserAdminUpdateSerializer(serializers.ModelSerializer):
 
     class Meta:
