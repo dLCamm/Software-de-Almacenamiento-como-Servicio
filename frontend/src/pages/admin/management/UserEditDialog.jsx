@@ -59,6 +59,9 @@ export default function UserEditDialog({ user, onClose, onSaved }) {
             <label className="admin-field"><span>Correo electrónico</span><input name="email" type="email" value={form.email} onChange={changeField} autoComplete="email" /><small>Si cambias el correo, el usuario deberá verificar la nueva dirección antes de volver a entrar.</small></label>
             <label className="admin-field"><span>Rol</span><select name="role" value={form.role} onChange={changeField}><option value="CLIENT">Cliente</option><option value="SUPPORT">Soporte</option><option value="ADMIN">Administrador</option></select></label>
           </div>
+          {form.role !== user?.role && <p className="management-muted">{form.role === 'CLIENT'
+            ? 'Al convertir la cuenta en cliente, comenzará con el plan FREE.'
+            : 'Al asignar un rol interno, se quitará el plan personal y se cancelará su suscripción.'}</p>}
           {error && <div className="admin-alert admin-alert--error" role="alert">{error}</div>}
         </div>
         <footer className="admin-dialog__footer"><button className="admin-button admin-button--secondary" type="button" onClick={onClose} disabled={saving}>Cancelar</button><button className="admin-button admin-button--primary" type="submit" disabled={saving}>{saving ? 'Guardando…' : 'Guardar cambios'}</button></footer>

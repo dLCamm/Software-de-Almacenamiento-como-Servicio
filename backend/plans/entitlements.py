@@ -2,7 +2,7 @@
 from django.utils import timezone
 
 from plans.models import PlanBenefit, Subscription
-from users.models import Plan
+from users.models import Plan, User
 
 
 class PlanFeatureUnavailable(Exception):
@@ -10,12 +10,16 @@ class PlanFeatureUnavailable(Exception):
 
 
 def get_plan_features(plan):
+    if plan is None:
+        return {feature: False for feature in PlanBenefit.Feature.values}
     enabled = {benefit.feature for benefit in plan.benefits.all() if benefit.feature}
     paid_plan = plan.code != Plan.FREE_CODE and plan.monthly_price > 0
     return {feature: paid_plan and feature in enabled for feature in PlanBenefit.Feature.values}
 
 
 def get_user_features(user):
+    if user.role != User.Role.CLIENT:
+        return get_plan_features(None)
     features = get_plan_features(user.plan)
     if not any(features.values()):
         return features

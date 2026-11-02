@@ -1,8 +1,6 @@
-from django.db import models
-
-# Create your models here.
-from django.contrib.auth.models import AbstractUser, BaseUserManager, AbstractBaseUser, PermissionsMixin
-from django.db import models
+from django.contrib.auth.models import AbstractUser, BaseUserManager
+from django.db import models, transaction
+from django.utils import timezone
 
 
 class Plan(models.Model):
@@ -42,11 +40,8 @@ class UserManager(BaseUserManager):
             raise ValueError("El correo electrónico es obligatorio.")
 
         email = self.normalize_email(email)
-        plan = extra_fields.pop("plan", None) or Plan.objects.get(code=Plan.FREE_CODE)
-
         user = self.model(
             email=email,
-            plan=plan,
             **extra_fields
         )
 
@@ -95,6 +90,8 @@ class User(AbstractUser):
 
     plan = models.ForeignKey(
         Plan,
+        null=True,
+        blank=True,
         on_delete=models.PROTECT,
         related_name="users",
         verbose_name="Plan actual",
@@ -136,6 +133,63 @@ class User(AbstractUser):
     REQUIRED_FIELDS = []
 
     objects = UserManager()
+
+    class Meta(AbstractUser.Meta):
+        abstract = False
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(role="CLIENT", plan__isnull=False)
+                    | models.Q(role__in=["ADMIN", "SUPPORT"], plan__isnull=True, pending_plan__isnull=True)
+                ),
+                name="user_plan_matches_role",
+            ),
+        ]
+
+    def _normalize_plan_for_role(self):
+        if self.role == self.Role.CLIENT:
+            if self.plan_id is None:
+                self.plan = Plan.objects.get(code=Plan.FREE_CODE)
+        else:
+            self.plan = None
+            self.pending_plan = None
+
+    def clean(self):
+        super().clean()
+        self._normalize_plan_for_role()
+
+    def save(self, *args, **kwargs):
+        from plans.models import Subscription
+
+        update_fields = kwargs.get("update_fields")
+        if update_fields is not None and not update_fields:
+            return
+        with transaction.atomic(using=kwargs.get("using")):
+            previous_role = None
+            if not self._state.adding and (update_fields is None or "role" in update_fields):
+                previous_role = type(self).objects.filter(pk=self.pk).values_list("role", flat=True).first()
+            original_plan_ids = (self.plan_id, self.pending_plan_id)
+            becoming_client = previous_role in (self.Role.ADMIN, self.Role.SUPPORT) and self.role == self.Role.CLIENT
+            if becoming_client:
+                self.plan = None
+                self.pending_plan = None
+            self._normalize_plan_for_role()
+            if update_fields is not None and original_plan_ids != (self.plan_id, self.pending_plan_id):
+                kwargs["update_fields"] = set(update_fields) | {"plan", "pending_plan"}
+            super().save(*args, **kwargs)
+
+            # Conservar los registros anteriores, sin suscripción operativa ni renovación.
+            if self.role != self.Role.CLIENT:
+                Subscription.objects.filter(user_id=self.pk).exclude(status="CANCELLED", auto_renew=False).update(
+                    status="CANCELLED", auto_renew=False, updated_at=timezone.now(),
+                )
+            elif becoming_client:
+                Subscription.objects.update_or_create(user_id=self.pk, defaults={
+                    "start_date": timezone.now(), "end_date": None,
+                    "status": "ACTIVE", "auto_renew": False,
+                })
+            if self.role != self.Role.CLIENT or becoming_client:
+                self._state.fields_cache.pop("subscription", None)
 
     def __str__(self):
         return self.email

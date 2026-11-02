@@ -8,13 +8,14 @@ class PlanFeatureMigrationTests(TransactionTestCase):
         before = [("plans", "0004_alter_planbenefit_plan")]
         after = [("plans", "0005_planbenefit_feature")]
         executor = MigrationExecutor(connection)
-        self.addCleanup(lambda: MigrationExecutor(connection).migrate(after))
+        latest = executor.loader.graph.leaf_nodes()
+        self.addCleanup(lambda: MigrationExecutor(connection).migrate(latest))
         executor.migrate(before)
         old_apps = executor.loader.project_state(before).apps
         Plan = old_apps.get_model("users", "Plan")
         Benefit = old_apps.get_model("plans", "PlanBenefit")
-        free = Plan.objects.get(code="free")
-        pro = Plan.objects.get(code="pro")
+        free, _ = Plan.objects.get_or_create(code="free", defaults={"name": "FREE", "storage_limit_bytes": 1024**3, "monthly_price": 0})
+        pro, _ = Plan.objects.get_or_create(code="pro", defaults={"name": "PRO", "storage_limit_bytes": 50 * 1024**3, "monthly_price": 149})
         Benefit.objects.filter(plan=pro).delete()
         Benefit.objects.create(plan=pro, description="Compartir archivos", order=1)
         Benefit.objects.create(plan=pro, description="Compartir enlaces", order=2)

@@ -10,8 +10,9 @@ from django.core.files.uploadedfile import UploadedFile
 from django.db import models, transaction
 from django.utils import timezone
 
-from plans.entitlements import get_user_features, require_feature
+from plans.entitlements import PlanFeatureUnavailable, get_user_features, require_feature
 from plans.models import PlanBenefit
+from users.models import User
 
 from storage.interfaces.storage_backend import (
     IStorageBackend,
@@ -275,6 +276,8 @@ class FileService:
     @classmethod
     def get_user_storage_usage(cls, user) -> dict:
         """Calcula el uso actual de almacenamiento del usuario (RF-09)."""
+        if user.role != User.Role.CLIENT or user.plan_id is None:
+            raise PlanFeatureUnavailable("El almacenamiento personal es exclusivo de clientes.")
         total_used = Archivo.objects.filter(
             usuario=user,
             estado__in=(EstadoElemento.ACTIVO, EstadoElemento.PAPELERA),

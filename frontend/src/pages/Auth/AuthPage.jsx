@@ -25,9 +25,10 @@ export default function AuthPage() {
   const requestedPlan = new URLSearchParams(location.search).get('plan')
   const selectedPlan = ['free', 'pro', 'business'].includes(requestedPlan) ? requestedPlan : 'free'
 
-  // El administrador entra directo a su panel; los demás, a Mis Archivos.
+  // Cada rol entra a su sección; las cuentas internas no tienen unidad ni plan personal.
   function handleAuthenticated(data) {
-    navigate(data?.user?.role === 'ADMIN' ? '/app/admin/inicio' : '/app/client')
+    const role = data?.user?.role
+    navigate(role === 'ADMIN' ? '/app/admin/inicio' : role === 'SUPPORT' ? '/app/admin/usuarios' : '/app/client')
   }
 
   function handleCompleted(message) {

@@ -80,7 +80,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
         plan = obj.user.plan
 
-        return PlanSerializer(plan).data
+        return PlanSerializer(plan).data if plan else None
 
 class PlanAdminSerializer(serializers.ModelSerializer):
 

@@ -38,12 +38,13 @@ class SupportUserCreationTests(TestCase):
         self.assertTrue(user.is_email_verified)
         self.assertFalse(user.is_staff)
         self.assertFalse(user.is_superuser)
-        self.assertEqual(user.plan.code, "free")
+        self.assertIsNone(user.plan)
         self.assertIsNone(user.pending_plan)
         self.assertTrue(user.check_password(self.payload["password"]))
         self.assertNotEqual(user.password, self.payload["password"])
-        self.assertEqual(user.subscription.status, "ACTIVE")
-        self.assertIsNone(user.subscription.end_date)
+        self.assertFalse(Subscription.objects.filter(user=user).exists())
+        self.assertIsNone(response.data["user"]["plan"])
+        self.assertIsNone(response.data["user"]["subscription"])
         self.assertEqual(response.data["user"]["id"], user.pk)
         self.assertNotIn("password", response.data["user"])
         self.assertNotIn("password_confirm", response.data["user"])
@@ -62,6 +63,7 @@ class SupportUserCreationTests(TestCase):
         }, format="json")
         self.assertEqual(response.status_code, 200, response.data)
         self.assertEqual(response.data["user"]["role"], "SUPPORT")
+        self.assertIsNone(response.data["user"]["plan"])
         self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {response.data['access']}")
         self.assertEqual(self.client.get("/api/auth/me/").status_code, 200)
         users = self.client.get("/api/auth/management/users/")
@@ -99,7 +101,7 @@ class SupportUserCreationTests(TestCase):
         self.assertFalse(user.user_permissions.exists())
         self.assertTrue(user.is_active)
         self.assertTrue(user.is_email_verified)
-        self.assertEqual(user.plan.code, "free")
+        self.assertIsNone(user.plan)
 
     def test_invalid_identity_and_passwords_do_not_create_accounts(self):
         for changes, field in (

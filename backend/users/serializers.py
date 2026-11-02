@@ -191,7 +191,7 @@ class LoginSerializer(TokenObtainPairSerializer):
             "email": self.user.email,
             "role": self.user.role,
             "is_email_verified": self.user.is_email_verified,
-            "plan": PlanSerializer(self.user.plan).data,
+            "plan": PlanSerializer(self.user.plan).data if self.user.plan else None,
             "pending_plan": (
                 PlanSerializer(self.user.pending_plan).data
                 if self.user.pending_plan
@@ -269,7 +269,8 @@ class UserListSerializer(serializers.ModelSerializer):
         }
 
     def get_subscription(self, obj):
-
+        if obj.role != User.Role.CLIENT:
+            return None
         try:
             subscription = obj.subscription
 
@@ -338,7 +339,8 @@ class UserDetailSerializer(serializers.ModelSerializer):
         }
 
     def get_subscription(self, obj):
-
+        if obj.role != User.Role.CLIENT:
+            return None
         try:
             subscription = obj.subscription
 
@@ -397,7 +399,6 @@ class SupportUserCreateSerializer(serializers.Serializer):
             is_staff=False,
             is_superuser=False,
         )
-        Subscription.objects.create(user=user, status="ACTIVE", end_date=None, auto_renew=False)
         return user
 
 

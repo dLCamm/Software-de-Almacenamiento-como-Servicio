@@ -4,7 +4,7 @@ import math
 
 from rest_framework import status, viewsets
 from rest_framework.generics import ListAPIView
-from rest_framework.permissions import IsAuthenticated
+from users.permissions import IsClient
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -32,7 +32,7 @@ class PlanListView(ListAPIView):
 class CurrentSubscriptionView(APIView):
 
     permission_classes = [
-        IsAuthenticated
+        IsClient
     ]
 
     def get(self, request):
@@ -159,7 +159,7 @@ class AdminPlanViewSet(viewsets.ModelViewSet):
 class CurrentPlanView(APIView):
 
     permission_classes = [
-        IsAuthenticated
+        IsClient
     ]
 
     def get(self, request):

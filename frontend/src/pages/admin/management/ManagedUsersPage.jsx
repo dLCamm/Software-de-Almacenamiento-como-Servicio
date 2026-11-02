@@ -102,7 +102,7 @@ export default function ManagedUsersPage() {
               <tbody>{paged.pageItems.map((user) => <tr key={user.id}>
                 <td data-label="Usuario"><span className="management-user-name">{userName(user)}</span><small className="management-user-email">{user.email}</small></td>
                 <td data-label="Rol">{user.role}</td>
-                <td data-label="Plan">{planName(user.plan)}</td>
+                <td data-label="Plan">{user.role === 'CLIENT' ? planName(user.plan) : 'No aplica'}</td>
                 <td data-label="Estado"><span className={`management-badge ${user.is_active ? 'is-success' : 'is-muted'}`}>{user.is_active ? 'Activo' : 'Desactivado'}</span></td>
                 <td data-label="Registro">{formatDate(user.created_at)}</td>
                 <td className="admin-actions"><Link className="admin-button admin-button--secondary management-detail-button" to={`/app/admin/usuarios/${user.id}`}>Ver detalle</Link></td>

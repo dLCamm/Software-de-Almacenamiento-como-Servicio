@@ -3,7 +3,6 @@ from django.db import transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.generics import ListAPIView
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from core.audit import record_audit_event
@@ -14,7 +13,7 @@ from .serializers import (ChangePlanSerializer,RenewSubscriptionSerializer,Payme
 from .services.mock_gateway import MockPaymentGateway
 from django.db.models import Q
 from django.utils.dateparse import parse_date
-from users.permissions import IsAdminOrSupport
+from users.permissions import IsAdminOrSupport, IsClient
 
 from .models import Payment
 from .serializers import PaymentManagementSerializer
@@ -24,7 +23,7 @@ from .serializers import PaymentManagementSerializer
 
 class ChangePlanView(APIView):
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsClient]
 
     def post(self, request):
 
@@ -288,7 +287,7 @@ class ChangePlanView(APIView):
 # HISTORIAL DE PAGOS
 class PaymentHistoryView(ListAPIView):
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsClient]
 
     serializer_class = PaymentSerializer
 
@@ -312,7 +311,7 @@ class PaymentHistoryView(ListAPIView):
 
 class RenewSubscriptionView(APIView):
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsClient]
 
     def post(self, request):
 

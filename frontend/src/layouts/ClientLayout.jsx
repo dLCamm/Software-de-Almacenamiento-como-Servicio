@@ -29,10 +29,9 @@ function NavIcon({ name, size = 20 }) {
 // `ready: false` muestra el enlace deshabilitado hasta que exista la página.
 // `children` son sub-opciones que se despliegan cuando estás dentro de esa sección.
 const NAV_ITEMS = [
-  // El administrador no tiene unidad propia: él administra, no guarda archivos.
-  { to: '/app/client', label: 'Mis Archivos', icon: 'files', end: true, hiddenFor: ['ADMIN'] },
+  { to: '/app/client', label: 'Mis Archivos', icon: 'files', end: true, roles: ['CLIENT'] },
   {
-    to: '/app/client/billing', label: 'Planes y Facturación', icon: 'billing',
+    to: '/app/client/billing', label: 'Planes y Facturación', icon: 'billing', roles: ['CLIENT'],
     children: [
       { to: '/app/client/billing', label: 'Resumen', end: true },
       { to: '/app/client/billing/planes', label: 'Planes' },
@@ -67,12 +66,12 @@ export default function ClientLayout() {
     let active = true
     getProfile().then((data) => { if (active) setProfile(data) }).catch(() => {})
     return () => { active = false }
-  }, [])
+  }, [pathname])
 
   // También se vuelve a pedir al cambiar de página (la respuesta llega por subscribeStorageUsage).
   useEffect(() => {
-    getStorageUsage().catch(() => {})
-  }, [pathname])
+    if (profile?.role === 'CLIENT') getStorageUsage().catch(() => {})
+  }, [pathname, profile?.role])
 
   // El administrador no tiene un plan propio: su recuadro muestra el almacenamiento de todo el sistema.
   // Se recalcula al cambiar de página y cada vez que cambia el uso (subir, borrar, restaurar…).
@@ -120,7 +119,7 @@ export default function ClientLayout() {
             <div className="client-nav__storage-head"><span>Uso del sistema</span><strong>{systemStorage ? formatBytes(systemStorage.usedBytes) : '—'}</strong></div>
             <small>{systemStorage ? `${systemStorage.files.toLocaleString('es-GT')} archivos · ${systemStorage.users.toLocaleString('es-GT')} usuarios` : 'Cargando…'}</small>
           </NavLink>
-        : <div className="client-nav__storage">
+        : profile?.role === 'CLIENT' && <div className="client-nav__storage">
         <div className="client-nav__storage-head"><span>Almacenamiento</span><strong>{formatBytes(usage?.usado_bytes)} / {formatBytes(usage?.maximo_bytes)}</strong></div>
         <div className="client-nav__storage-track" role="img" aria-label={`${percent.toFixed(2)} por ciento utilizado`}><span style={{ width: `${percent}%` }} /></div>
         <small>{formatBytes(usage?.disponible_bytes)} disponibles</small>

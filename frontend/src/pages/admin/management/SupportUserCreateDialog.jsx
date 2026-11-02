@@ -83,7 +83,7 @@ export default function SupportUserCreateDialog({ onClose, onCreated }) {
       </header>
       <form onSubmit={submit} aria-busy={saving}>
         <div className="admin-dialog__body">
-          <p className="management-create-description" id="support-create-description">La cuenta tendrá el rol Soporte y podrá iniciar sesión inmediatamente. Podrá consultar clientes y gestionar su estado.</p>
+          <p className="management-create-description" id="support-create-description">La cuenta tendrá el rol Soporte y podrá iniciar sesión inmediatamente. Podrá consultar clientes y gestionar su estado. No tendrá plan ni almacenamiento personal.</p>
           <div className="admin-form-grid">
             <label className="admin-field"><span>Nombre</span><input ref={firstInput} name="first_name" value={form.first_name} onChange={changeField} maxLength={150} autoComplete="given-name" required disabled={saving} /></label>
             <label className="admin-field"><span>Apellido</span><input name="last_name" value={form.last_name} onChange={changeField} maxLength={150} autoComplete="family-name" required disabled={saving} /></label>

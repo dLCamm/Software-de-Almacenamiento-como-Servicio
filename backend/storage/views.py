@@ -2,7 +2,7 @@ import logging
 from django.http import FileResponse
 from rest_framework import status
 from rest_framework.parsers import FormParser, MultiPartParser
-from rest_framework.permissions import IsAuthenticated
+from users.permissions import IsClient
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 
 
 class AuthenticatedStorageAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsClient]
 
     def handle_exception(self, exc):
         if isinstance(exc, PlanFeatureUnavailable):
