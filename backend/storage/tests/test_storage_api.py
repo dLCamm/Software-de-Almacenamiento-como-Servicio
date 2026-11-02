@@ -12,6 +12,7 @@ from rest_framework.test import APIClient
 from storage.interfaces.storage_backend import IStorageBackend
 from storage.models import Archivo, Carpeta, EstadoElemento
 from core.models import AuditLog
+from plans.models import Subscription
 from users.models import Plan
 
 
@@ -184,6 +185,9 @@ class StorageApiTestCase(TestCase):
         self.storage_backend.upload_object.assert_not_called()
 
     def test_upload_accepts_temporary_file_and_custom_expiration(self):
+        self.user.plan = Plan.objects.get(code="pro")
+        self.user.save(update_fields=["plan"])
+        Subscription.objects.create(user=self.user, end_date=timezone.now() + timedelta(days=30))
         self.authenticate()
         uploaded = SimpleUploadedFile(
             "temporary.pdf",

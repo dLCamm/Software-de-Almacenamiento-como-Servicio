@@ -211,7 +211,7 @@ no inicia sesión automáticamente. Consulta [configuración y pruebas](docs/AUT
 - **Parámetros del FormData:**
   - `archivo` *(File, Requerido)*: Objeto del archivo a cargar.
   - `carpeta_id` *(UUID string, Opcional)*: ID de la carpeta destino. Si se omite, se guarda en la raíz.
-  - `es_temporal` *(Boolean, Opcional, Default: `false`)*: Marca si el archivo expirará automáticamente.
+  - `es_temporal` *(Boolean, Opcional, Default: `false`)*: Marca si el archivo expirará automáticamente. Requiere el beneficio `temporary_files` en un plan de pago con suscripción vigente; de lo contrario devuelve `403` con código `plan_feature_unavailable`.
   - `tiempo_vida_dias` *(Integer, Opcional, Default: `14`)*: Días de validez (1 a 365) si es temporal. El sistema elimina el archivo vencido en la tarea de limpieza diaria. Si se mueve a papelera antes de vencer, se conserva según el periodo de retención de la papelera.
 - El endpoint procesa un archivo por solicitud. Para subir varios desde el frontend, se envía una solicitud por archivo; los éxitos se conservan aunque falle otra carga.
 - **Respuestas:**
@@ -292,6 +292,7 @@ no inicia sesión automáticamente. Consulta [configuración y pruebas](docs/AUT
 
 ### 4.5. Compartir Archivo (Enlace Público Temporal)
 - **Ruta:** `POST /api/storage/files/<uuid:file_id>/share/`
+- **Beneficio requerido:** `share_links` en el plan contratado, con precio mayor a cero y suscripción `ACTIVE` dentro de su periodo de vigencia. FREE, pagos pendientes y suscripciones vencidas no pueden generar enlaces (`403`, `code: plan_feature_unavailable`). Los enlaces ya emitidos conservan su vencimiento de MinIO.
 - **Autenticación:** Requerida.
 - **Request Body (JSON, Opcional):**
   ```json

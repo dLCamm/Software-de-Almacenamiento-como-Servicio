@@ -7,6 +7,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.audit import record_audit_event
+from plans.entitlements import PlanFeatureUnavailable
 from storage.models import Archivo, Carpeta, EstadoElemento
 from storage.serializers import (
     FileDetailSerializer,
@@ -46,6 +47,14 @@ logger = logging.getLogger(__name__)
 
 class AuthenticatedStorageAPIView(APIView):
     permission_classes = [IsAuthenticated]
+
+    def handle_exception(self, exc):
+        if isinstance(exc, PlanFeatureUnavailable):
+            return Response(
+                {"detail": str(exc), "code": "plan_feature_unavailable"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        return super().handle_exception(exc)
 
 
 class FileUploadView(AuthenticatedStorageAPIView):

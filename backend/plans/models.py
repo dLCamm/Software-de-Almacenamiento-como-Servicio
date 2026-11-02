@@ -45,6 +45,10 @@ class Plan(models.Model):
         return self.name
 
 class PlanBenefit(models.Model):
+    class Feature(models.TextChoices):
+        TEMPORARY_FILES = "temporary_files", "Archivos temporales"
+        SHARE_LINKS = "share_links", "Compartir enlaces"
+
     plan = models.ForeignKey(
         "users.Plan",
         on_delete=models.CASCADE,
@@ -53,11 +57,26 @@ class PlanBenefit(models.Model):
     description = models.CharField(
         max_length=150)
 
+    feature = models.CharField(
+        max_length=30,
+        choices=Feature.choices,
+        blank=True,
+        default="",
+        help_text="Función habilitada por este beneficio. Vacío para textos informativos.",
+    )
+
     order = models.PositiveIntegerField(
         default=0)
 
     class Meta:
         ordering = ["order"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["plan", "feature"],
+                condition=~models.Q(feature=""),
+                name="unique_plan_feature",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.plan.name} - {self.description}"

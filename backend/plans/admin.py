@@ -9,6 +9,7 @@ class PlanBenefitAdmin(admin.ModelAdmin):
     list_display = (
         "plan",
         "description",
+        "feature",
         "order",
     )
 

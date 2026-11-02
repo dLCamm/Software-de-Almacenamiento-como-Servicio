@@ -113,6 +113,9 @@
 
 /* Beneficios */
 .admin-benefits { margin: 22px 0 0; padding: 0; border: 0; }
+.admin-plan-features .admin-switch { margin-bottom: 14px; }
+.admin-switch input:disabled ~ span { opacity: .6; }
+.admin-switch input:focus-visible + .admin-switch__track { outline: 2px solid var(--admin-purple-light); outline-offset: 3px; }
 .admin-benefits legend { width: 100%; margin-bottom: 10px; padding: 0; color: var(--gray-77); font-size: 13px; font-weight: 600; }
 .admin-benefits legend small { display: block; margin-top: 3px; color: var(--admin-muted); font-size: 12px; font-weight: 400; }
 .admin-benefit { margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }

@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from users.models import Plan
 
 from .models import Subscription
+from .entitlements import get_user_features
 from .permissions import IsAdministrator
 from .serializers import (PlanSerializer,SubscriptionSerializer,PlanAdminSerializer,)
 
@@ -76,44 +77,8 @@ class CurrentSubscriptionView(APIView):
 
         return Response(
             {
-                "plan": {
-                    "id":
-                        plan.id,
-
-                    "code":
-                        plan.code,
-
-                    "name":
-                        plan.name,
-
-                    "monthly_price":
-                        str(plan.monthly_price),
-
-                    "storage_limit_bytes":
-                        plan.storage_limit_bytes,
-
-                    "storage_limit_gb":
-                        round(
-                            plan.storage_limit_bytes
-                            / (1024 ** 3),
-                            2
-                        ),
-
-                    "is_active":
-                        plan.is_active,
-
-                    "benefits": [
-                        {
-                            "id": benefit.id,
-                            "description":
-                                benefit.description,
-                            "order":
-                                benefit.order,
-                        }
-                        for benefit
-                        in plan.benefits.all()
-                    ],
-                },
+                "plan": PlanSerializer(plan).data,
+                "features": get_user_features(user),
 
                 "subscription": {
                     "start_date":
@@ -259,32 +224,8 @@ class CurrentPlanView(APIView):
 
         return Response({
 
-            "plan": {
-                "id":
-                    plan.id,
-
-                "code":
-                    plan.code,
-
-                "name":
-                    plan.name,
-
-                "monthly_price":
-                    str(plan.monthly_price),
-
-                "storage_limit_bytes":
-                    plan.storage_limit_bytes,
-
-                "storage_limit_gb":
-                    round(
-                        plan.storage_limit_bytes
-                        / (1024 ** 3),
-                        2
-                    ),
-
-                "is_active":
-                    plan.is_active,
-            },
+            "plan": PlanSerializer(plan).data,
+            "features": get_user_features(user),
 
             "subscription": {
                 "start_date":

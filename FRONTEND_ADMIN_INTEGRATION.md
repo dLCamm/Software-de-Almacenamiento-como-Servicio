@@ -17,6 +17,20 @@ El usuario debe tener el rol `ADMIN`, en concordancia con las rutas administrati
 
 ## Endpoints
 
+### Beneficios de planes
+
+`POST /api/admin/plans/` y `PUT/PATCH /api/admin/plans/{id}/` aceptan beneficios con `description`, `order` y `feature`:
+
+- `feature: "temporary_files"`: habilita las subidas temporales.
+- `feature: "share_links"`: habilita la generación de enlaces compartidos.
+- `feature: ""` (predeterminado): texto informativo que no otorga permisos.
+
+Cada función puede aparecer una sola vez por plan y requiere `monthly_price > 0`. La API normaliza su descripción. Para quitar una función, enviar la lista `benefits` completa sin ella. Omitir `benefits` al actualizar conserva la configuración existente. No se puede convertir un plan con estas funciones en gratuito sin quitarlas en la misma actualización.
+
+`GET /api/plans/` y el CRUD administrativo incluyen `features: { "temporary_files": boolean, "share_links": boolean }` con las funciones del catálogo. `GET /api/storage/usage/`, `/api/plans/current/` y `/api/subscription/current/` incluyen `features` en la raíz con los permisos efectivos del usuario. La interfaz usa estos permisos; el servidor vuelve a validarlos en cada operación. Un plan pendiente no otorga permisos. Las suscripciones sin fecha de fin, futuras, vencidas o canceladas tampoco habilitan funciones de pago. Desactivar un plan lo oculta del catálogo y conserva los beneficios de suscripciones vigentes.
+
+Aplicar `python manage.py migrate` desde `backend` antes de iniciar la versión actualizada. La migración `plans.0005_planbenefit_feature` vincula los beneficios existentes, configura PRO/BUSINESS y retira los anuncios de funciones de pago de planes gratuitos. `seed_plans` usa el catálogo de `users.Plan` y conserva la configuración administrativa existente.
+
 ### Auditoría
 
 ```http

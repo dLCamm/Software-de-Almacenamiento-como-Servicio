@@ -55,7 +55,7 @@ export default function AdminPlansPage() {
                     <td data-label="Beneficios"><span className="admin-benefits-cell"><span className="admin-benefit-count" title={benefits.map((benefit) => benefit.description).join('\n')}>{benefits.length} {benefits.length === 1 ? 'beneficio' : 'beneficios'}</span><span className="admin-benefit-preview">{benefits.slice(0, 2).map((benefit) => benefit.description).join(' · ')}{benefits.length > 2 ? '…' : ''}</span></span></td>
                     <td data-label="Visible">
                       <label className="admin-switch admin-switch--compact" title={plan.is_active ? 'Desactivar' : 'Activar'}>
-                        <input type="checkbox" checked={Boolean(plan.is_active)} disabled={busy} onChange={() => admin.toggleActive(plan)} aria-label={`${plan.is_active ? 'Desactivar' : 'Activar'} plan ${plan.name}`} />
+                        <input type="checkbox" checked={Boolean(plan.is_active)} disabled={busy || plan.code === 'free'} onChange={() => admin.toggleActive(plan)} aria-label={`${plan.is_active ? 'Desactivar' : 'Activar'} plan ${plan.name}`} />
                         <span className="admin-switch__track" aria-hidden="true" />
                         <span className="admin-status">{plan.is_active ? 'Activo' : 'Inactivo'}</span>
                       </label>
