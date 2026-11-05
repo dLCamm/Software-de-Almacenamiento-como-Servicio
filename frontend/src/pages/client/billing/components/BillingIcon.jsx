@@ -5,6 +5,7 @@ const paths = {
   arrow: <><path d="M19 12H5m0 0 6-6m-6 6 6 6" /></>,
   chart: <><path d="M3 3v18h18" /><path d="m7 14 4-4 3 3 6-7" /></>,
   close: <><path d="m5 5 14 14M19 5 5 19" /></>,
+  minus: <path d="M6 12h12" />,
   document: <><path d="M6 3h8l5 5v13H6z" /><path d="M14 3v5h5M9 13h7M9 17h7" /></>,
   lock: <><rect x="4" y="10" width="16" height="11" rx="2" /><path d="M8 10V7a4 4 0 1 1 8 0v3" /></>,
 }

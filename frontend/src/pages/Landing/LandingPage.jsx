@@ -22,6 +22,14 @@ const NAV_LINKS = [
   { id: 'precios', label: 'Precios' },
 ]
 
+// Lo que incluye cada plan. Sin `code` = lo incluyen todos; con `code` depende de plan.features.
+const PLAN_FEATURES = [
+  { label: 'Subir y descargar archivos' },
+  { label: 'Organizar en carpetas' },
+  { code: 'share_links', label: 'Compartir enlaces' },
+  { code: 'temporary_files', label: 'Archivos temporales' },
+]
+
 const FORMATS = [
   { label: '.PDF', tone: 'red' },
   { label: '.DOCX', tone: 'blue' },
@@ -256,6 +264,17 @@ export default function LandingPage() {
                             <span>/mes</span>
                           </div>
                           <p className="plan-card__storage">{storage.toLocaleString('es-GT')} GB de almacenamiento</p>
+                          <ul className="plan-card__features">
+                            {PLAN_FEATURES.map((feature) => {
+                              const included = !feature.code || Boolean(plan.features?.[feature.code])
+                              return (
+                                <li key={feature.label} className={included ? undefined : 'is-missing'}>
+                                  {included ? <CheckIcon /> : <span className="plan-card__dash" aria-hidden="true" />}
+                                  {included ? feature.label : <><s>{feature.label}</s><span className="visually-hidden"> (no incluido)</span></>}
+                                </li>
+                              )
+                            })}
+                          </ul>
                           <button
                             type="button"
                             className={`btn btn--block ${isPopular ? 'btn--primary' : 'btn--secondary'}`}
@@ -269,13 +288,7 @@ export default function LandingPage() {
                   </div>
                 )}
 
-          <p className="pricing__more">
-            ¿Necesitas más?{' '}
-            <a href="#planes-completos">
-              Ver todos los beneficios
-              <ArrowRightIcon className="link-icon" />
-            </a>
-          </p>
+          <p className="pricing__more">Empieza gratis y cambia de plan cuando lo necesites desde tu cuenta.</p>
         </section>
 
         <section className="final-cta">

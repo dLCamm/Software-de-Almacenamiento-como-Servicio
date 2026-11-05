@@ -114,6 +114,9 @@
 .plan-card__benefits .billing-icon { color: var(--gray-47); }
 .plan-card.is-current .plan-card__benefits .billing-icon, .plan-card--business .plan-card__benefits .billing-icon { color: var(--green-40); }
 .plan-card.is-current .plan-card__benefits .billing-icon { color: var(--purple-69); }
+.plan-card__benefits > span.is-missing { color: var(--gray-47); }
+.plan-card__benefits > span.is-missing s { text-decoration-color: var(--gray-41); }
+.plan-card .plan-card__benefits > span.is-missing .billing-icon { color: var(--gray-41); }
 .plan-card__selected { margin-top: auto; padding-top: 20px; color: var(--purple-71); }
 .plan-card__selected .billing-icon { color: currentColor; }
 .billing-button { min-height: 50px; padding: 0 21px; display: inline-flex; align-items: center; justify-content: center; gap: 10px; border: 0; border-radius: 12px; font-size: 15px !important; font-weight: 700; cursor: pointer; transition: transform .15s, opacity .15s, background .15s; }
