@@ -86,13 +86,22 @@ Kubo te lleva automáticamente a tu espacio según tu tipo de cuenta: los client
 | Zona | Qué contiene |
 |---|---|
 | **Menú lateral (izquierda)** | *Mis Archivos*, *Planes y Facturación*, el recuadro de **Almacenamiento**, *Modo oscuro*, *Configuración* y *Cerrar sesión*. Haz clic en el cubo de Kubo para volver a la página de inicio. |
-| **Barra superior** | Buscador, filtro por **Tipo**, casilla **Subida temporal**, botones **Subir archivo**, **Nueva carpeta**, cambio de vista (cuadrícula o lista) y **Papelera**. |
-| **Barra de uso** | Porcentaje usado, espacio usado / total, espacio disponible, tu plan y el botón **Ampliar almacenamiento**. |
+| **Barra superior** | Buscador, filtro por **Tipo**, casilla **Subida temporal** (planes de pago), botones **Subir archivo**, **Nueva carpeta**, cambio de vista (cuadrícula o lista) y el botón de **Papelera** (icono de bote de basura). |
+| **Barra de uso** | Porcentaje usado, espacio usado / total, espacio disponible y tu plan. En el plan FREE aparece **Ampliar almacenamiento**; en los planes de pago, **Ver planes**. |
 | **Mi unidad** | Tus carpetas y archivos. |
 
-> En el celular, el menú lateral se abre con el botón **☰** de la esquina inferior izquierda.
->
-> ![Vista en celular](img/12-movil.png)
+### 4.1 Usar Kubo en el celular
+
+Kubo se adapta a la pantalla del teléfono:
+
+- Arriba hay una **barra fija** con el botón **☰**, el logo y el nombre de la sección en la que estás. El botón **☰** abre el menú lateral; se cierra con la **X**, tocando fuera del menú o con **Esc**.
+- En *Mis Archivos*, el buscador y el botón **Opciones** quedan en la primera fila. **Opciones** despliega el filtro por **Tipo**, la **Subida temporal**, el cambio de vista y la **Papelera**. Si tienes un filtro activo, el botón muestra cuántos.
+- **Subir archivo** y **Nueva carpeta** quedan siempre visibles debajo del buscador.
+- En *Planes y Facturación*, las secciones (Resumen, Planes, Método de pago, Historial) aparecen como **pestañas deslizables** bajo el título, y el historial se muestra como tarjetas.
+
+| Mis Archivos con **Opciones** abierto | Menú lateral abierto |
+|---|---|
+| ![Vista en celular](img/12-movil.png) | ![Menú en celular](img/14-movil-menu.png) |
 
 ## 5. Archivos
 
@@ -122,12 +131,26 @@ Cada archivo puede pesar **hasta 100 MB**. Si intentas subir otro formato, verá
 
 Al terminar, el archivo aparece en la cuadrícula y la barra de almacenamiento se actualiza.
 
-### 5.3 Descargar un archivo
+### 5.3 Ver un archivo sin descargarlo *(PNG, PDF y MP3)*
 
-- Haz clic sobre el archivo, **o**
-- abre su menú **⋮** y elige **Descargar**.
+Haz clic sobre una imagen **PNG**, un documento **PDF** o un audio **MP3** (o elige **Vista previa** en su menú **⋮**). Se abre una ventana con:
 
-### 5.4 Menú de opciones de un archivo
+- **PNG:** la imagen completa.
+- **PDF:** el documento con sus páginas, zoom e impresión.
+- **MP3:** un reproductor de audio; el disco gira mientras suena.
+
+![Vista previa de un audio](img/13-vista-previa-audio.png)
+
+Desde la vista previa puedes pulsar **Descargar**. Para cerrarla usa la **X**, la tecla **Esc** o haz clic fuera de la ventana. En el celular la vista previa ocupa toda la pantalla.
+
+### 5.4 Descargar un archivo
+
+- Abre su menú **⋮** y elige **Descargar**, **o**
+- pulsa **Descargar** dentro de la vista previa.
+
+Los documentos **DOC** y **DOCX** no tienen vista previa: al hacer clic sobre ellos se descargan directamente.
+
+### 5.5 Menú de opciones de un archivo
 
 Cada archivo tiene un botón **⋮** en la esquina superior derecha:
 
@@ -135,12 +158,13 @@ Cada archivo tiene un botón **⋮** en la esquina superior derecha:
 
 | Opción | Qué hace |
 |---|---|
+| **Vista previa** | Abre el archivo dentro de Kubo. *Solo PNG, PDF y MP3.* |
 | **Descargar** | Guarda el archivo en tu equipo. |
 | **Compartir enlace** | Crea un enlace de descarga para enviarlo a otra persona. *Solo planes de pago.* |
 | **Renombrar** | Cambia el nombre. La extensión original se conserva. |
 | **Mover a papelera** | Envía el archivo a la papelera por 30 días. |
 
-### 5.5 Compartir un archivo *(planes PRO, PREMIUM y BUSINESS)*
+### 5.6 Compartir un archivo *(planes PRO, PREMIUM y BUSINESS)*
 
 1. Abre el menú **⋮** del archivo y elige **Compartir enlace**.
 2. Kubo genera el enlace y muestra cuándo expira.
@@ -152,7 +176,7 @@ La persona que reciba el enlace **no necesita una cuenta de Kubo**: verá una p�
 
 > En el plan **FREE** la opción **Compartir enlace** no está disponible. Para usarla, cambia a un plan de pago.
 
-### 5.6 Archivos temporales *(planes PRO, PREMIUM y BUSINESS)*
+### 5.7 Archivos temporales *(planes PRO, PREMIUM y BUSINESS)*
 
 Un archivo temporal se elimina solo al cumplirse los días que elijas. Sirve para entregas puntuales o archivos que no necesitas conservar.
 
@@ -164,7 +188,7 @@ El archivo mostrará la etiqueta **◷ Temporal · Tiempo restante: N días**. D
 
 > En el plan **FREE** la casilla **Subida temporal** no aparece.
 
-### 5.7 Buscar y filtrar
+### 5.8 Buscar y filtrar
 
 - **Buscador:** escribe parte del nombre del archivo o carpeta.
 - **Tipo:** muestra solo PDF, MP3, DOC, DOCX o PNG. Elige **Todos** para quitar el filtro.
@@ -181,7 +205,7 @@ El archivo mostrará la etiqueta **◷ Temporal · Tiempo restante: N días**. D
 
 ## 7. Papelera
 
-Haz clic en **Papelera** en la barra superior.
+Haz clic en el botón de **Papelera** (bote de basura) en la barra superior. En el celular está dentro de **Opciones**.
 
 ![Papelera](img/06-papelera.png)
 
@@ -201,7 +225,11 @@ En el menú lateral, haz clic en **Planes y Facturación**. Se despliegan cuatro
 
 ![Resumen de facturación](img/07-resumen.png)
 
-Muestra el almacenamiento usado (anillo con el porcentaje), tu plan actual, su precio y la **fecha de vencimiento** con los días restantes, e indica si la renovación automática está activa.
+Muestra:
+
+- **Almacenamiento utilizado:** anillo con el porcentaje y el espacio usado de tu total.
+- **Desglose por tipo:** cuánto espacio ocupan tus **Audios**, **Imágenes**, **PDF** y **Documentos** (DOC/DOCX), con el número de archivos de cada tipo. Incluye lo que está en la papelera.
+- **Tu plan vence / Próximo cobro:** la fecha con los días restantes, el monto e indica si la renovación automática está activa.
 
 ### 8.2 Planes
 
@@ -216,9 +244,11 @@ Muestra el almacenamiento usado (anillo con el porcentaje), tu plan actual, su p
 
 *Los planes y precios los define el administrador y pueden cambiar; la pantalla **Planes** siempre muestra los vigentes.*
 
+- Cada tarjeta muestra con **✓** lo que incluye el plan y **tachado** lo que no incluye (por ejemplo, el FREE muestra tachados *Compartir enlaces* y *Archivos temporales*).
 - Tu plan aparece marcado como **Plan actual**.
 - **Contratar:** inicia el pago de otro plan.
 - **Renovar plan:** paga un nuevo periodo del plan que ya tienes.
+- **Cambiar a Free:** vuelve al plan gratuito.
 
 > Las funciones de pago (compartir y temporales) se activan **después** de que el pago es aprobado y se mantienen mientras la suscripción esté vigente. Si la suscripción vence, vuelves a tener las funciones del plan FREE; tus archivos no se borran.
 
@@ -240,7 +270,7 @@ Si el pago es rechazado, Kubo muestra el motivo y tu plan no cambia. Puedes inte
 
 ![Historial de pagos](img/10-historial.png)
 
-Lista todos tus pagos con su referencia, fecha, plan, monto y estado: **Pagado**, **Pendiente** o **Fallido**.
+Lista todos tus pagos con su número de referencia, fecha, plan, monto y estado: **Pagado**, **Pendiente** o **Fallido**.
 
 ## 9. Configuración de la cuenta
 
@@ -288,6 +318,8 @@ Al iniciar sesión, el administrador entra a **Administración → Inicio** y el
 
 Ruta: **Administración → Inicio**
 
+![Inicio de administración](img/20-admin-inicio.png)
+
 - **Saludo** con tu nombre y la etiqueta *Cuenta de administrador*.
 - **Uso del sistema:** espacio total usado en Kubo, número de archivos (incluye papelera) y de usuarios. El botón **Ver estadísticas** abre el detalle.
 - **Tarjetas de resumen:**
@@ -302,8 +334,10 @@ En el menú lateral, el recuadro **Uso del sistema** reemplaza al de almacenamie
 
 Ruta: **Administración → Usuarios**
 
+![Gestión de usuarios](img/21-admin-usuarios.png)
+
 ### 12.1 Buscar y filtrar
-1. En **Buscar usuario**, escribe un nombre o correo.
+1. En **Buscar usuario**, escribe un nombre o correo. *(En el celular, toca **Filtros** para desplegar el formulario.)*
 2. Usa los filtros disponibles:
    - **Estado:** Todos, Activos, Desactivados.
    - **Plan:** Free, Pro, Premium, Business.
@@ -314,10 +348,13 @@ Si no hay resultados verás *No hay usuarios para mostrar — Prueba con otros f
 
 ### 12.2 Ver el detalle de un usuario
 Haz clic en **Ver detalle**. La ficha muestra:
+
+![Detalle de un usuario](img/22-admin-detalle-usuario.png)
+
 - **Información del usuario:** nombre, correo, rol, si el correo está verificado, fecha de creación y última actualización.
 - **Plan y almacenamiento** (solo clientes): plan actual, precio mensual y espacio.
 - **Suscripción:** estado, fecha de finalización y si tiene renovación automática.
-- **Pagos del usuario:** su historial de transacciones.
+- **Pagos del usuario:** su historial de transacciones. En cada pago, **Ver detalle** abre la ventana **Detalle del pago** con la referencia, el método, la fecha y, si fue rechazado, el **motivo del rechazo**.
 
 En cuentas internas (soporte o administrador) aparece: *Esta cuenta no tiene plan, suscripción ni almacenamiento personal.*
 
@@ -348,10 +385,12 @@ La cuenta queda con rol **Soporte** y puede iniciar sesión de inmediato.
 
 Ruta: **Administración → Pagos** — *Historial global de pagos*
 
-1. **Buscar:** usuario, correo o referencia.
+![Historial global de pagos](img/23-admin-pagos.png)
+
+1. **Buscar:** usuario, correo o referencia. *(En el celular, los filtros están dentro de **Filtros**.)*
 2. Filtros: **Estado** (Aprobado, Rechazado), **Tipo de pago** (Suscripción, Renovación), **Plan**, rango de fechas **Desde / Hasta**.
 3. **Filtrar** aplica; **Limpiar** reinicia.
-4. Haz clic en **Ver detalle** en un pago para abrir **Detalle del pago**: referencia, usuario, correo, rol, plan, tipo, método, fecha y, si fue rechazado, el **motivo del rechazo**.
+4. Haz clic en el nombre del usuario de un pago para abrir su ficha; ahí, en *Pagos del usuario*, **Ver detalle** muestra el **Detalle del pago** (referencia, método, fecha y, si fue rechazado, el **motivo del rechazo**).
 
 Úsalo para atender reclamos de clientes sobre cobros o renovaciones fallidas.
 
@@ -359,7 +398,9 @@ Ruta: **Administración → Pagos** — *Historial global de pagos*
 
 Ruta: **Administración → Planes** — *Gestión de planes*
 
-La tabla muestra cada plan con su precio, almacenamiento, beneficios, si es visible y las acciones.
+La tabla muestra cada plan con su precio, almacenamiento, beneficios, si es visible y las acciones (lápiz para editar, bote de basura para eliminar).
+
+![Gestión de planes](img/24-admin-planes.png)
 
 ### 14.1 Crear un plan
 1. Haz clic en **Nuevo plan**.
@@ -372,6 +413,8 @@ La tabla muestra cada plan con su precio, almacenamiento, beneficios, si es visi
 3. **Funciones incluidas:** marca **Archivos temporales** y/o **Compartir enlaces**. Solo se pueden activar en planes con precio mayor a Q0; se habilitan para el cliente después del pago y mientras su suscripción esté vigente.
 4. **Descripción de beneficios:** textos que aparecen en la tarjeta del plan (ej. *Gestión de carpetas*). Usa **Agregar beneficio**, las flechas para ordenarlos y la **X** para quitarlos. Estos textos son informativos: no activan funciones.
 5. Haz clic en **Crear plan**.
+
+![Formulario de plan](img/25-admin-editar-plan.png)
 
 ### 14.2 Editar, activar o desactivar
 - **Editar** abre el mismo formulario con los datos del plan; guarda con **Guardar cambios**.
@@ -386,6 +429,8 @@ Haz clic en **Eliminar** y confirma con **Eliminar plan**. **La acción no se pu
 
 Ruta: **Administración → Estadísticas**
 
+![Estadísticas](img/26-admin-estadisticas.png)
+
 Resumen global de usuarios, pagos y almacenamiento:
 - **Almacenamiento usado** total.
 - **Usuarios** totales y **Usuarios por rol** (clientes, soporte, administradores).
@@ -399,6 +444,8 @@ El almacenamiento incluye archivos activos y en papelera; no cuenta los eliminad
 Ruta: **Administración → Auditoría**
 
 Registro de lo que ocurre en Kubo. Cada evento muestra **Fecha**, **Usuario**, **Acción**, **Recurso** y **Detalles**.
+
+![Auditoría](img/27-admin-auditoria.png)
 
 Filtra por **Acción** y **Tipo de recurso** y haz clic en **Filtrar**. Las acciones se agrupan así:
 
@@ -428,7 +475,8 @@ Igual que para clientes ([sección 9](#9-configuración-de-la-cuenta)): datos pe
 | Espacio del plan FREE | 5 GB |
 | Permanencia en papelera | 30 días |
 | Duración de un archivo temporal | 1 a 365 días (14 por defecto) |
-| Duración de un enlace compartido | La indicada al generarlo (7 días por defecto) |
+| Duración de un enlace compartido | 7 días |
+| Vista previa | PNG, PDF y MP3 |
 
 ## B. Permisos por rol
 
@@ -447,6 +495,9 @@ Igual que para clientes ([sección 9](#9-configuración-de-la-cuenta)): datos pe
 | Estadísticas y auditoría | — | — | ✓ |
 
 ## C. Preguntas frecuentes
+
+**¿Puedo ver un archivo sin descargarlo?**
+Sí, si es PNG, PDF o MP3: haz clic sobre él y se abre la vista previa. Los DOC y DOCX se descargan.
 
 **No veo "Compartir enlace" ni "Subida temporal".**
 Estás en el plan FREE, tu pago aún no fue aprobado o tu suscripción venció. Revisa *Planes y Facturación → Resumen*.

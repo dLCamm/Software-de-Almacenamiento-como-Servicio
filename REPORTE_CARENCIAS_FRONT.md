@@ -111,3 +111,25 @@ Lo que ya funciona bien: modo claro/oscuro con tokens (`styles/theme.css`), skel
 3. A6, A7 — distribución de la barra de herramientas y navegación móvil.
 4. A4, M2, M4 — vista previa, duración de enlaces, breadcrumbs.
 5. M1, M3, M5, M9, M10 y el resto.
+
+---
+
+## 7. Estado tras las correcciones (4 de noviembre de 2026)
+
+| Hallazgo | Estado | Qué se hizo |
+|---|---|---|
+| A1 Pantalla en blanco al cargar | Resuelto | Esqueletos en el área principal y el menú; el perfil se pide una sola vez por carga. |
+| A2 Textos técnicos | Resuelto | Mensajes para el cliente en pagos y resumen; el desglose por tipo ahora es real (nuevo dato `por_tipo` en `/api/storage/usage/`); referencias sin `MOCK-`. |
+| A3 Comparación de planes | Resuelto | Cada plan muestra con ✓ lo que incluye y tachado lo que no (cliente y landing). Textos del plan FREE actualizados desde el panel de administración. |
+| A4 Vista previa | Resuelto | Vista previa de PNG, PDF y MP3 (DOC/DOCX se descargan). |
+| A5 Error en inglés | Resuelto | Traducción de mensajes de Django/SimpleJWT y de errores HTTP. |
+| A6 Barra desbordada | Resuelto | La barra se acomoda; Papelera como botón de icono en escritorio mediano. |
+| A7 Navegación móvil | Resuelto | Barra superior fija con ☰, menú "Opciones" en Mis Archivos, pestañas en Facturación, tarjetas en historial y tablas de administración, filtros plegables. |
+| M2 Duración de enlaces | Se mantiene | Decisión del equipo: 7 días fijos. |
+| M6 Salto del saludo | Resuelto | Esqueleto del saludo y de la barra de uso. |
+| M7 "Ampliar almacenamiento" en PRO | Resuelto | En planes de pago dice "Ver planes". |
+| M8 "Contratar" en Free | Resuelto | Ahora dice "Cambiar a Free" con estilo secundario. |
+| B1 / B2 Pestaña del navegador | Resuelto | Título por sección ("Mis archivos · Kubo") e icono del cubo de Kubo. |
+| B4 Icono MP3 | Resuelto | Disco de música verde. |
+| Admin: códigos en inglés | Resuelto | Roles, estados de suscripción y de pago en español. |
+| M1, M3, M4, M5, M9, M10, B3, B5–B8 | Pendiente | Sin cambios en esta entrega. |
