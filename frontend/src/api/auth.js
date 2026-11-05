@@ -31,6 +31,31 @@ export function getRefreshToken() {
   return localStorage.getItem(REFRESH_TOKEN_KEY)
 }
 
+const STATUS_MESSAGES = {
+  401: 'Tu sesión expiró. Vuelve a iniciar sesión.',
+  403: 'No tienes permiso para realizar esta acción.',
+  404: 'No encontramos lo que buscas. Puede que se haya movido o eliminado.',
+  413: 'El archivo es demasiado grande.',
+  500: 'Algo salió mal de nuestro lado. Inténtalo de nuevo en unos minutos.',
+}
+
+// Mensajes en inglés que envía Django/SimpleJWT y su versión para el usuario.
+const ENGLISH_MESSAGES = [
+  [/no active account found/i, 'Correo o contraseña incorrectos.'],
+  [/token is invalid or expired|token not valid|given token not valid/i, STATUS_MESSAGES[401]],
+  [/authentication credentials were not provided/i, STATUS_MESSAGES[401]],
+  [/you do not have permission/i, STATUS_MESSAGES[403]],
+  [/^not found\.?$/i, STATUS_MESSAGES[404]],
+  [/this field may not be blank|this field is required/i, 'Completa todos los campos obligatorios.'],
+  [/enter a valid email/i, 'Ingresa un correo electrónico válido.'],
+  [/request was throttled/i, 'Has realizado demasiados intentos. Espera un momento antes de volver a intentarlo.'],
+]
+
+function friendlyMessage(message) {
+  const text = String(message || '')
+  return ENGLISH_MESSAGES.find(([pattern]) => pattern.test(text))?.[1] || text
+}
+
 export async function apiRequest(path, options = {}) {
   const { auth, responseType, ...fetchOptions } = options
   const isFormData = typeof FormData !== 'undefined' && fetchOptions.body instanceof FormData
@@ -48,7 +73,7 @@ export async function apiRequest(path, options = {}) {
   try {
     res = await fetch(`${API_URL}${path}`, { ...fetchOptions, body, headers })
   } catch {
-    throw new Error('No se pudo conectar con la API. Verifica que el servidor esté disponible e inténtalo de nuevo.')
+    throw new Error('No pudimos conectarnos. Revisa tu conexión a internet e inténtalo de nuevo.')
   }
 
   const data = res.ok && responseType === 'blob'
@@ -60,15 +85,15 @@ export async function apiRequest(path, options = {}) {
     const fieldErrors = data && typeof data === 'object'
       ? Object.entries(data).find(([key]) => !['detail', 'error', 'detalle'].includes(key))
       : null
-    const message =
+    const message = friendlyMessage(
       (res.status === 429 ? 'Has realizado demasiados intentos. Espera un momento antes de volver a intentarlo.' : null) ||
       data?.detail ||
       (data?.error && data?.detalle ? `${data.error}: ${data.detalle}` : null) ||
       data?.detalle || data?.error ||
-      (fieldErrors ? `${fieldErrors[0]}: ${[].concat(fieldErrors[1]).join(' ')}` : null) ||
-      (res.status === 401
-        ? 'Tu sesión no está autorizada o expiró. Vuelve a iniciar sesión.'
-        : `La API respondió con el estado HTTP ${res.status}. No se pudo completar la solicitud.`)
+      (fieldErrors ? [].concat(fieldErrors[1]).join(' ') : null) ||
+      STATUS_MESSAGES[res.status] ||
+      (res.status >= 500 ? STATUS_MESSAGES[500] : 'No se pudo completar la solicitud. Inténtalo de nuevo.'),
+    )
     const error = new Error(message)
     error.data = data
     error.status = res.status

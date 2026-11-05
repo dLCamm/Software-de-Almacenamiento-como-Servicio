@@ -45,13 +45,13 @@ function CardForm({ card, onUpdate, onContinue, onBack }) {
 
   return <form className="billing-payment-form" onSubmit={onContinue}>
     <h2>Datos de la tarjeta</h2>
-    <p>Los datos se envían directamente a la API de pagos y no se guardan en el navegador.</p>
+    <p>Tus datos viajan cifrados y no se guardan en este navegador.</p>
     <label>Número de tarjeta<input autoComplete="cc-number" inputMode="numeric" value={card.number} onChange={(event) => updateNumber(event.target.value)} placeholder="0000 0000 0000 0000" maxLength={19} required /></label>
     <div className="billing-payment-form__row">
       <label>Vencimiento<input autoComplete="cc-exp" inputMode="numeric" value={card.expiry} onChange={(event) => updateExpiry(event.target.value)} placeholder="MM/AA" maxLength={5} required /></label>
       <label>CVV<input autoComplete="cc-csc" inputMode="numeric" value={card.cvv} onChange={(event) => onUpdate('cvv', event.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="123" maxLength={4} required /></label>
     </div>
-    <div className="billing-secure-note"><BillingIcon name="lock" size={17} />Pago de prueba procesado por la API configurada.</div>
+    <div className="billing-secure-note"><BillingIcon name="lock" size={17} />Pago seguro. Tu información está protegida.</div>
     <div className="checkout-actions"><button className="billing-button billing-button--secondary" type="button" onClick={onBack}>Atrás</button><button className="billing-button billing-button--primary" type="submit">Continuar</button></div>
   </form>
 }
@@ -90,7 +90,7 @@ export default function BillingCheckout({
     <div className="checkout-success__icon"><BillingIcon name="check" size={33} /></div>
     <h2>¡Operación completada!</h2>
     <p>{result?.detail || 'Tu plan se actualizó correctamente.'}</p>
-    <div className="checkout-success__reference"><span>Referencia</span><strong>{result?.transaction_reference || 'No proporcionada'}</strong></div>
+    <div className="checkout-success__reference"><span>Referencia</span><strong>{result?.transaction_reference ? `#${result.transaction_reference.replace(/^MOCK-/i, '')}` : '—'}</strong></div>
     <div className="checkout-success__reference"><span>Monto</span><strong>{formatMoney(result?.amount ?? price)}</strong></div>
     {newEndDate && <div className="checkout-success__reference"><span>Vigente hasta</span><strong>{newEndDate}</strong></div>}
     <div className="checkout-actions"><button className="billing-button billing-button--secondary" type="button" onClick={onViewHistory}>Ver historial</button><button className="billing-button billing-button--primary" type="button" onClick={onReset}>Volver al resumen</button></div>
@@ -106,7 +106,7 @@ export default function BillingCheckout({
         <span className="payment-method__details"><strong>{method.title}</strong><span>{method.detail}</span></span>
         {!method.enabled && <span className="payment-method__badge">No disponible</span>}
       </button>)}
-      <p className="billing-footnote">El contrato actual de la API solo procesa pagos con tarjeta; las otras opciones aparecen deshabilitadas.</p>
+      <p className="billing-footnote">Por ahora aceptamos pagos con tarjeta. Pronto habilitaremos la transferencia bancaria.</p>
       <button className="billing-button billing-button--primary checkout-full-button" type="button" onClick={onContinue}>Continuar</button>
     </div>}
 

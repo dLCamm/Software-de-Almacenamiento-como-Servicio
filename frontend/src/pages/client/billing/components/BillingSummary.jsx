@@ -1,6 +1,21 @@
 import { formatBytes } from '../../dashboard/formatters'
 import BillingIcon from './BillingIcon'
 import { formatUsagePercent, getUsagePercent, getVisualPercent } from '../../../../utils/storageUsage'
+import { SUPPORTED_FILE_TYPES } from '../../dashboard/fileTypes'
+
+// Agrupa DOC y DOCX como "Documentos"; el color coincide con el icono de cada tipo en Mis Archivos.
+const TYPE_GROUPS = { pdf: 'PDF', doc: 'Documentos', png: 'Imágenes', mp3: 'Audio' }
+
+function groupByType(rows = []) {
+  const groups = {}
+  for (const row of rows) {
+    const kind = SUPPORTED_FILE_TYPES[String(row.extension || '').toLowerCase()]?.kind || 'doc'
+    groups[kind] = groups[kind] || { kind, label: TYPE_GROUPS[kind], bytes: 0, files: 0 }
+    groups[kind].bytes += Number(row.usado_bytes || 0)
+    groups[kind].files += Number(row.archivos || 0)
+  }
+  return Object.values(groups).sort((a, b) => b.bytes - a.bytes)
+}
 
 function formatMoney(value) {
   const amount = Number(value || 0)
@@ -30,7 +45,7 @@ function daysLabel(days) {
 function getNextCharge({ price, subscription, nextBillingDate }) {
   if (price <= 0) return { title: 'Plan gratuito', text: 'Tu plan actual no genera cargos.' }
   const dateLabel = formatDate(nextBillingDate)
-  if (!dateLabel) return { title: 'Próximo cobro', text: 'La API no proporciona la fecha del próximo cobro.' }
+  if (!dateLabel) return { title: 'Próximo cobro', text: 'Te avisaremos antes de tu próximo cobro.' }
   const days = subscription?.days_remaining ?? daysUntil(nextBillingDate)
   const expired = subscription?.is_expired || (subscription?.status && subscription.status !== 'ACTIVE')
   if (expired) return { title: 'Tu plan venció', text: `Venció el ${dateLabel}. Renuévalo para conservar tu espacio.`, tone: 'danger' }
@@ -45,6 +60,8 @@ export default function BillingSummary({ usage, currentPlan, subscription, nextB
   const percentText = formatUsagePercent(percent)
   const price = Number(currentPlan?.monthly_price ?? usage?.plan_precio_mensual ?? 0)
   const nextCharge = getNextCharge({ price, subscription, nextBillingDate })
+  const types = groupByType(usage?.por_tipo)
+  const totalBytes = types.reduce((sum, type) => sum + type.bytes, 0)
 
   return <div className="billing-summary">
     <div className="billing-summary-grid">
@@ -60,7 +77,14 @@ export default function BillingSummary({ usage, currentPlan, subscription, nextB
 
       <section className="billing-card breakdown-card">
         <h2>Desglose por tipo</h2>
-        <div className="breakdown-unavailable"><BillingIcon name="chart" size={25} /><p>La API actual informa el uso total, pero no separa el almacenamiento por tipo de archivo.</p></div>
+        {types.length
+          ? <ul className="breakdown-list">
+              {types.map((type) => <li key={type.kind} className={`breakdown-row breakdown-row--${type.kind}`}>
+                <div className="breakdown-row__head"><span className="breakdown-row__label"><i aria-hidden="true" />{type.label}</span><span>{formatBytes(type.bytes)} · {type.files} {type.files === 1 ? 'archivo' : 'archivos'}</span></div>
+                <div className="breakdown-row__track" aria-hidden="true"><span style={{ width: `${totalBytes ? Math.max(2, (type.bytes / totalBytes) * 100) : 0}%` }} /></div>
+              </li>)}
+            </ul>
+          : <div className="breakdown-unavailable"><BillingIcon name="chart" size={25} /><p>Aún no tienes archivos. Cuando subas documentos, imágenes o audios, aquí verás cuánto espacio ocupa cada tipo.</p></div>}
         <div className="breakdown-total"><span>Total usado</span><strong>{formatBytes(usage?.usado_bytes)} / {formatBytes(usage?.maximo_bytes)}</strong></div>
       </section>
     </div>

@@ -6,7 +6,7 @@ import {
 } from './fileTypes'
 
 function getErrorMessage(error) {
-  return error?.message || 'Ocurrió un error al comunicarse con el servidor.'
+  return error?.message || 'Algo salió mal. Inténtalo de nuevo.'
 }
 
 /**

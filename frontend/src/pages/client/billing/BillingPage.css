@@ -51,6 +51,16 @@
 .breakdown-unavailable { flex: 1; min-height: 190px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 13px; color: var(--gray-51); text-align: center; }
 .breakdown-unavailable .billing-icon { color: var(--purple-66); }
 .breakdown-unavailable p { max-width: 400px; margin: 0; color: var(--gray-55); font-size: 14px; line-height: 1.55; }
+.breakdown-list { flex: 1; margin: 0 0 18px; padding: 0; list-style: none; display: flex; flex-direction: column; justify-content: center; gap: 16px; }
+.breakdown-row { --type-color: var(--blue-62); display: grid; gap: 8px; }
+.breakdown-row--pdf { --type-color: var(--red-63); }
+.breakdown-row--png { --type-color: var(--purple-77); }
+.breakdown-row--mp3 { --type-color: var(--green-38); }
+.breakdown-row__head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; color: var(--billing-muted); font-size: 13px; }
+.breakdown-row__label { display: inline-flex; align-items: center; gap: 8px; color: var(--purple-95); font-size: 14px; font-weight: 600; }
+.breakdown-row__label i { width: 10px; height: 10px; border-radius: 3px; background: var(--type-color); }
+.breakdown-row__track { height: 8px; overflow: hidden; border-radius: 999px; background: var(--gray-17); }
+.breakdown-row__track span { display: block; height: 100%; border-radius: inherit; background: var(--type-color); }
 .breakdown-total { min-height: 48px; padding-top: 17px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-top: 1px solid var(--gray-19); color: var(--billing-muted); font-size: 16px; }
 .breakdown-total strong { color: var(--purple-95); font-size: 16px; }
 .next-charge-card { min-height: 123px; margin-top: 35px; padding: 22px 30px; display: flex; align-items: center; gap: 18px; border: 1px solid var(--purple-23); border-radius: 19px; background: var(--purple-10); }

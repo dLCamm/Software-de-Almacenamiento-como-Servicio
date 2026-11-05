@@ -25,7 +25,7 @@ export default function BillingHistory({ history, loading }) {
     <tbody>{history.map((payment) => {
       const status = getStatus(payment.status)
       return <tr key={payment.id}>
-        <td><span className="history-reference">{payment.transaction_reference || `#${payment.id}`}</span></td>
+        <td><span className="history-reference">{payment.transaction_reference ? `#${payment.transaction_reference.replace(/^MOCK-/i, '')}` : `#${payment.id}`}</span></td>
         <td>{formatDate(payment.created_at)}</td>
         <td>{payment.plan_name || 'Plan'}</td>
         <td>{formatMoney(payment.amount)}</td>

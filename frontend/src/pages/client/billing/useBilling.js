@@ -146,7 +146,7 @@ export default function useBilling({ billingApi, accountApi, storageApi, activeT
     event?.preventDefault()
     if (checkoutStep === 1) {
       if (paymentMethod !== 'CARD') {
-        setError('La API de facturación disponible solo procesa pagos con tarjeta por ahora.')
+        setError('Por ahora solo aceptamos pagos con tarjeta.')
         return
       }
       setCheckoutStep(2)
