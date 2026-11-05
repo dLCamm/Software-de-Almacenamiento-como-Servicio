@@ -1,3 +1,4 @@
+import MobileFilters from '../shared/MobileFilters'
 import { useEffect, useState } from 'react'
 import { listAdminPlans } from '../../../api/adminPlans'
 import { listAuditEvents } from '../../../api/adminReports'
@@ -85,6 +86,7 @@ export default function AuditLogPage() {
     </header>
 
     <div className="admin-content">
+      <MobileFilters>
       <form className="management-filters report-filters" onSubmit={applyFilters}>
         <label className="admin-field"><span>Acción</span>
           <select name="action" value={form.action} onChange={changeField}>
@@ -102,6 +104,7 @@ export default function AuditLogPage() {
         </label>
         <div className="management-filter-actions"><button className="admin-button admin-button--primary" type="submit">Filtrar</button><button className="admin-button admin-button--secondary" type="button" onClick={clearFilters} disabled={!hasFilters && !form.action && !form.resource_type}>Limpiar</button></div>
       </form>
+      </MobileFilters>
 
       {error && <div className="admin-alert admin-alert--error" role="alert"><span>{error}</span></div>}
 

@@ -1,3 +1,5 @@
+import MobileFilters from '../shared/MobileFilters'
+import { ROLE_LABELS, label } from '../shared/labels'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getProfile } from '../../../api/auth'
@@ -84,6 +86,7 @@ export default function ManagedUsersPage() {
     <div className="admin-content">
       {error && <div className="admin-alert admin-alert--error" role="alert"><span>{error}</span></div>}
       {notice && <div className="admin-alert admin-alert--success" role="status"><span>{notice}</span><button type="button" onClick={() => setNotice('')} aria-label="Cerrar mensaje">×</button></div>}
+      <MobileFilters>
       <form className="management-filters" onSubmit={applyFilters}>
         <label className="admin-field management-search"><span>Buscar usuario</span><input name="search" value={form.search} onChange={changeField} placeholder="Nombre o correo" /></label>
         <label className="admin-field"><span>Plan</span><select name="plan" value={form.plan} onChange={changeField}><option value="">Todos</option><option value="free">Free</option><option value="pro">Pro</option><option value="business">Business</option><option value="premium">Premium</option></select></label>
@@ -91,6 +94,7 @@ export default function ManagedUsersPage() {
         {profile?.role === 'ADMIN' && <label className="admin-field"><span>Rol</span><select name="role" value={form.role} onChange={changeField}><option value="">Todos</option><option value="CLIENT">Cliente</option><option value="SUPPORT">Soporte</option><option value="ADMIN">Administrador</option></select></label>}
         <div className="management-filter-actions"><button className="admin-button admin-button--primary" type="submit">Filtrar</button><button className="admin-button admin-button--secondary" type="button" onClick={clearFilters}>Limpiar</button></div>
       </form>
+      </MobileFilters>
 
       {loading && !users.length
         ? <div className="admin-empty"><span className="admin-spinner" />Cargando usuarios…</div>
@@ -101,7 +105,7 @@ export default function ManagedUsersPage() {
               <thead><tr><th>Usuario</th><th>Rol</th><th>Plan</th><th>Estado</th><th>Registro</th><th><span className="visually-hidden">Detalle</span></th></tr></thead>
               <tbody>{paged.pageItems.map((user) => <tr key={user.id}>
                 <td data-label="Usuario"><span className="management-user-name">{userName(user)}</span><small className="management-user-email">{user.email}</small></td>
-                <td data-label="Rol">{user.role}</td>
+                <td data-label="Rol">{label(ROLE_LABELS, user.role)}</td>
                 <td data-label="Plan">{user.role === 'CLIENT' ? planName(user.plan) : 'No aplica'}</td>
                 <td data-label="Estado"><span className={`management-badge ${user.is_active ? 'is-success' : 'is-muted'}`}>{user.is_active ? 'Activo' : 'Desactivado'}</span></td>
                 <td data-label="Registro">{formatDate(user.created_at)}</td>

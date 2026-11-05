@@ -1,3 +1,4 @@
+import MobileFilters from '../shared/MobileFilters'
 import { useEffect, useState } from 'react'
 import { listManagedPayments } from '../../../api/management'
 import { AdminIcon } from '../plans/AdminIcon'
@@ -48,6 +49,7 @@ export default function ManagedPaymentsPage() {
     <header className="admin-header"><div><span className="admin-header__crumb">Administración</span><h1>Historial global de pagos</h1><p>{loading ? 'Cargando transacciones…' : `${payments.length} ${payments.length === 1 ? 'transacción' : 'transacciones'}`}</p></div></header>
     <div className="admin-content">
       {error && <div className="admin-alert admin-alert--error" role="alert"><span>{error}</span></div>}
+      <MobileFilters>
       <form className="management-filters management-payment-filters" onSubmit={applyFilters}>
         <label className="admin-field management-search"><span>Buscar</span><input name="search" value={form.search} onChange={changeField} placeholder="Usuario, correo o referencia" /></label>
         <label className="admin-field"><span>Plan</span><select name="plan" value={form.plan} onChange={changeField}><option value="">Todos</option><option value="free">Free</option><option value="pro">Pro</option><option value="business">Business</option><option value="premium">Premium</option></select></label>
@@ -57,6 +59,7 @@ export default function ManagedPaymentsPage() {
         <label className="admin-field"><span>Hasta</span><input type="date" name="date_to" value={form.date_to} onChange={changeField} /></label>
         <div className="management-filter-actions"><button className="admin-button admin-button--primary" type="submit">Filtrar</button><button className="admin-button admin-button--secondary" type="button" onClick={clearFilters}>Limpiar</button></div>
       </form>
+      </MobileFilters>
 
       {loading && !payments.length
         ? <div className="admin-empty"><span className="admin-spinner" />Cargando pagos…</div>

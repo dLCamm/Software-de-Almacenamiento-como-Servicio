@@ -1,3 +1,4 @@
+import { PAYMENT_LABELS, ROLE_LABELS, label } from '../shared/labels'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getManagedPayment } from '../../../api/management'
@@ -40,11 +41,11 @@ export default function PaymentDetailDialog({ paymentId, onClose }) {
         {loading && <div className="admin-empty management-inline-empty"><span className="admin-spinner" />Cargando transacción…</div>}
         {!loading && error && <div className="admin-alert admin-alert--error" role="alert">{error}</div>}
         {!loading && payment && <>
-          <div className="management-payment-summary"><strong>{formatMoney(payment.amount)}</strong><span className={`management-badge ${payment.status === 'APPROVED' ? 'is-success' : payment.status === 'REJECTED' ? 'is-danger' : 'is-muted'}`}>{payment.status}</span></div>
+          <div className="management-payment-summary"><strong>{formatMoney(payment.amount)}</strong><span className={`management-badge ${payment.status === 'APPROVED' ? 'is-success' : payment.status === 'REJECTED' ? 'is-danger' : 'is-muted'}`}>{label(PAYMENT_LABELS, payment.status)}</span></div>
           <dl className="management-data-list management-payment-data">
             <div><dt>Usuario</dt><dd><Link className="management-table-link" to={`/app/admin/usuarios/${payment.user?.id}`} onClick={onClose}>{customerName}</Link></dd></div>
             <div><dt>Correo</dt><dd>{payment.user?.email || '—'}</dd></div>
-            <div><dt>Rol</dt><dd>{payment.user?.role || '—'}</dd></div>
+            <div><dt>Rol</dt><dd>{label(ROLE_LABELS, payment.user?.role)}</dd></div>
             <div><dt>Plan</dt><dd>{payment.plan?.name || payment.plan?.code || '—'}</dd></div>
             <div><dt>Tipo</dt><dd>{payment.payment_type === 'RENEWAL' ? 'Renovación' : 'Suscripción'}</dd></div>
             <div><dt>Método de pago</dt><dd>{payment.payment_method || '—'}</dd></div>

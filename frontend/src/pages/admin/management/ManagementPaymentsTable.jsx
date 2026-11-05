@@ -1,3 +1,4 @@
+import { PAYMENT_LABELS, label } from '../shared/labels'
 import { Link } from 'react-router-dom'
 
 function formatMoney(value) {
@@ -26,7 +27,7 @@ export default function ManagementPaymentsTable({ payments, onOpenPayment }) {
         <td data-label="Plan">{payment.plan?.name || payment.plan?.code || '—'}</td>
         <td data-label="Importe"><strong className="management-payment-amount">{formatMoney(payment.amount)}</strong></td>
         <td data-label="Tipo">{payment.payment_type === 'RENEWAL' ? 'Renovación' : 'Suscripción'}</td>
-        <td data-label="Estado"><span className={`management-badge ${paymentStatusClass(payment.status)}`}>{payment.status}</span></td>
+        <td data-label="Estado"><span className={`management-badge ${paymentStatusClass(payment.status)}`}>{label(PAYMENT_LABELS, payment.status)}</span></td>
         <td data-label="Fecha">{formatDate(payment.created_at)}</td>
         {onOpenPayment && <td className="admin-actions"><button className="admin-button admin-button--secondary management-detail-button" type="button" onClick={() => onOpenPayment(payment.id)}>Ver detalle</button></td>}
       </tr>)}</tbody>

@@ -1,3 +1,4 @@
+import { ROLE_LABELS, SUBSCRIPTION_LABELS, label } from '../shared/labels'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getProfile, logout } from '../../../api/auth'
@@ -111,7 +112,7 @@ export default function ManagedUserDetailPage() {
             <article className="management-card management-card--identity">
               <div className="management-avatar" aria-hidden="true">{displayName(user).slice(0, 1).toLocaleUpperCase()}</div>
               <div className="management-card__identity"><h2>{displayName(user)}</h2><p>{user.email}</p><span className={`management-badge ${user.is_active ? 'is-success' : 'is-muted'}`}>{user.is_active ? 'Cuenta activa' : 'Cuenta desactivada'}</span></div>
-              <dl className="management-data-list"><div><dt>Rol</dt><dd>{user.role}</dd></div><div><dt>Correo verificado</dt><dd>{user.is_email_verified ? 'Sí' : 'No'}</dd></div><div><dt>Cuenta creada</dt><dd>{formatDate(user.created_at)}</dd></div><div><dt>Última actualización</dt><dd>{formatDate(user.updated_at)}</dd></div></dl>
+              <dl className="management-data-list"><div><dt>Rol</dt><dd>{label(ROLE_LABELS, user.role)}</dd></div><div><dt>Correo verificado</dt><dd>{user.is_email_verified ? 'Sí' : 'No'}</dd></div><div><dt>Cuenta creada</dt><dd>{formatDate(user.created_at)}</dd></div><div><dt>Última actualización</dt><dd>{formatDate(user.updated_at)}</dd></div></dl>
             </article>
 
             {user.role === 'CLIENT' ? <><article className="management-card">
@@ -124,7 +125,7 @@ export default function ManagedUserDetailPage() {
             <article className="management-card management-card--subscription">
               <span className="management-card__eyebrow">Suscripción</span>
               {subscription ? <>
-                <h2>{subscription.status}</h2>
+                <h2>{label(SUBSCRIPTION_LABELS, subscription.status)}</h2>
                 <dl className="management-data-list"><div><dt>Inicio</dt><dd>{formatDate(subscription.start_date)}</dd></div><div><dt>Finalización</dt><dd>{formatDate(subscription.end_date)}</dd></div><div><dt>Renovación automática</dt><dd>{subscription.auto_renew ? 'Activada' : 'Desactivada'}</dd></div></dl>
               </> : <p className="management-muted">Este usuario no tiene una suscripción registrada.</p>}
             </article>

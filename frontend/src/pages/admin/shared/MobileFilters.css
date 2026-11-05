@@ -1,0 +1,8 @@
+/* Filtros plegables en celular */
+.mobile-filters__toggle { display: none; }
+@media (max-width: 760px) {
+  .mobile-filters__toggle { width: 100%; min-height: 46px; margin-bottom: 12px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 1px solid var(--gray-19); border-radius: 13px; color: var(--purple-95); background: var(--admin-panel, var(--gray-10)); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+  .mobile-filters__toggle svg { transition: transform .15s; }
+  .mobile-filters__toggle[aria-expanded='true'] svg { transform: rotate(180deg); }
+  .mobile-filters:not(.is-open) form { display: none; }
+}

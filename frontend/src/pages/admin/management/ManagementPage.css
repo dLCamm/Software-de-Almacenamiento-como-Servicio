@@ -71,3 +71,16 @@
   .management-filters .management-search { grid-column: 1 / -1; }
   .management-filters .management-filter-actions { grid-column: 1 / -1; }
 }
+
+/* Celular: tarjetas de usuarios y pagos con el nombre arriba y el botón a la derecha. */
+@media (max-width: 860px) {
+  .management-users-table td[data-label="Usuario"],
+  .management-payments-table td[data-label="Usuario"] { display: block; padding: 0 110px 10px 0; }
+  .management-users-table td[data-label="Usuario"]::before,
+  .management-payments-table td[data-label="Usuario"]::before { content: none; }
+  .management-user-email { display: block; overflow: hidden; text-overflow: ellipsis; }
+  .management-users-table td[data-label="Plan"],
+  .management-payments-table td[data-label="Plan"] { display: flex; padding: 6px 0; }
+  .management-users-table td[data-label="Plan"]::before,
+  .management-payments-table td[data-label="Plan"]::before { content: attr(data-label); }
+}
