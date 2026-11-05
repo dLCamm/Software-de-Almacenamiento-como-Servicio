@@ -21,3 +21,15 @@ export function getFileExtension(fileName = '') {
 export function getFileKind(extension = '') {
   return SUPPORTED_FILE_TYPES[extension]?.kind ?? 'doc'
 }
+
+// Tipos que se pueden ver sin descargar. El MIME se fuerza para que el navegador los muestre.
+export const PREVIEW_TYPES = {
+  png: 'image/png',
+  pdf: 'application/pdf',
+  mp3: 'audio/mpeg',
+}
+
+export function getPreviewType(file) {
+  const extension = String(file?.extension || getFileExtension(file?.nombre_original)).toLowerCase()
+  return PREVIEW_TYPES[extension] ? extension : null
+}

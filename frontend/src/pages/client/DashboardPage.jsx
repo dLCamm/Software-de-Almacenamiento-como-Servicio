@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getProfile } from '../../api/auth'
 import * as storageApi from '../../api/storage'
 import DashboardModal from './dashboard/components/DashboardModal'
 import FileCard from './dashboard/components/FileCard'
+import FilePreview from './dashboard/components/FilePreview'
 import FolderCard from './dashboard/components/FolderCard'
 import Icon from './dashboard/components/Icon'
 import StorageBar from './dashboard/components/StorageBar'
@@ -38,6 +39,10 @@ export default function DashboardPage() {
 
   // DashboardPage actúa como punto de composición e inyecta el adaptador API.
   const dashboard = useDashboard(storageApi)
+  const { setOpenMenu } = dashboard
+  const [previewFile, setPreviewFile] = useState(null)
+  const closePreview = useCallback(() => setPreviewFile(null), [])
+  const openPreview = useCallback((file) => { setOpenMenu(''); setPreviewFile(file) }, [setOpenMenu])
 
   useEffect(() => {
     let active = true
@@ -115,7 +120,7 @@ export default function DashboardPage() {
         {!dashboard.trashItems.length && <div className="empty-state"><Icon name="trash" size={44} /><h2>La papelera está vacía</h2><p>Los archivos y carpetas que elimines aparecerán aquí durante 30 días.</p></div>}
       </div> : <div className={`drive-grid ${layout === 'list' ? 'drive-grid--list' : ''}`}>
         {dashboard.visibleFolders.map((folder) => <FolderCard key={folder.id} folder={folder} layout={layout} onOpen={dashboard.openFolder} menuOpen={dashboard.openMenu === `folder:${folder.id}`} onMenu={() => dashboard.toggleMenu(`folder:${folder.id}`)} onRename={(item) => dashboard.showFolderDialog('rename', item)} onDelete={dashboard.deleteFolder} />)}
-        {dashboard.files.map((file) => <FileCard key={file.id} file={file} layout={layout} onDownload={dashboard.downloadFile} menuOpen={dashboard.openMenu === `file:${file.id}`} onMenu={() => dashboard.toggleMenu(`file:${file.id}`)} canShare={dashboard.canShareLinks} onShare={dashboard.shareFile} onRename={(item) => dashboard.showFileDialog('rename-file', item)} onDelete={dashboard.deleteFile} />)}
+        {dashboard.files.map((file) => <FileCard key={file.id} file={file} layout={layout} onDownload={dashboard.downloadFile} onPreview={openPreview} menuOpen={dashboard.openMenu === `file:${file.id}`} onMenu={() => dashboard.toggleMenu(`file:${file.id}`)} canShare={dashboard.canShareLinks} onShare={dashboard.shareFile} onRename={(item) => dashboard.showFileDialog('rename-file', item)} onDelete={dashboard.deleteFile} />)}
         {!dashboard.visibleFolders.length && !dashboard.files.length && <div className="empty-state"><span className="empty-state__watermark">{dashboard.search ? 'Sin resultados' : 'La carpeta está vacía'}</span><Icon name="folder" size={44} /><h2>{dashboard.search ? 'No encontramos coincidencias' : 'La carpeta está vacía'}</h2><p>{dashboard.search ? 'Prueba con otro nombre de archivo o carpeta.' : 'Arrastra un archivo aquí o crea una carpeta para comenzar.'}</p>{!dashboard.search && <button className="empty-state__button" type="button" onClick={() => uploadInput.current?.click()}><Icon name="upload" size={17} />Subir archivo</button>}</div>}
       </div>}
     </section>
@@ -123,6 +128,7 @@ export default function DashboardPage() {
     <footer className="dashboard-footer"><span>Kubo · Tu almacenamiento en la nube</span></footer>
 
     {dragging && <div className="drop-overlay" aria-live="polite"><div className="drop-overlay__card"><span className="drop-overlay__icon"><Icon name="upload" size={32} /></span><strong>Suelta el archivo para subirlo</strong><span>PDF, MP3, DOC, DOCX o PNG</span></div></div>}
+    <FilePreview file={previewFile} loadFile={storageApi.downloadFile} onDownload={dashboard.downloadFile} onClose={closePreview} />
     <DashboardModal dialog={dashboard.dialog} name={dashboard.dialogName} setName={dashboard.setDialogName} onClose={dashboard.closeDialog} onSubmit={dashboard.dialog?.type === 'rename-file' ? dashboard.saveFile : dashboard.saveFolder} busy={dashboard.dialogBusy} onCopy={dashboard.copyShareLink} copied={dashboard.copied} />
   </main>
 }
