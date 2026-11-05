@@ -8,7 +8,8 @@ const content = {
   pdf: <><path d="M6 2.5h8l6 6v13H6z" /><path d="M14 2.5v6h6" /><text x="8" y="17" className="file-glyph-text">PDF</text></>,
   doc: <><path d="M6 2.5h8l6 6v13H6z" /><path d="M14 2.5v6h6" /><text x="8" y="17" className="file-glyph-text">DOC</text></>,
   png: <><path d="M6 2.5h8l6 6v13H6z" /><path d="M14 2.5v6h6" /><text x="8" y="17" className="file-glyph-text">PNG</text></>,
-  mp3: <><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5.5" /><circle cx="12" cy="12" r="1.5" /><path d="M12 3a9 9 0 0 1 9 9" /></>,
+  // Disco de vinilo: borde, surco, etiqueta central y brillo.
+  mp3: <><circle cx="12" cy="12" r="9.5" /><circle cx="12" cy="12" r="6.6" strokeWidth="1" opacity=".45" /><circle cx="12" cy="12" r="3.2" fill="currentColor" fillOpacity=".22" /><circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" /><path d="M6.4 9.2a6.2 6.2 0 0 1 2.9-3.1" strokeWidth="1.3" /><path d="M17.6 14.8a6.2 6.2 0 0 1-2.9 3.1" strokeWidth="1.3" opacity=".6" /></>,
   more: <><circle cx="12" cy="5" r="1" fill="currentColor" /><circle cx="12" cy="12" r="1" fill="currentColor" /><circle cx="12" cy="19" r="1" fill="currentColor" /></>,
   upgrade: <><path d="M3 16.5 9 10l4 4 8-9" /><path d="M15 5h6v6" /></>,
   download: <><path d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5" /><path d="M5 17v3h14v-3" /></>,
