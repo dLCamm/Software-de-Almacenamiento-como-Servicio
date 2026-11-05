@@ -329,3 +329,8 @@
 .dashboard-account__skeleton--short { width: 230px; height: 13px; }
 .storage-caption__skeleton { width: min(360px, 90%); height: 13px; }
 @media (max-width: 760px) { .dashboard-account { padding: 14px 16px 0; } }
+/* Escritorio mediano: la papelera queda como botón de icono para que todo quepa en una fila. */
+@media (min-width: 761px) and (max-width: 1640px) {
+  .toolbar-options .toolbar-trash { width: 48px; min-width: 48px; padding: 0; }
+  .toolbar-options .toolbar-trash span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+}
