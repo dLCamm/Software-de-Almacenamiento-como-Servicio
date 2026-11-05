@@ -259,3 +259,29 @@
 @media (prefers-reduced-motion: reduce) {
   .plan-skeleton__shape { animation: none; }
 }
+
+/* Pestañas de secciones (solo celular y tableta) */
+.billing-tabs { display: none; }
+@media (max-width: 900px) {
+  .billing-tabs { position: sticky; z-index: 5; top: var(--topbar-height, 0); padding: 10px 16px; display: flex; gap: 6px; overflow-x: auto; border-bottom: 1px solid var(--gray-15); background: var(--gray-8); scrollbar-width: none; }
+  .billing-tabs::-webkit-scrollbar { display: none; }
+  .billing-tabs__link { flex: none; min-height: 36px; padding: 0 14px; display: inline-flex; align-items: center; border: 1px solid var(--gray-19); border-radius: 99px; color: var(--billing-muted); font-size: 13px; font-weight: 600; text-decoration: none; white-space: nowrap; }
+  .billing-tabs__link.is-active { border-color: transparent; color: var(--on-accent); background: var(--purple-64); }
+  .billing-tabs__link:focus-visible { outline: 2px solid var(--purple-64); outline-offset: 2px; }
+}
+@media (max-width: 760px) {
+  .billing-header { min-height: 0; }
+  .billing-header p strong { display: block; }
+  .billing-card { min-height: 0; }
+  .history-table-wrap, .billing-history { overflow-x: auto; }
+}
+/* Historial como tarjetas en celular: cada fila muestra sus datos con etiqueta. */
+@media (max-width: 560px) {
+  .history-table, .history-table tbody, .history-table tr, .history-table td { display: block; width: 100%; }
+  .history-table thead { display: none; }
+  .history-table tr { padding: 14px 16px; border-bottom: 1px solid var(--gray-19); }
+  .history-table tr:last-child { border-bottom: 0; }
+  .history-table td { height: auto !important; padding: 4px 0 !important; display: flex; align-items: center; justify-content: space-between; gap: 12px; border: 0 !important; }
+  .history-table td:first-child { padding-bottom: 8px !important; font-weight: 600; }
+  .history-table td[data-label]::before { content: attr(data-label); color: var(--billing-muted); font-size: 12px; }
+}

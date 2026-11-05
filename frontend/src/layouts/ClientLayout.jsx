@@ -4,6 +4,7 @@ import { getProfile, logout } from '../api/auth'
 import { getStorageUsage } from '../api/storage'
 import { CubeLogoIcon } from '../components/icons'
 import ThemeToggle from '../components/ThemeToggle'
+import { NavLoading } from '../components/PageLoading'
 import { formatBytes } from '../pages/client/dashboard/formatters'
 import { getUsagePercent, subscribeStorageUsage } from '../utils/storageUsage'
 import useSystemStorage from '../utils/systemStorage'
@@ -78,6 +79,14 @@ export default function ClientLayout() {
   const isAdmin = profile?.role === 'ADMIN'
   const systemStorage = useSystemStorage(isAdmin, `${pathname}|${usage?.usado_bytes}`)
 
+  // Escape cierra el menú abierto en celular.
+  useEffect(() => {
+    if (!open) return undefined
+    const onKey = (event) => { if (event.key === 'Escape') setOpen(false) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open])
+
   function handleLogout() {
     logout()
     navigate('/login')
@@ -88,11 +97,23 @@ export default function ClientLayout() {
   const items = NAV_ITEMS.filter((item) => (!item.roles || item.roles.includes(role)) && !item.hiddenFor?.includes(role))
   const percent = getUsagePercent(usage)
 
+  const sectionTitle = items.flatMap((item) => [item, ...(item.children || [])]).filter((item) => (!item.roles || item.roles.includes(role)) && isInside(item)).pop()?.label
+    || (pathname.startsWith('/app/configuracion') ? 'Configuración' : '')
+
   return <div className={`client-layout ${open ? 'is-nav-open' : ''}`}>
-    <button className="client-nav__toggle" type="button" onClick={() => setOpen(true)} aria-label="Abrir menú"><NavIcon name="menu" /></button>
+    {/* En celular el menú lateral se abre desde esta barra superior. */}
+    <header className="client-topbar">
+      <button className="client-topbar__menu" type="button" onClick={() => setOpen(true)} aria-label="Abrir menú" aria-expanded={open} aria-controls="client-nav"><NavIcon name="menu" /></button>
+      <button className="client-topbar__brand" type="button" onClick={() => navigate(role === 'CLIENT' ? '/app/client' : '/app/admin')} aria-label="Ir al inicio de Kubo">
+        <span className="client-nav__logo"><CubeLogoIcon width={18} height={18} /></span>
+        <strong>Kubo</strong>
+      </button>
+      {sectionTitle && <span className="client-topbar__section">{sectionTitle}</span>}
+      <ThemeToggle className="client-topbar__theme" />
+    </header>
     <div className="client-nav__scrim" onClick={() => setOpen(false)} aria-hidden="true" />
 
-    <aside className="client-nav" aria-label="Navegación principal">
+    <aside id="client-nav" className="client-nav" aria-label="Navegación principal">
       <div className="client-nav__brand">
         <button className="client-nav__logo client-nav__logo-button" type="button" onClick={() => { setOpen(false); navigate('/') }} aria-label="Volver a la página principal de Kubo" title="Volver al landing page">
           <CubeLogoIcon width={22} height={22} />
@@ -102,6 +123,7 @@ export default function ClientLayout() {
       </div>
 
       <nav className="client-nav__links">
+        {!profile && <NavLoading />}
         {items.map((item) => item.ready === false
           ? <span key={item.to} className="client-nav__link is-disabled" aria-disabled="true" title="Próximamente"><NavIcon name={item.icon} /><span>{item.label}</span><small>Pronto</small></span>
           : <div key={item.to} className="client-nav__group">

@@ -1,3 +1,4 @@
+import PageLoading from '../components/PageLoading'
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { getProfile } from '../api/auth'
@@ -14,5 +15,5 @@ export default function AdminIndexRoute() {
     return () => { active = false }
   }, [])
 
-  return target ? <Navigate to={target} replace /> : null
+  return target ? <Navigate to={target} replace /> : <PageLoading />
 }

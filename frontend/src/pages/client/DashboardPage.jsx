@@ -41,6 +41,8 @@ export default function DashboardPage() {
   const dashboard = useDashboard(storageApi)
   const { setOpenMenu } = dashboard
   const [previewFile, setPreviewFile] = useState(null)
+  const [optionsOpen, setOptionsOpen] = useState(false)
+  const activeOptions = (dashboard.extensionFilter ? 1 : 0) + (dashboard.uploadTemporary ? 1 : 0)
   const closePreview = useCallback(() => setPreviewFile(null), [])
   const openPreview = useCallback((file) => { setOpenMenu(''); setPreviewFile(file) }, [setOpenMenu])
 
@@ -69,21 +71,30 @@ export default function DashboardPage() {
   }
 
   return <main className="dashboard-page" onClick={() => dashboard.setOpenMenu('')} onDragOver={(event) => { event.preventDefault(); if (!dashboard.showTrash && event.dataTransfer?.types.includes('Files')) setDragging(true) }} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false) }} onDrop={handleDrop}>
-    <header className="dashboard-toolbar">
-      {!dashboard.showTrash && <><label className="drive-search"><Icon name="search" /><input type="search" value={dashboard.search} onChange={(event) => dashboard.setSearch(event.target.value)} placeholder="Buscar archivos y carpetas..." aria-label="Buscar archivos y carpetas" /></label>
-      <label className="drive-filter"><span>Tipo</span><select value={dashboard.extensionFilter} onChange={(event) => dashboard.setExtensionFilter(event.target.value)} aria-label="Filtrar por tipo de archivo"><option value="">Todos</option>{Object.entries(SUPPORTED_FILE_TYPES).map(([extension, config]) => <option key={extension} value={extension}>{config.label}</option>)}</select></label></>}
-      {!dashboard.showTrash && dashboard.canUploadTemporary && <div className="upload-options"><label className="checkbox-inline"><input type="checkbox" checked={dashboard.uploadTemporary} onChange={(event) => dashboard.setUploadTemporary(event.target.checked)} />Subida temporal</label>{dashboard.uploadTemporary && <label className="ttl-field">Días<input type="number" min="1" max="365" value={dashboard.uploadTtlDays} onChange={(event) => dashboard.setUploadTtlDays(Math.min(365, Math.max(1, Number(event.target.value) || 14)))} /></label>}</div>}
-      <div className="toolbar-actions">
-        {dashboard.showTrash ? <button className="toolbar-button toolbar-button--secondary" type="button" onClick={dashboard.closeTrash}><Icon name="back" />Volver a mi unidad</button> : <>
-        <button className="toolbar-button toolbar-button--primary" type="button" onClick={() => uploadInput.current?.click()} disabled={dashboard.uploading}><Icon name="upload" />{dashboard.uploading ? 'Subiendo…' : 'Subir archivo'}</button>
-        <button className="toolbar-button toolbar-button--secondary" type="button" onClick={() => dashboard.showFolderDialog('create')}><Icon name="folderAdd" /><span>Nueva carpeta</span></button>
-        <div className="view-toggle" role="group" aria-label="Vista de archivos"><button type="button" className={layout === 'grid' ? 'is-active' : ''} onClick={() => setLayout('grid')} aria-label="Vista de cuadrícula"><Icon name="grid" /></button><button type="button" className={layout === 'list' ? 'is-active' : ''} onClick={() => setLayout('list')} aria-label="Vista de lista"><Icon name="list" /></button></div>
-        <button className="toolbar-button toolbar-button--secondary" type="button" onClick={dashboard.openTrash}><Icon name="trash" /><span>Papelera</span></button>
+    <header className={`dashboard-toolbar${optionsOpen ? ' is-options-open' : ''}`}>
+      {dashboard.showTrash
+        ? <div className="toolbar-actions"><button className="toolbar-button toolbar-button--secondary" type="button" onClick={dashboard.closeTrash}><Icon name="back" />Volver a mi unidad</button></div>
+        : <>
+          <label className="drive-search"><Icon name="search" /><input type="search" value={dashboard.search} onChange={(event) => dashboard.setSearch(event.target.value)} placeholder="Buscar archivos y carpetas..." aria-label="Buscar archivos y carpetas" /></label>
+          {/* En celular, filtros, vista y papelera se agrupan en este menú desplegable. */}
+          <button className="toolbar-options-toggle" type="button" onClick={(event) => { event.stopPropagation(); setOptionsOpen((value) => !value) }} aria-expanded={optionsOpen} aria-controls="toolbar-options">
+            <Icon name="sliders" /><span>Opciones</span>{activeOptions > 0 && <span className="toolbar-options-toggle__count" aria-label={`${activeOptions} activas`}>{activeOptions}</span>}
+          </button>
+          <div id="toolbar-options" className="toolbar-options" onClick={(event) => event.stopPropagation()}>
+            <label className="drive-filter"><span>Tipo</span><select value={dashboard.extensionFilter} onChange={(event) => dashboard.setExtensionFilter(event.target.value)} aria-label="Filtrar por tipo de archivo"><option value="">Todos</option>{Object.entries(SUPPORTED_FILE_TYPES).map(([extension, config]) => <option key={extension} value={extension}>{config.label}</option>)}</select></label>
+            {dashboard.canUploadTemporary && <div className="upload-options"><label className="checkbox-inline"><input type="checkbox" checked={dashboard.uploadTemporary} onChange={(event) => dashboard.setUploadTemporary(event.target.checked)} />Subida temporal</label>{dashboard.uploadTemporary && <label className="ttl-field">Días<input type="number" min="1" max="365" value={dashboard.uploadTtlDays} onChange={(event) => dashboard.setUploadTtlDays(Math.min(365, Math.max(1, Number(event.target.value) || 14)))} /></label>}</div>}
+            <div className="view-toggle" role="group" aria-label="Vista de archivos"><button type="button" className={layout === 'grid' ? 'is-active' : ''} onClick={() => setLayout('grid')} aria-label="Vista de cuadrícula" aria-pressed={layout === 'grid'}><Icon name="grid" /></button><button type="button" className={layout === 'list' ? 'is-active' : ''} onClick={() => setLayout('list')} aria-label="Vista de lista" aria-pressed={layout === 'list'}><Icon name="list" /></button></div>
+            <button className="toolbar-button toolbar-button--secondary toolbar-trash" type="button" onClick={() => { setOptionsOpen(false); dashboard.openTrash() }}><Icon name="trash" /><span>Papelera</span></button>
+          </div>
+          <div className="toolbar-actions">
+            <button className="toolbar-button toolbar-button--primary" type="button" onClick={() => uploadInput.current?.click()} disabled={dashboard.uploading}><Icon name="upload" />{dashboard.uploading ? 'Subiendo…' : 'Subir archivo'}</button>
+            <button className="toolbar-button toolbar-button--secondary" type="button" onClick={() => dashboard.showFolderDialog('create')}><Icon name="folderAdd" /><span>Nueva carpeta</span></button>
+          </div>
+          <input ref={uploadInput} className="visually-hidden" type="file" accept={dashboard.acceptedFileTypes} multiple onChange={handleFileSelection} />
         </>}
-      </div>
-      {!dashboard.showTrash && <input ref={uploadInput} className="visually-hidden" type="file" accept={dashboard.acceptedFileTypes} multiple onChange={handleFileSelection} />}
     </header>
 
+    {!account && !accountError && <div className="dashboard-account" aria-hidden="true"><span className="file-skeleton__shape dashboard-account__skeleton" /><span className="file-skeleton__shape dashboard-account__skeleton dashboard-account__skeleton--short" /></div>}
     {account && <div className="dashboard-account">
       <strong>Hola, {[account.first_name, account.last_name].filter(Boolean).join(' ') || account.email}</strong>
       <span>{account.email}</span>

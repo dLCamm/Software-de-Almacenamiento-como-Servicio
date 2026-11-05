@@ -1,3 +1,4 @@
+import PageLoading from '../components/PageLoading'
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { getProfile } from '../api/auth'
@@ -14,7 +15,7 @@ export default function AdminRoute({ children }) {
     return () => { active = false }
   }, [])
 
-  if (status === 'checking') return null
+  if (status === 'checking') return <PageLoading />
   if (status === 'denied') return <Navigate to="/app/client" replace />
   return children
 }

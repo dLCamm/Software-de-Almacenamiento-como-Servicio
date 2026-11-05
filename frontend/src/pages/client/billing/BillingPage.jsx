@@ -1,4 +1,4 @@
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { NavLink, Navigate, useNavigate, useParams } from 'react-router-dom'
 import * as accountApi from '../../../api/auth'
 import * as billingApi from '../../../api/billing'
 import * as storageApi from '../../../api/storage'
@@ -47,6 +47,11 @@ export default function BillingPage() {
       <div><span className="billing-header__crumb">Planes y Facturación</span><h1>{section.label}</h1><p>Plan actual: <strong>{planName} — {formatMonthlyPrice(planPrice)}</strong></p></div>
       <button className="billing-back-button" type="button" onClick={() => navigate('/app/client')}><BillingIcon name="arrow" size={18} />Volver a mi unidad</button>
     </header>
+
+    {/* En celular, las secciones se muestran como pestañas deslizables bajo el encabezado. */}
+    <nav className="billing-tabs" aria-label="Secciones de facturación">
+      {SECTIONS.map((item) => <NavLink key={item.id} to={item.slug ? `${BASE_PATH}/${item.slug}` : BASE_PATH} end className={({ isActive }) => `billing-tabs__link${isActive ? ' is-active' : ''}`}>{item.label}</NavLink>)}
+    </nav>
 
     <div className="billing-content">
       {billing.error && <div className="billing-alert billing-alert--error" role="alert"><span>{billing.error}</span><button type="button" onClick={billing.dismissMessages} aria-label="Cerrar mensaje"><BillingIcon name="close" size={17} /></button></div>}

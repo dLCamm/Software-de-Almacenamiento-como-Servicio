@@ -291,3 +291,41 @@
   .file-preview__download span { display: none; }
   .file-preview__download { width: 38px; padding: 0; justify-content: center; }
 }
+
+/* Barra de herramientas: en escritorio todo en una fila que se acomoda; en celular, menú "Opciones". */
+.dashboard-toolbar { flex-wrap: wrap; justify-content: flex-start; gap: 12px 14px; }
+.drive-search { flex: 1 1 260px; width: auto; max-width: 560px; min-width: 220px; }
+.toolbar-options { display: contents; }
+.toolbar-options .drive-filter { order: 1; margin-left: auto; }
+.toolbar-options .upload-options { order: 2; }
+.dashboard-toolbar > .toolbar-actions { order: 3; }
+.toolbar-options .view-toggle { order: 4; }
+.toolbar-options .toolbar-trash { order: 5; }
+.toolbar-options-toggle { display: none; }
+@media (max-width: 1280px) {
+  .toolbar-button { min-height: 48px; padding-inline: 14px; font-size: 14px !important; }
+  .drive-search { height: 50px; }
+}
+@media (max-width: 760px) {
+  .dashboard-toolbar { padding: 14px 16px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+  .drive-search { grid-column: 1; max-width: none; min-width: 0; height: 46px; }
+  .toolbar-options-toggle { grid-column: 2; position: relative; height: 46px; padding: 0 14px; display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--gray-24); border-radius: 12px; color: var(--gray-73) !important; background: var(--gray-12); font-size: 13px !important; font-weight: 600; cursor: pointer; }
+  .toolbar-options-toggle[aria-expanded='true'] { border-color: var(--purple-55); color: var(--purple-72) !important; background: var(--purple-63-a15); }
+  .toolbar-options-toggle__count { min-width: 18px; height: 18px; padding: 0 5px; display: inline-grid; place-items: center; border-radius: 99px; color: var(--on-accent); background: var(--purple-64); font-size: 11px; }
+  .toolbar-options { grid-column: 1 / -1; padding: 12px; display: none; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; border: 1px solid var(--gray-19); border-radius: 13px; background: var(--gray-10); }
+  .is-options-open .toolbar-options { display: grid; }
+  .toolbar-options .drive-filter { margin: 0; }
+  .toolbar-options .drive-filter select { flex: 1; }
+  .toolbar-options .upload-options { grid-column: 1 / -1; grid-row: 2; justify-content: space-between; }
+  .toolbar-options .view-toggle { grid-column: 2; grid-row: 1; }
+  .toolbar-options .toolbar-trash { grid-column: 1 / -1; grid-row: 3; width: 100%; min-height: 44px; }
+  .dashboard-toolbar > .toolbar-actions { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .dashboard-toolbar > .toolbar-actions .toolbar-button { min-height: 46px; width: 100%; }
+  .toolbar-button--secondary span { max-width: none; }
+  .storage-overview { min-height: 0; }
+  .item-menu { right: 8px; left: auto; max-width: calc(100vw - 48px); }
+}
+.dashboard-account__skeleton { width: 180px; height: 17px; }
+.dashboard-account__skeleton--short { width: 230px; height: 13px; }
+.storage-caption__skeleton { width: min(360px, 90%); height: 13px; }
+@media (max-width: 760px) { .dashboard-account { padding: 14px 16px 0; } }

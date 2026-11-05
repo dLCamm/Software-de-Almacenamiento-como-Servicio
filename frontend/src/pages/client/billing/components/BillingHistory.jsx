@@ -26,10 +26,10 @@ export default function BillingHistory({ history, loading }) {
       const status = getStatus(payment.status)
       return <tr key={payment.id}>
         <td><span className="history-reference">{payment.transaction_reference ? `#${payment.transaction_reference.replace(/^MOCK-/i, '')}` : `#${payment.id}`}</span></td>
-        <td>{formatDate(payment.created_at)}</td>
-        <td>{payment.plan_name || 'Plan'}</td>
-        <td>{formatMoney(payment.amount)}</td>
-        <td><span className={`payment-status ${status.className}`}>{status.label}</span></td>
+        <td data-label="Fecha">{formatDate(payment.created_at)}</td>
+        <td data-label="Plan">{payment.plan_name || 'Plan'}</td>
+        <td data-label="Monto">{formatMoney(payment.amount)}</td>
+        <td data-label="Estado"><span className={`payment-status ${status.className}`}>{status.label}</span></td>
       </tr>
     })}</tbody>
   </table></div>

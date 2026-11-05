@@ -16,11 +16,13 @@ const REFRESH_TOKEN_KEY = 'vaultdrive_refresh_token'
 export function saveTokens({ access, refresh }) {
   if (access) localStorage.setItem(ACCESS_TOKEN_KEY, access)
   if (refresh) localStorage.setItem(REFRESH_TOKEN_KEY, refresh)
+  clearProfileCache()
 }
 
 export function clearTokens() {
   localStorage.removeItem(ACCESS_TOKEN_KEY)
   localStorage.removeItem(REFRESH_TOKEN_KEY)
+  clearProfileCache()
 }
 
 export function getAccessToken() {
@@ -138,11 +140,27 @@ export async function refreshAccessToken() {
   return data
 }
 
+// El menú, la ruta protegida y la página piden el perfil al mismo tiempo: se comparte una sola
+// petición y su respuesta se reutiliza unos segundos para no esperar varias veces al servidor.
+const PROFILE_CACHE_MS = 5000
+let profileRequest = null
+let profileRequestedAt = 0
+
+export function clearProfileCache() {
+  profileRequest = null
+  profileRequestedAt = 0
+}
+
 export function getProfile() {
-  return apiRequest('/api/auth/me/', { method: 'GET', auth: true })
+  if (profileRequest && Date.now() - profileRequestedAt < PROFILE_CACHE_MS) return profileRequest
+  profileRequestedAt = Date.now()
+  profileRequest = apiRequest('/api/auth/me/', { method: 'GET', auth: true })
+  profileRequest.catch(() => clearProfileCache())
+  return profileRequest
 }
 
 export function updateProfile(changes) {
+  clearProfileCache()
   return apiRequest('/api/auth/me/', { method: 'PATCH', body: changes, auth: true })
 }
 
