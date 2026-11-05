@@ -20,7 +20,6 @@ import './LandingPage.css'
 const NAV_LINKS = [
   { id: 'caracteristicas', label: 'Características' },
   { id: 'precios', label: 'Precios' },
-  { id: 'soporte', label: 'Soporte' },
 ]
 
 const FORMATS = [
@@ -279,7 +278,7 @@ export default function LandingPage() {
           </p>
         </section>
 
-        <section className="final-cta" id="soporte">
+        <section className="final-cta">
           <div className="final-cta__checks">
             <CheckIcon />
             <CheckIcon />
