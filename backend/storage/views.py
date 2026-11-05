@@ -1,4 +1,5 @@
 import logging
+from django.db.models import Count, Sum
 from django.http import FileResponse
 from rest_framework import status
 from rest_framework.parsers import FormParser, MultiPartParser
@@ -360,8 +361,19 @@ class StorageUsageView(AuthenticatedStorageAPIView):
     def get(self, request, *args, **kwargs):
         user = request.user
         usage = FileService.get_user_storage_usage(user)
-        serializer = StorageUsageSerializer(usage)
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        data = dict(StorageUsageSerializer(usage).data)
+        # Desglose del espacio usado por tipo de archivo (activos y en papelera).
+        data["por_tipo"] = [
+            {"extension": item["extension"], "archivos": item["archivos"], "usado_bytes": item["usado_bytes"] or 0}
+            for item in Archivo.objects.filter(
+                usuario=user,
+                estado__in=(EstadoElemento.ACTIVO, EstadoElemento.PAPELERA),
+            )
+            .values("extension")
+            .annotate(archivos=Count("id"), usado_bytes=Sum("tamano_bytes"))
+            .order_by("-usado_bytes")
+        ]
+        return Response(data, status=status.HTTP_200_OK)
 
 
 class TrashListView(AuthenticatedStorageAPIView):

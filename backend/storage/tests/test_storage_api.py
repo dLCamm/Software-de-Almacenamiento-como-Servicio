@@ -498,3 +498,7 @@ class StorageApiTestCase(TestCase):
         self.assertEqual(response.data["disponible_bytes"], 625)
         self.assertEqual(response.data["porcentaje_usado"], 37.5)
         self.assertEqual(response.data["plan_codigo"], "usage-test")
+        self.assertEqual(
+            response.data["por_tipo"],
+            [{"extension": "pdf", "archivos": 2, "usado_bytes": 375}],
+        )
