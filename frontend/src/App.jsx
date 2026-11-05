@@ -19,10 +19,13 @@ import AuditLogPage from './pages/admin/reports/AuditLogPage'
 import StatisticsPage from './pages/admin/reports/StatisticsPage'
 import AdminHomePage from './pages/admin/home/AdminHomePage'
 import SettingsPage from './pages/settings/SettingsPage'
+import DocumentTitle from './routes/DocumentTitle'
 
 
 export default function App() {
   return (
+    <>
+    <DocumentTitle />
     <Routes>
 
       <Route path="/" element={<LandingPage />}/>
@@ -50,5 +53,6 @@ export default function App() {
       <Route path="*" element={<Navigate to="/" replace />}/>
 
     </Routes>
+    </>
   )
 }
