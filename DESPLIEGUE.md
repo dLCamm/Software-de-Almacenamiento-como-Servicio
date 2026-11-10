@@ -1,7 +1,12 @@
-# Despliegue para la presentación
+# Despliegue
 
-Kubo se levanta en Docker en una computadora del equipo y se publica con
-**Cloudflare Tunnel** (gratis, sin cuenta). Todo se sirve desde un solo origen:
+Hay dos formas, las dos con `docker-compose.prod.yml`:
+
+- **Azure (recomendada):** una VM siempre encendida con enlace fijo.
+- **Computadora del equipo + Cloudflare Tunnel:** gratis, pero el enlace
+  cambia en cada arranque y la computadora debe quedar encendida.
+
+Todo se sirve desde un solo origen:
 
 | Ruta       | Va a                         |
 |------------|------------------------------|
@@ -29,7 +34,36 @@ Kubo se levanta en Docker en una computadora del equipo y se publica con
   Sin esto, el enlace de verificación solo aparece en
   `docker compose -f docker-compose.prod.yml logs backend`.
 
-## Levantarlo
+## Opción A: VM en Azure (Ubuntu)
+
+```bash
+# Docker
+curl -fsSL https://get.docker.com | sudo sh
+sudo usermod -aG docker $USER && newgrp docker
+
+# Código (rama de despliegue)
+git clone -b deploy/presentacion https://github.com/dLCamm/Software-de-Almacenamiento-como-Servicio.git kubo
+cd kubo
+nano backend/.env        # pegar el mismo .env que usan en local
+
+# Levantar (cambiar el dominio por el de la VM)
+export HTTP_PORT=80 PUBLIC_URL=http://<nombre>.<region>.cloudapp.azure.com
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Actualizar después de nuevos cambios:
+
+```bash
+cd kubo && git pull
+export HTTP_PORT=80 PUBLIC_URL=http://<nombre>.<region>.cloudapp.azure.com
+docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml restart frontend
+```
+
+Los contenedores se vuelven a levantar solos si la VM se reinicia.
+**Apaguen o eliminen la VM después de la presentación** para no gastar crédito.
+
+## Opción B: computadora del equipo + Cloudflare Tunnel
 
 En PowerShell, desde la carpeta del repo:
 
@@ -43,7 +77,7 @@ local (`http://localhost:8080`).
 Si PowerShell bloquea el script:
 `powershell -ExecutionPolicy Bypass -File .\desplegar.ps1`
 
-## Importante
+### Importante (opción B)
 
 - El enlace funciona **solo mientras la computadora y Docker estén encendidos**.
 - **Cambia cada vez** que se reinicia el contenedor `cloudflared`. Levántenlo
@@ -55,5 +89,5 @@ Si PowerShell bloquea el script:
 ## Apagarlo
 
 ```powershell
-docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml --profile tunnel down
 ```

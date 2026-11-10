@@ -2,11 +2,11 @@
 # (Cloudflare Tunnel). Uso, desde la carpeta del repo en PowerShell:
 #   .\desplegar.ps1
 # Para apagarlo:
-#   docker compose -f docker-compose.prod.yml down
+#   docker compose -f docker-compose.prod.yml --profile tunnel down
 
 $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
-$compose = @("compose", "-f", "docker-compose.prod.yml")
+$compose = @("compose", "-f", "docker-compose.prod.yml", "--profile", "tunnel")
 
 Write-Host "Deteniendo el entorno de desarrollo (si estaba corriendo)..."
 docker compose -f docker-compose.yml down 2>$null | Out-Null

@@ -1,8 +1,10 @@
-# Despliegue para presentación: todo se sirve desde un solo origen (Nginx)
-# y Cloudflare Tunnel lo publica con un enlace https gratuito.
+# Despliegue: todo se sirve desde un solo origen (Nginx).
 #
-#   docker compose -f docker-compose.prod.yml up -d --build
-#   docker compose -f docker-compose.prod.yml logs cloudflared   (ahí aparece el enlace)
+# En un servidor (Azure):
+#   HTTP_PORT=80 PUBLIC_URL=http://<dominio> docker compose -f docker-compose.prod.yml up -d --build
+#
+# En una computadora del equipo, con enlace público por Cloudflare Tunnel:
+#   .\desplegar.ps1   (usa el perfil "tunnel")
 #
 # Ver DESPLIEGUE.md para los detalles.
 
@@ -26,7 +28,7 @@ services:
         VITE_API_URL: ""
     container_name: kubo-frontend
     ports:
-      - "8080:80"
+      - "${HTTP_PORT:-8080}:80"
     depends_on:
       backend:
         condition: service_healthy
@@ -101,6 +103,8 @@ services:
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: kubo-tunnel
+    # Solo se levanta con --profile tunnel (no hace falta en Azure).
+    profiles: ["tunnel"]
     command: tunnel --no-autoupdate --url http://frontend:80
     depends_on:
       - frontend
