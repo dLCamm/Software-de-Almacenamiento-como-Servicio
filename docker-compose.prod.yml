@@ -1,0 +1,110 @@
+# Despliegue para presentación: todo se sirve desde un solo origen (Nginx)
+# y Cloudflare Tunnel lo publica con un enlace https gratuito.
+#
+#   docker compose -f docker-compose.prod.yml up -d --build
+#   docker compose -f docker-compose.prod.yml logs cloudflared   (ahí aparece el enlace)
+#
+# Ver DESPLIEGUE.md para los detalles.
+
+x-backend-env: &backend-env
+  env_file:
+    - ./backend/.env
+  environment:
+    MINIO_ENDPOINT: minio:9000
+    DJANGO_DEBUG: "False"
+    # El dominio del túnel cambia en cada arranque, por eso se aceptan todos.
+    DJANGO_ALLOWED_HOSTS: "*"
+    # Enlaces de los correos (verificación / recuperar contraseña).
+    FRONTEND_URL: ${PUBLIC_URL:-http://localhost:8080}
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ""
+    container_name: kubo-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: kubo-backend
+    <<: *backend-env
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 300"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health/', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 24
+      start_period: 30s
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  trash-cleanup:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: kubo-trash-cleanup
+    <<: *backend-env
+    command: ["python", "manage.py", "purge_expired_trash", "--loop", "--interval-seconds", "86400"]
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  minio:
+    image: bitnamilegacy/minio:latest
+    container_name: kubo-minio
+    # Sin puertos publicados: solo se accede por Nginx (/minio/).
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/bitnami/minio/data
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://127.0.0.1:9000/minio/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  minio-init:
+    image: bitnamilegacy/minio-client:latest
+    container_name: kubo-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      set -e;
+      until (mc alias set localminio http://minio:9000 minioadmin minioadmin); do
+        echo 'Esperando que MinIO esté disponible...';
+        sleep 2;
+      done;
+      mc mb localminio/vaultdrive-storage --ignore-existing;
+      exit 0;
+      "
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: kubo-tunnel
+    command: tunnel --no-autoupdate --url http://frontend:80
+    depends_on:
+      - frontend
+    restart: unless-stopped
+
+volumes:
+  minio_data:

@@ -8,7 +8,8 @@
 //
 // Los flujos de verificación y recuperación son públicos y no envían JWT.
 
-const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '')
+// Si VITE_API_URL viene vacío (despliegue con Nginx), la API se llama en el mismo origen (/api/...).
+const API_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/+$/, '')
 
 const ACCESS_TOKEN_KEY = 'vaultdrive_access_token'
 const REFRESH_TOKEN_KEY = 'vaultdrive_refresh_token'
