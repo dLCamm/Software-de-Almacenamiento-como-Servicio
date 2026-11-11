@@ -22,13 +22,46 @@ function isDownloadUrl(value) {
   }
 }
 
+// Los archivos se sirven por /minio/ en el mismo origen que esta página. Un enlace
+// creado con otro origen (por ejemplo http antes de activar https) se reescribe al
+// actual: el Host firmado lo conserva Nginx, así que la firma sigue siendo válida.
+function toCurrentOrigin(value) {
+  try {
+    const url = new URL(value)
+    if (!url.pathname.startsWith('/minio/')) return value
+    return `${window.location.origin}${url.pathname}${url.search}`
+  } catch {
+    return value
+  }
+}
+
+// Descarga el archivo como blob para que el navegador lo guarde en lugar de abrirlo
+// (PDF, PNG y MP3 se abrirían en una pestaña). Si falla, sigue el enlace normal.
+async function downloadDirectly(event, url, fileName) {
+  event.preventDefault()
+  try {
+    const response = await fetch(url, { referrerPolicy: 'no-referrer' })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const objectUrl = URL.createObjectURL(await response.blob())
+    const link = document.createElement('a')
+    link.href = objectUrl
+    link.download = fileName
+    document.body.append(link)
+    link.click()
+    link.remove()
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 10000)
+  } catch {
+    window.location.href = url
+  }
+}
+
 export default function SharedFilePage() {
   const params = new URLSearchParams(window.location.search)
   const fileName = params.get('name')?.trim() || ''
-  const downloadUrl = params.get('download') || ''
+  const downloadUrl = toCurrentOrigin(params.get('download') || '')
   const expiresAt = Number(params.get('expires_at'))
   const linkIsValid = Boolean(fileName && isDownloadUrl(downloadUrl) && Number.isFinite(expiresAt) && expiresAt > 0)
-  const [now, setNow] = useState(Date.now())
+  const [now, setNow] = useState(() => Date.now())
 
   useEffect(() => {
     if (!linkIsValid) return undefined
@@ -67,7 +100,7 @@ export default function SharedFilePage() {
                 <span>El enlace expira en</span>
                 <strong>{formatCountdown(secondsRemaining)}</strong>
               </div>
-              <a className="shared-file__download" href={downloadUrl} download={fileName} referrerPolicy="no-referrer">
+              <a className="shared-file__download" href={downloadUrl} download={fileName} referrerPolicy="no-referrer" onClick={(event) => downloadDirectly(event, downloadUrl, fileName)}>
                 <Icon name="download" size={19} />Descargar archivo
               </a>
             </div>
