@@ -688,9 +688,13 @@
 /* ---------- Responsive ---------- */
 
 @media (max-width: 1024px) {
-  .landing-nav__links,
-  .landing-nav__cta {
+  .landing-nav__links {
     display: none;
+  }
+
+  /* "Iniciar sesión" queda visible en el encabezado, sin abrir el menú. */
+  .landing-nav__cta {
+    margin-left: auto;
   }
 
   .landing-nav__toggle {
@@ -698,7 +702,7 @@
   }
 
   .landing-nav__theme {
-    margin-left: auto;
+    margin-left: 0;
   }
 
   .landing-nav__theme + .landing-nav__toggle {
@@ -719,6 +723,20 @@
 }
 
 @media (max-width: 640px) {
+  .landing-nav__bar {
+    padding: 12px 16px;
+    gap: 10px;
+  }
+
+  .landing-nav__cta {
+    padding: 8px 12px;
+    font-size: 13.5px;
+  }
+
+  .landing-nav__cta .btn__icon {
+    display: none;
+  }
+
   .pricing__grid {
     grid-template-columns: 1fr;
     max-width: 420px;
