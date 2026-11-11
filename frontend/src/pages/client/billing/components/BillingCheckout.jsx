@@ -3,7 +3,6 @@ import BillingIcon from './BillingIcon'
 
 const PAYMENT_METHODS = [
   { id: 'CARD', title: 'Tarjeta de crédito/débito', detail: 'Visa, Mastercard, AMEX', enabled: true },
-  { id: 'TRANSFER', title: 'Transferencia bancaria', detail: 'Transferencia ACH o depósito', enabled: false },
 ]
 
 function formatMoney(value) {
@@ -106,7 +105,6 @@ export default function BillingCheckout({
         <span className="payment-method__details"><strong>{method.title}</strong><span>{method.detail}</span></span>
         {!method.enabled && <span className="payment-method__badge">No disponible</span>}
       </button>)}
-      <p className="billing-footnote">Por ahora aceptamos pagos con tarjeta. Pronto habilitaremos la transferencia bancaria.</p>
       <button className="billing-button billing-button--primary checkout-full-button" type="button" onClick={onContinue}>Continuar</button>
     </div>}
 
