@@ -42,6 +42,8 @@ const NAV_ITEMS = [
   },
   {
     to: '/app/admin', label: 'Administración', icon: 'admin', roles: ['ADMIN', 'SUPPORT'],
+    // El perfil de soporte ve la misma sección con su propio nombre e ícono.
+    byRole: { SUPPORT: { label: 'Soporte técnico', icon: 'support' } },
     children: [
       { to: '/app/admin/inicio', label: 'Inicio', roles: ['ADMIN'] },
       { to: '/app/admin/usuarios', label: 'Usuarios' },
@@ -128,7 +130,7 @@ export default function ClientLayout() {
           ? <span key={item.to} className="client-nav__link is-disabled" aria-disabled="true" title="Próximamente"><NavIcon name={item.icon} /><span>{item.label}</span><small>Pronto</small></span>
           : <div key={item.to} className="client-nav__group">
               <NavLink to={item.children ? (item.children.find((child) => !child.roles || child.roles.includes(role))?.to || item.to) : item.to} end={item.end} onClick={() => setOpen(false)} className={() => `client-nav__link ${isInside(item) ? 'is-active' : ''} ${item.children ? 'has-children' : ''}`}>
-                <NavIcon name={item.icon} /><span>{item.label}</span><NavIcon name="chevron" size={15} />
+                <NavIcon name={item.byRole?.[role]?.icon ?? item.icon} /><span>{item.byRole?.[role]?.label ?? item.label}</span><NavIcon name="chevron" size={15} />
               </NavLink>
               {item.children && isInside(item) && <div className="client-nav__sub">
                 {item.children.filter((child) => !child.roles || child.roles.includes(role)).map((child) => <NavLink key={child.to} to={child.to} end={child.end} onClick={() => setOpen(false)} className={({ isActive }) => `client-nav__sublink ${isActive ? 'is-active' : ''}`}>{child.label}</NavLink>)}
