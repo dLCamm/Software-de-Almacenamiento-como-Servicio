@@ -1,5 +1,10 @@
 import { apiRequest } from './auth'
 
+/** Cifras públicas y agregadas para la página de inicio (no requiere sesión). */
+export function getPublicStats() {
+  return apiRequest('/api/public/stats/')
+}
+
 export function listPlans() {
   return apiRequest('/api/plans/', { auth: true })
 }

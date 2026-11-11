@@ -35,6 +35,7 @@ export default function useDashboard(storageApi) {
   const [dialog, setDialog] = useState(null)
   const [dialogName, setDialogName] = useState('')
   const [dialogBusy, setDialogBusy] = useState(false)
+  const [trashBusy, setTrashBusy] = useState(false)
   const [copied, setCopied] = useState(false)
   const canUploadTemporary = usage?.features?.temporary_files === true
   const canShareLinks = usage?.features?.share_links === true
@@ -131,6 +132,12 @@ export default function useDashboard(storageApi) {
     setSearch('')
     setOpenMenu('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function goToFolderIndex(index) {
+    setFolderStack((stack) => stack.slice(0, index + 1))
+    setSearch('')
+    setOpenMenu('')
   }
 
   function goToRoot() {
@@ -285,6 +292,42 @@ export default function useDashboard(storageApi) {
     }
   }
 
+  async function runTrashBulk(action) {
+    const items = [...trashItems].sort((a, b) => (a.tipo === b.tipo ? 0 : a.tipo === 'carpeta' ? -1 : 1))
+    let done = 0
+    let failed = 0
+    setTrashBusy(true)
+    for (const item of items) {
+      try {
+        await action(item)
+        done += 1
+      } catch (requestError) {
+        // Un archivo dentro de una carpeta ya procesada responde 404: no es un fallo real.
+        if (requestError?.status === 404) done += 1
+        else failed += 1
+      }
+    }
+    setTrashBusy(false)
+    refresh()
+    return { done, failed }
+  }
+
+  async function restoreAllTrash() {
+    if (!trashItems.length) return
+    if (!window.confirm(`¿Restaurar los ${trashItems.length} elementos de la papelera a su ubicación original?`)) return
+    const { failed } = await runTrashBulk((item) => (item.tipo === 'archivo' ? storageApi.restoreFile(item.id) : storageApi.restoreFolder(item.id)))
+    if (failed) setError(`No se pudieron restaurar ${failed} elementos. Inténtalo de nuevo.`)
+    else setNotice('Todos los elementos se restauraron correctamente.')
+  }
+
+  async function emptyTrash() {
+    if (!trashItems.length) return
+    if (!window.confirm(`¿Vaciar la papelera? Se eliminarán definitivamente ${trashItems.length} elementos y esta acción no se puede deshacer.`)) return
+    const { failed } = await runTrashBulk((item) => (item.tipo === 'archivo' ? storageApi.deleteFile(item.id, true) : storageApi.deleteFolder(item.id, true)))
+    if (failed) setError(`No se pudieron eliminar ${failed} elementos. Inténtalo de nuevo.`)
+    else setNotice('La papelera se vació correctamente.')
+  }
+
   async function downloadFile(file) {
     setOpenMenu('')
     try {
@@ -308,8 +351,16 @@ export default function useDashboard(storageApi) {
       setError('Tu suscripción actual no incluye enlaces compartidos.')
       return
     }
+    setCopied(false)
+    setDialog({ type: 'share-setup', file })
+  }
+
+  async function createShareLink(seconds) {
+    const file = dialog?.file
+    if (!file) return
+    setDialogBusy(true)
     try {
-      const result = await storageApi.shareFile(file.id)
+      const result = await storageApi.shareFile(file.id, seconds)
       setCopied(false)
       setDialog({
         type: 'share',
@@ -318,7 +369,10 @@ export default function useDashboard(storageApi) {
       })
     } catch (requestError) {
       setError(getErrorMessage(requestError))
+      setDialog(null)
       if (requestError?.data?.code === 'plan_feature_unavailable') refresh()
+    } finally {
+      setDialogBusy(false)
     }
   }
 
@@ -372,9 +426,15 @@ export default function useDashboard(storageApi) {
     deleteFolder,
     downloadFile,
     shareFile,
+    createShareLink,
     copyShareLink,
     openFolder,
+    goToFolderIndex,
+    folderStack,
     goToRoot,
+    trashBusy,
+    restoreAllTrash,
+    emptyTrash,
     openTrash,
     closeTrash,
     showFolderDialog,

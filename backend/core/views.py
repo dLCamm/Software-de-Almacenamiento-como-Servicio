@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Count, Sum
 from rest_framework import status
 from rest_framework.decorators import api_view
+from rest_framework.permissions import AllowAny
 from rest_framework.generics import ListAPIView
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -12,7 +13,7 @@ from rest_framework.views import APIView
 from core.models import AuditLog
 from core.serializers import AuditLogSerializer
 from payments.models import Payment
-from storage.models import Archivo, EstadoElemento
+from storage.models import Archivo, Carpeta, EstadoElemento
 from users.permissions import IsAdministrator
 
 
@@ -116,6 +117,28 @@ class AdminStorageByTypeView(APIView):
             {
                 "total_usado_bytes": sum(item["usado_bytes"] for item in usage_by_extension),
                 "tipos": usage_by_extension,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class PublicStatisticsView(APIView):
+    """Cifras reales y agregadas para la página de inicio (sin datos personales)."""
+
+    authentication_classes = []
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        active_files = Archivo.objects.filter(estado=EstadoElemento.ACTIVO)
+        totals = active_files.aggregate(count=Count("id"), used=Sum("tamano_bytes"))
+        return Response(
+            {
+                "usuarios": User.objects.filter(
+                    role=User.Role.CLIENT, is_active=True
+                ).count(),
+                "archivos": totals["count"] or 0,
+                "carpetas": Carpeta.objects.filter(estado=EstadoElemento.ACTIVO).count(),
+                "almacenado_bytes": totals["used"] or 0,
             },
             status=status.HTTP_200_OK,
         )

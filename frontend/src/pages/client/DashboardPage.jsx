@@ -104,8 +104,25 @@ export default function DashboardPage() {
     <StorageBar usage={dashboard.usage} onUpgrade={() => navigate('/app/client/billing')} />
 
     <section className="folder-content" aria-label="Contenido de la unidad">
-      <div className="folder-heading">{dashboard.showTrash ? <span className="breadcrumb-current">PAPELERA</span> : <><button type="button" className={dashboard.currentFolder ? 'breadcrumb-root' : 'breadcrumb-root is-current'} onClick={dashboard.goToRoot}>MI UNIDAD</button>{dashboard.currentFolder && <><span className="breadcrumb-separator">/</span><span className="breadcrumb-current">{dashboard.currentFolder.name}</span></>}</>}</div>
-      {dashboard.showTrash && <p className="trash-description">Los elementos se eliminan automáticamente después de 30 días. Puedes restaurarlos mientras permanezcan aquí.</p>}
+      <div className="folder-heading">{dashboard.showTrash ? <span className="breadcrumb-current">PAPELERA</span> : <nav className="folder-path" aria-label="Ruta de la carpeta">
+        <ol>
+          <li><button type="button" className={`folder-path__item folder-path__root${dashboard.currentFolder ? '' : ' is-current'}`} onClick={dashboard.goToRoot} aria-current={dashboard.currentFolder ? undefined : 'page'}><Icon name="home" size={16} /><span>Mi unidad</span></button></li>
+          {dashboard.folderStack.map((folder, index) => {
+            const isLast = index === dashboard.folderStack.length - 1
+            return <li key={folder.id}>
+              <span className="folder-path__separator" aria-hidden="true"><Icon name="chevron" size={15} /></span>
+              <button type="button" className={`folder-path__item${isLast ? ' is-current' : ''}`} onClick={() => !isLast && dashboard.goToFolderIndex(index)} aria-current={isLast ? 'page' : undefined} title={folder.name}><Icon name="folder" size={15} /><span>{folder.name}</span></button>
+            </li>
+          })}
+        </ol>
+      </nav>}</div>
+      {dashboard.showTrash && <div className="trash-toolbar">
+        <p className="trash-description">Los elementos se eliminan automáticamente después de 30 días. Puedes restaurarlos mientras permanezcan aquí.</p>
+        {dashboard.trashItems.length > 0 && <div className="trash-toolbar__actions">
+          <button type="button" onClick={dashboard.restoreAllTrash} disabled={dashboard.trashBusy}><Icon name="restore" size={16} />Restaurar todo</button>
+          <button type="button" className="is-danger" onClick={dashboard.emptyTrash} disabled={dashboard.trashBusy}><Icon name="trash" size={16} />{dashboard.trashBusy ? 'Procesando…' : 'Vaciar papelera'}</button>
+        </div>}
+      </div>}
       {dashboard.error && <div className="dashboard-alert dashboard-alert--error" role="alert"><span>{dashboard.error}</span><button type="button" onClick={dashboard.clearError} aria-label="Cerrar mensaje"><Icon name="x" size={16} /></button></div>}
       {dashboard.uploadErrors.length > 0 && <div className="dashboard-alert dashboard-alert--error" role="alert"><span>No se pudieron subir: {dashboard.uploadErrors.join(' ')}</span><button type="button" onClick={() => dashboard.clearUploadErrors()} aria-label="Cerrar errores de carga"><Icon name="x" size={16} /></button></div>}
       {dashboard.notice && <div className="dashboard-alert dashboard-alert--success" role="status"><Icon name="check" size={17} /><span>{dashboard.notice}</span><button type="button" onClick={dashboard.clearNotice} aria-label="Cerrar mensaje"><Icon name="x" size={16} /></button></div>}
@@ -140,6 +157,6 @@ export default function DashboardPage() {
 
     {dragging && <div className="drop-overlay" aria-live="polite"><div className="drop-overlay__card"><span className="drop-overlay__icon"><Icon name="upload" size={32} /></span><strong>Suelta el archivo para subirlo</strong><span>PDF, MP3, DOC, DOCX o PNG</span></div></div>}
     <FilePreview file={previewFile} loadFile={storageApi.downloadFile} onDownload={dashboard.downloadFile} onClose={closePreview} />
-    <DashboardModal dialog={dashboard.dialog} name={dashboard.dialogName} setName={dashboard.setDialogName} onClose={dashboard.closeDialog} onSubmit={dashboard.dialog?.type === 'rename-file' ? dashboard.saveFile : dashboard.saveFolder} busy={dashboard.dialogBusy} onCopy={dashboard.copyShareLink} copied={dashboard.copied} />
+    <DashboardModal dialog={dashboard.dialog} name={dashboard.dialogName} setName={dashboard.setDialogName} onClose={dashboard.closeDialog} onSubmit={dashboard.dialog?.type === 'rename-file' ? dashboard.saveFile : dashboard.saveFolder} busy={dashboard.dialogBusy} onCopy={dashboard.copyShareLink} copied={dashboard.copied} onCreateShare={dashboard.createShareLink} />
   </main>
 }

@@ -131,6 +131,18 @@ class AdminReportingTests(TestCase):
             [{"extension": "pdf", "archivos_count": 2, "usado_bytes": 150}],
         )
 
+    def test_public_stats_are_anonymous_and_count_only_active_items(self):
+        self.create_file("pdf", 100)
+        self.create_file("png", 50, state=EstadoElemento.PAPELERA)
+
+        response = APIClient().get("/api/public/stats/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["usuarios"], 1)
+        self.assertEqual(response.data["archivos"], 1)
+        self.assertEqual(response.data["almacenado_bytes"], 100)
+        self.assertNotIn("email", str(response.data))
+
     def test_audit_entries_can_be_created_without_an_actor(self):
         event = record_audit_event(
             actor=None,

@@ -109,12 +109,15 @@ export function downloadFile(fileId) {
   })
 }
 
-export function shareFile(fileId) {
+export const MAX_SHARE_SECONDS = 7 * 24 * 60 * 60
+
+export function shareFile(fileId, seconds = MAX_SHARE_SECONDS) {
+  const expiracion = Math.min(MAX_SHARE_SECONDS, Math.max(60, Math.round(Number(seconds) || MAX_SHARE_SECONDS)))
   return apiRequest(`/api/storage/files/${fileId}/share/`, {
     method: 'POST',
     // MinIO admite URLs prefirmadas por un máximo de 7 días. El endpoint
-    // usa 14 días por defecto, así que enviamos una duración compatible.
-    body: { expiracion_segundos: 7 * 24 * 60 * 60 },
+    // usa 14 días por defecto; el usuario elige una duración de hasta 7 días.
+    body: { expiracion_segundos: expiracion },
     auth: true,
   })
 }

@@ -181,7 +181,31 @@
 .history-table { width: 100%; border-collapse: collapse; text-align: left; }
 .history-table th { height: 60px; padding: 0 28px; color: var(--gray-41); font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .history-table td { height: 79px; padding: 0 28px; border-top: 1px solid var(--gray-15); color: var(--gray-92); font-size: 15px; white-space: nowrap; }
-.history-reference { color: var(--purple-71); font-weight: 600; }
+.history-reference { padding: 0; border: 0; color: var(--purple-71) !important; background: transparent; font: inherit; font-weight: 600; cursor: pointer; text-underline-offset: 3px; }
+.history-reference:hover { text-decoration: underline; color: var(--purple-95) !important; }
+.history-actions { text-align: right; }
+.history-detail-button { min-height: 34px; padding: 0 12px; border: 1px solid var(--purple-32); border-radius: 8px; color: var(--purple-90) !important; background: var(--purple-18); font-size: 12px !important; font-weight: 650; cursor: pointer; }
+.history-detail-button:hover { background: var(--purple-23); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.payment-detail-backdrop { position: fixed; z-index: 40; inset: 0; padding: 20px; display: grid; place-items: center; background: var(--veil-gray-0-a72, rgba(0,0,0,.6)); backdrop-filter: blur(4px); }
+.payment-detail { position: relative; width: min(100%, 430px); max-height: calc(100vh - 40px); overflow-y: auto; padding: 30px 28px 24px; display: flex; flex-direction: column; align-items: center; border: 1px solid var(--gray-24); border-radius: 18px; background: var(--billing-panel, var(--gray-12)); box-shadow: 0 22px 90px var(--shadow-gray-0-a60, rgba(0,0,0,.5)); text-align: center; }
+.payment-detail__close { position: absolute; top: 13px; right: 13px; width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 8px; color: var(--gray-61) !important; background: transparent; cursor: pointer; }
+.payment-detail__close:hover { background: var(--gray-17); }
+.payment-detail__badge { width: 58px; height: 58px; margin-bottom: 12px; display: grid; place-items: center; border-radius: 50%; }
+.payment-detail__badge.is-paid { color: var(--green-66); background: var(--green-15); }
+.payment-detail__badge.is-failed, .payment-detail__badge.is-pending { color: var(--red-66); background: var(--red-51-a14); }
+.payment-detail h2 { margin: 0; color: var(--gray-61); font-size: 14px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; }
+.payment-detail__amount { margin: 6px 0 10px; color: var(--gray-100); font-size: 32px; font-weight: 750; }
+.payment-detail__rows { width: 100%; margin: 20px 0 0; border-top: 1px solid var(--gray-19); text-align: left; }
+.payment-detail__rows > div { min-height: 48px; padding: 10px 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; border-bottom: 1px solid var(--gray-15); }
+.payment-detail__rows dt { color: var(--gray-55); font-size: 13px; }
+.payment-detail__rows dd { margin: 0; color: var(--gray-92); font-size: 14px; font-weight: 600; text-align: right; overflow-wrap: anywhere; }
+.payment-detail__rows .is-failure dd { color: var(--red-66); }
+.payment-detail__reference { display: flex; align-items: center; gap: 8px; }
+.payment-detail__reference code { color: var(--purple-95); font-size: 12px; }
+.payment-detail__reference button { flex: none; min-height: 28px; padding: 0 9px; border: 1px solid var(--purple-32); border-radius: 7px; color: var(--purple-90) !important; background: var(--purple-18); font-size: 11px !important; cursor: pointer; }
+.payment-detail__done { width: 100%; min-height: 42px; margin-top: 20px; border: 0; border-radius: 10px; color: var(--on-accent, #fff) !important; background: var(--purple-64); font-size: 14px !important; font-weight: 650; cursor: pointer; }
+.payment-detail__done:hover { background: var(--purple-69); }
 .payment-status { min-width: 86px; padding: 7px 13px; display: inline-flex; justify-content: center; border-radius: 999px; font-size: 13px; font-weight: 600; }
 .payment-status.is-paid { color: var(--green-40); background: var(--green-34-a13); }
 .payment-status.is-pending { color: var(--yellow-61); background: var(--yellow-47-a13); }
@@ -285,3 +309,5 @@
   .history-table td:first-child { padding-bottom: 8px !important; font-weight: 600; }
   .history-table td[data-label]::before { content: attr(data-label); color: var(--billing-muted); font-size: 12px; }
 }
+
+@media (max-width: 560px) { .history-table td.history-actions { padding-top: 8px !important; } .history-detail-button { width: 100%; } }
