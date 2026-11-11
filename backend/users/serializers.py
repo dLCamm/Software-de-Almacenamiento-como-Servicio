@@ -1,0 +1,489 @@
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
+from rest_framework import serializers
+from rest_framework.exceptions import PermissionDenied
+from .models import Plan, User
+from .authentication import VerifiedJWTAuthentication
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
+from plans.models import Subscription
+from django.utils import timezone
+
+
+class PlanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Plan
+        fields = ("code", "name", "storage_limit_bytes", "monthly_price")
+
+
+class RegisterSerializer(serializers.ModelSerializer):
+
+    password = serializers.CharField(
+        write_only=True,
+        trim_whitespace=False,
+        min_length=8
+    )
+
+    password_confirm = serializers.CharField(
+        write_only=True,
+        trim_whitespace=False,
+        min_length=8
+    )
+
+    plan_code = serializers.CharField(
+        write_only=True,
+        required=False,
+        default=Plan.FREE_CODE,
+    )
+
+    plan = PlanSerializer(
+        read_only=True
+    )
+
+    pending_plan = PlanSerializer(
+        read_only=True
+    )
+
+    class Meta:
+        model = User
+
+        fields = (
+            "id",
+            "first_name",
+            "last_name",
+            "email",
+            "role",
+            "password",
+            "password_confirm",
+            "plan_code",
+            "plan",
+            "pending_plan",
+        )
+
+        read_only_fields = (
+            "id",
+            "role",
+            "plan",
+            "pending_plan",
+        )
+
+    def validate_email(self, value):
+        email = value.lower().strip()
+
+        if User.objects.filter(email__iexact=email).exists():
+            raise serializers.ValidationError(
+                "Ya existe una cuenta con este correo electrónico."
+            )
+
+        return email
+
+    def validate_plan_code(self, value):
+        if not Plan.objects.filter(code=value, is_active=True).exists():
+            raise serializers.ValidationError("El plan solicitado no está disponible.")
+        return value
+
+    def validate(self, attrs):
+        if attrs["password"] != attrs["password_confirm"]:
+            raise serializers.ValidationError({
+                "password_confirm":
+                    "Las contraseñas no coinciden."
+            })
+
+        user = User(
+            email=attrs.get("email", ""),
+            first_name=attrs.get("first_name", ""),
+            last_name=attrs.get("last_name", ""),
+        )
+        try:
+            validate_password(attrs["password"], user=user)
+        except DjangoValidationError as error:
+            raise serializers.ValidationError({"password": error.messages}) from error
+
+        return attrs
+
+    def create(self, validated_data):
+
+        # Este campo solo sirve para validar.
+        # NO pertenece al modelo User.
+        validated_data.pop("password_confirm", None)
+
+        password = validated_data.pop("password")
+        selected_plan_code = validated_data.pop("plan_code")
+        free_plan = Plan.objects.get(code=Plan.FREE_CODE)
+        selected_plan = Plan.objects.get(code=selected_plan_code, is_active=True)
+
+        user = User.objects.create_user(
+            password=password,
+
+            # Todo registro público será CLIENTE.
+            role=User.Role.CLIENT,
+            plan=free_plan,
+            pending_plan=selected_plan if selected_plan != free_plan else None,
+            **validated_data
+        )
+        
+
+
+        Subscription.objects.get_or_create(
+            user=user,
+            defaults={
+                "start_date": timezone.now(),
+                "end_date": None,
+                "status": "ACTIVE",
+                "auto_renew": False,
+            }
+        )
+
+        return user
+
+
+
+class UserSerializer(serializers.ModelSerializer):
+    plan = PlanSerializer(read_only=True)
+    pending_plan = PlanSerializer(read_only=True)
+
+    class Meta:
+        model = User
+
+        fields = (
+            "id",
+            "first_name",
+            "last_name",
+            "email",
+            "role",
+            "plan",
+            "pending_plan",
+            "is_email_verified",
+            "is_active",
+            "created_at",
+        )
+
+        read_only_fields = fields
+
+class LoginSerializer(TokenObtainPairSerializer):
+
+    @classmethod
+    def get_token(cls, user):
+        if not user.is_email_verified:
+            raise PermissionDenied({
+                "detail": "Verifica tu correo electrónico antes de iniciar sesión.",
+                "code": "email_not_verified",
+            })
+        token = super().get_token(user)
+
+        token["email"] = user.email
+        token["role"] = user.role
+
+        return token
+
+    def validate(self, attrs):
+        email = attrs["email"].strip()
+        # Conservar compatibilidad con cuentas antiguas que usaban mayúsculas.
+        try:
+            attrs["email"] = User.objects.get(email__iexact=email).email
+        except (User.DoesNotExist, User.MultipleObjectsReturned):
+            attrs["email"] = email.lower()
+        data = super().validate(attrs)
+
+        data["user"] = {
+            "id": self.user.id,
+            "first_name": self.user.first_name,
+            "last_name": self.user.last_name,
+            "email": self.user.email,
+            "role": self.user.role,
+            "is_email_verified": self.user.is_email_verified,
+            "plan": PlanSerializer(self.user.plan).data if self.user.plan else None,
+            "pending_plan": (
+                PlanSerializer(self.user.pending_plan).data
+                if self.user.pending_plan
+                else None
+            ),
+        }
+
+        return data
+
+
+class VerifiedTokenRefreshSerializer(TokenRefreshSerializer):
+    def validate(self, attrs):
+        refresh = self.token_class(attrs["refresh"])
+        VerifiedJWTAuthentication().get_user(refresh)
+        return super().validate(attrs)
+
+
+class AccountEmailSerializer(serializers.Serializer):
+    email = serializers.EmailField(max_length=254)
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+
+class ProfileUpdateSerializer(serializers.Serializer):
+    first_name = serializers.CharField(max_length=150, allow_blank=True, required=False)
+    last_name = serializers.CharField(max_length=150, allow_blank=True, required=False)
+
+    def validate(self, attrs):
+        if set(self.initial_data) - set(self.fields):
+            raise serializers.ValidationError({"detail": "Desde configuración solo puedes editar tu nombre y apellido."})
+        if not attrs:
+            raise serializers.ValidationError({"detail": "Envía el nombre o el apellido que deseas cambiar."})
+        return attrs
+
+
+class PasswordChangeSerializer(serializers.Serializer):
+    current_password = serializers.CharField(write_only=True, trim_whitespace=False)
+    password = serializers.CharField(write_only=True, trim_whitespace=False, min_length=8)
+    password_confirm = serializers.CharField(write_only=True, trim_whitespace=False, min_length=8)
+
+    def validate(self, attrs):
+        user = self.context["user"]
+        if not user.check_password(attrs["current_password"]):
+            raise serializers.ValidationError({"current_password": "La contraseña actual es incorrecta."})
+        if attrs["password"] != attrs["password_confirm"]:
+            raise serializers.ValidationError({"password_confirm": "Las contraseñas nuevas no coinciden."})
+        if attrs["password"] == attrs["current_password"]:
+            raise serializers.ValidationError({"password": "La nueva contraseña debe ser diferente de la actual."})
+        try:
+            validate_password(attrs["password"], user=user)
+        except DjangoValidationError as error:
+            raise serializers.ValidationError({"password": error.messages}) from error
+        return attrs
+
+
+class AccountTokenSerializer(serializers.Serializer):
+    uid = serializers.CharField(max_length=64)
+    token = serializers.CharField(max_length=128)
+
+
+class PasswordResetConfirmSerializer(AccountTokenSerializer):
+    password = serializers.CharField(write_only=True, trim_whitespace=False, min_length=8)
+    password_confirm = serializers.CharField(write_only=True, trim_whitespace=False, min_length=8)
+
+    def validate(self, attrs):
+        if attrs["password"] != attrs["password_confirm"]:
+            raise serializers.ValidationError({"password_confirm": "Las contraseñas no coinciden."})
+        return attrs
+
+
+class UserListSerializer(serializers.ModelSerializer):
+
+    plan = serializers.SerializerMethodField()
+    subscription = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "role",
+            "is_active",
+            "is_email_verified",
+            "plan",
+            "subscription",
+            "created_at",
+        ]
+
+    def get_plan(self, obj):
+
+        if not obj.plan:
+            return None
+
+        return {
+            "id": obj.plan.id,
+            "code": obj.plan.code,
+            "name": obj.plan.name,
+            "monthly_price": str(
+                obj.plan.monthly_price
+            ),
+            "storage_limit_bytes":
+                obj.plan.storage_limit_bytes,
+        }
+
+    def get_subscription(self, obj):
+        if obj.role != User.Role.CLIENT:
+            return None
+        try:
+            subscription = obj.subscription
+
+        except Exception:
+            return None
+
+        return {
+            "status":
+                subscription.status,
+
+            "start_date":
+                subscription.start_date,
+
+            "end_date":
+                subscription.end_date,
+
+            "auto_renew":
+                subscription.auto_renew,
+        }
+
+class UserDetailSerializer(serializers.ModelSerializer):
+
+    plan = serializers.SerializerMethodField()
+    subscription = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "role",
+            "is_active",
+            "is_email_verified",
+            "plan",
+            "subscription",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_plan(self, obj):
+
+        if not obj.plan:
+            return None
+
+        return {
+            "id": obj.plan.id,
+            "code": obj.plan.code,
+            "name": obj.plan.name,
+            "monthly_price": str(
+                obj.plan.monthly_price
+            ),
+            "storage_limit_bytes":
+                obj.plan.storage_limit_bytes,
+
+            "storage_limit_gb": round(
+                obj.plan.storage_limit_bytes
+                / (1024 ** 3),
+                2
+            ),
+
+            "is_active":
+                obj.plan.is_active,
+        }
+
+    def get_subscription(self, obj):
+        if obj.role != User.Role.CLIENT:
+            return None
+        try:
+            subscription = obj.subscription
+
+        except Exception:
+            return None
+
+        return {
+            "status":
+                subscription.status,
+
+            "start_date":
+                subscription.start_date,
+
+            "end_date":
+                subscription.end_date,
+
+            "auto_renew":
+                subscription.auto_renew,
+        }
+
+class SupportUserCreateSerializer(serializers.Serializer):
+    first_name = serializers.CharField(max_length=150)
+    last_name = serializers.CharField(max_length=150)
+    email = serializers.EmailField(max_length=254)
+    password = serializers.CharField(write_only=True, trim_whitespace=False, min_length=8)
+    password_confirm = serializers.CharField(write_only=True, trim_whitespace=False, min_length=8)
+
+    def validate_email(self, value):
+        email = value.strip().lower()
+        if User.objects.filter(email__iexact=email).exists():
+            raise serializers.ValidationError("Ya existe un usuario con este correo.")
+        return email
+
+    def validate(self, attrs):
+        if attrs["password"] != attrs["password_confirm"]:
+            raise serializers.ValidationError({"password_confirm": "Las contraseñas no coinciden."})
+        candidate = User(
+            email=attrs["email"],
+            first_name=attrs["first_name"],
+            last_name=attrs["last_name"],
+        )
+        try:
+            validate_password(attrs["password"], user=candidate)
+        except DjangoValidationError as error:
+            raise serializers.ValidationError({"password": error.messages}) from error
+        return attrs
+
+    def create(self, validated_data):
+        validated_data.pop("password_confirm")
+        # Alta interna autorizada por ADMIN: acceso inmediato, sin privilegios Django.
+        user = User.objects.create_user(
+            **validated_data,
+            role=User.Role.SUPPORT,
+            is_active=True,
+            is_email_verified=True,
+            is_staff=False,
+            is_superuser=False,
+        )
+        return user
+
+
+class UserAdminUpdateSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+
+        fields = [
+            "first_name",
+            "last_name",
+            "email",
+            "role",
+        ]
+
+    def validate_email(self, value):
+
+        user = self.instance
+        value = value.strip().lower()
+
+        if (
+            User.objects
+            .exclude(id=user.id)
+            .filter(email__iexact=value)
+            .exists()
+        ):
+            raise serializers.ValidationError(
+                "Ya existe un usuario con este correo."
+            )
+
+        return value
+
+    def update(self, instance, validated_data):
+        if "email" in validated_data and validated_data["email"] != instance.email:
+            validated_data["is_email_verified"] = False
+        return super().update(instance, validated_data)
+
+    def validate_role(self, value):
+
+        valid_roles = [
+            User.Role.CLIENT,
+            User.Role.SUPPORT,
+            User.Role.ADMIN,
+        ]
+
+        if value not in valid_roles:
+
+            raise serializers.ValidationError(
+                "El rol seleccionado no es válido."
+            )
+
+        return value
+
+class UserStatusSerializer(serializers.Serializer):
+
+    is_active = serializers.BooleanField()

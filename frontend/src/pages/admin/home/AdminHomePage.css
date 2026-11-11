@@ -1,0 +1,31 @@
+/* Inicio del administrador. Colores: variables de src/styles/theme.css */
+.admin-home__identity { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.admin-home__role { padding: 3px 10px; border: 1px solid var(--purple-69-a50); border-radius: 999px; color: var(--purple-75); background: var(--purple-69-a14); font-size: 12px; font-weight: 700; letter-spacing: .01em; }
+
+/* Uso del sistema: el dato principal, en grande */
+.admin-home__storage { padding: 26px 28px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; border: 1px solid var(--gray-19); border-radius: 18px; background: linear-gradient(120deg, var(--purple-69-a14), transparent 60%), var(--admin-panel); }
+.admin-home__storage h2 { margin: 0 0 6px; color: var(--gray-67); font-size: 14px; font-weight: 600; }
+.admin-home__storage-value { display: block; color: var(--admin-strong); font-size: clamp(36px, 5vw, 52px); font-weight: 700; line-height: 1.05; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.admin-home__storage p { margin: 8px 0 0; color: var(--admin-muted); font-size: 14px; }
+.admin-home__storage .admin-button { text-decoration: none; }
+
+@media (max-width: 600px) {
+  .admin-home__storage { padding: 20px; }
+  .admin-home__storage .admin-button { width: 100%; }
+}
+
+/* Resumen rápido debajo del uso del sistema */
+.admin-home__summary { margin-top: 18px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.admin-home__summary .stat-tile__value { font-size: 26px; }
+@media (max-width: 860px) { .admin-home__summary { grid-template-columns: 1fr; } }
+
+/* Accesos rápidos */
+.admin-home__sections { margin-top: 28px; }
+.admin-home__sections h2 { margin: 0 0 12px; color: var(--gray-67); font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.admin-home__links { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.admin-home__link { min-height: 104px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--gray-19); border-radius: 14px; color: inherit; background: var(--admin-panel); text-decoration: none; transition: border-color .15s, transform .15s; }
+.admin-home__link:hover { border-color: var(--purple-69-a50); transform: translateY(-1px); }
+.admin-home__link:focus-visible { outline: 2px solid var(--admin-purple-light); outline-offset: 2px; }
+.admin-home__link strong { display: flex; align-items: center; justify-content: space-between; color: var(--admin-strong); font-size: 15px; }
+.admin-home__link strong span { color: var(--purple-75); }
+.admin-home__link > span { color: var(--admin-muted); font-size: 13px; line-height: 1.45; }

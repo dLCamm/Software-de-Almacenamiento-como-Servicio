@@ -1,0 +1,619 @@
+# Guía de Integración API Backend para Frontend — VaultDrive
+
+Esta guía documenta todos los endpoints disponibles en el backend de VaultDrive, su estructura de datos, formatos de petición y respuesta, y consideraciones de autenticación para su consumo desde el frontend.
+
+---
+
+## 1. Configuración General
+
+- **Base URL Local:** `http://localhost:8000` (definida comúnmente en el frontend mediante `VITE_API_URL`).
+- **Formato por defecto:** `application/json` (excepto subida de archivos que usa `multipart/form-data`).
+- **Esquema de Autenticación:** JSON Web Tokens (JWT).
+  - Todos los endpoints de `/api/storage/` requieren un token válido.
+  - Los endpoints protegidos requieren enviar el header HTTP:
+    ```http
+    Authorization: Bearer <access_token>
+    ```
+
+---
+
+## 2. Almacenamiento de Binarios (MinIO Object Storage)
+
+El backend utiliza una arquitectura desacoplada para los archivos:
+- **Base de Datos Relacional (PostgreSQL):** Almacena únicamente los **metadatos** (nombre original, extensión, tamaño, fecha de subida, carpeta contenedora, usuario propietario y estado).
+- **MinIO (Object Storage compatible con S3):** Almacena físicamente los **archivos binarios**.
+
+### Tecnologías y Librerías utilizadas:
+1. **`minio==7.2.15`** (en `backend/requirements.txt`): El SDK oficial de MinIO para Python.
+2. **`filetype==1.2.0`**: Para inspeccionar los primeros bytes (magic numbers) y verificar el formato binario real antes de subirlo.
+3. **Contenedor MinIO:**
+   - **Puerto API S3:** `http://localhost:9000`
+   - **Consola Web MinIO:** `http://localhost:9001` (Credenciales por defecto: `minioadmin` / `minioadmin`).
+   - **Bucket:** `vaultdrive-storage`.
+
+### Cómo interactúa el backend con los binarios:
+- **Guardado (`put_object`):** Todos los usuarios comparten el bucket `vaultdrive-storage`. Cada objeto usa una clave generada por el backend con el formato:
+  `users/{user_id}/{uuid}_{nombre_original_sanitizado}`.
+  Por ejemplo: `users/42/a1b2c3d4_reporte.pdf`. El identificador del usuario organiza los objetos y el UUID evita colisiones; el nombre es solo informativo. Estos prefijos no son carpetas con permisos independientes en MinIO.
+- **Propiedad y aislamiento:** PostgreSQL registra para cada archivo su usuario propietario, bucket y `object_key`, además de los metadatos. Las operaciones de listado y acceso consultan los archivos del usuario autenticado; el backend no debe aceptar un `user_id` enviado por el cliente como prueba de propiedad. MinIO no asigna un propietario de aplicación al objeto: la relación entre objeto y usuario la mantiene la aplicación mediante PostgreSQL y la clave.
+- **Persistencia local con Docker Compose:** El contenido binario se guarda en el volumen persistente `minio_data`, montado en el contenedor en `/bitnami/minio/data`. No se guarda como archivo dentro de `backend/`. PostgreSQL mantiene los metadatos y MinIO los bytes; ambos componentes deben conservarse para mantener íntegros los archivos.
+- **Descarga Streaming (`get_object`):** El backend recupera el stream desde MinIO y lo canaliza directamente al frontend con `FileResponse` sin saturar memoria RAM.
+- **Enlaces Compartidos (`presigned_get_object`):** MinIO genera una URL firmada criptográficamente con vencimiento temporal (`X-Amz-Signature`), permitiendo descargar directamente desde MinIO.
+
+---
+
+## 3. Mapa de Rutas en el Código Fuente
+
+Para consultar validaciones o lógica interna en el repositorio:
+
+| Módulo | Archivo de Rutas | Vistas / Controladores | Serializadores y Modelos |
+| :--- | :--- | :--- | :--- |
+| **Enrutador Principal** | `backend/config/urls.py` | — | — |
+| **Autenticación y Usuarios** | `backend/users/urls.py` | `backend/users/views.py` | `backend/users/serializers.py` |
+| **Almacenamiento (Storage)** | `backend/storage/urls.py` | `backend/storage/views.py` | `backend/storage/serializers.py` |
+| **Auditoría y Estadísticas de Administración** | `backend/core/urls.py` | `backend/core/views.py` | `backend/core/serializers.py`, `backend/core/models.py` |
+| **Health Check** | `backend/config/urls.py` | `backend/core/views.py` | — |
+
+---
+
+## 3. Endpoints de Autenticación (`/api/auth/`)
+
+### Verificación de correo y recuperación
+
+El registro envía un correo y requiere verificación antes de iniciar sesión.
+Su respuesta incluye `detail` y `verification_email_sent`. Si falla el envío, la cuenta
+se conserva y se puede solicitar un reenvío. El login de una cuenta sin verificar,
+con contraseña correcta, devuelve `403` con `code: "email_not_verified"`.
+
+| Ruta pública (POST) | JSON requerido |
+| --- | --- |
+| `/api/auth/resend-verification/` | `email` |
+| `/api/auth/verify-email/` | `uid`, `token` |
+| `/api/auth/password-reset/` | `email` |
+| `/api/auth/password-reset/confirm/` | `uid`, `token`, `password`, `password_confirm` |
+
+Las solicitudes de correo devuelven `200` con un mensaje genérico. Los enlaces vencen
+en 30 minutos por defecto, son de un solo uso y los inválidos devuelven `400`.
+Los límites de solicitudes devuelven `429`. La recuperación invalida los JWT anteriores;
+no inicia sesión automáticamente. Consulta [configuración y pruebas](docs/AUTENTICACION_CORREO.md).
+
+### 3.1. Registro de Usuario
+- **Ruta:** `POST /api/auth/register/`
+- **Autenticación:** Pública.
+- **Request Body (JSON):**
+  ```json
+  {
+    "first_name": "Juan",
+    "last_name": "Pérez",
+    "email": "juan.perez@example.com",
+    "password": "Password123!",
+    "password_confirm": "Password123!",
+    "plan_code": "pro"
+  }
+  ```
+- `plan_code` es opcional y acepta `free`, `pro` o `business`. Todas las cuentas se crean con el plan activo FREE (5 GB). Si se solicita PRO o BUSINESS, queda registrado como pendiente de pago y no cambia la cuota hasta que el pago sea confirmado.
+- **Respuestas:**
+  - `201 Created`:
+    ```json
+    {
+      "id": 1,
+      "first_name": "Juan",
+      "last_name": "Pérez",
+      "email": "juan.perez@example.com",
+      "role": "CLIENT",
+      "plan": {
+        "code": "free",
+        "name": "FREE",
+        "storage_limit_bytes": 5368709120,
+        "monthly_price": "0.00"
+      },
+      "pending_plan": {
+        "code": "pro",
+        "name": "PRO",
+        "storage_limit_bytes": 53687091200,
+        "monthly_price": "149.00"
+      }
+    }
+    ```
+  - `400 Bad Request`: Si el correo ya existe, las contraseñas no coinciden o el plan solicitado no es válido.
+
+---
+
+### 3.2. Inicio de Sesión (Login)
+- **Ruta:** `POST /api/auth/login/`
+- **Autenticación:** Pública.
+- **Request Body (JSON):**
+  ```json
+  {
+    "email": "juan.perez@example.com",
+    "password": "Password123!"
+  }
+  ```
+- **Respuestas:**
+  - `200 OK`:
+    ```json
+    {
+      "refresh": "eyJhbGciOi...",
+      "access": "eyJhbGciOi...",
+      "user": {
+        "id": 1,
+        "first_name": "Juan",
+        "last_name": "Pérez",
+        "email": "juan.perez@example.com",
+        "role": "CLIENT",
+        "plan": {
+          "code": "free",
+          "name": "FREE",
+          "storage_limit_bytes": 5368709120,
+          "monthly_price": "0.00"
+        },
+        "pending_plan": null
+      }
+    }
+    ```
+  - `401 Unauthorized`: Credenciales inválidas.
+
+---
+
+### 3.3. Refresco de Token de Acceso
+- **Ruta:** `POST /api/auth/token/refresh/`
+- **Autenticación:** Pública.
+- **Request Body (JSON):**
+  ```json
+  {
+    "refresh": "<refresh_token>"
+  }
+  ```
+- **Respuestas:**
+  - `200 OK`:
+    ```json
+    {
+      "access": "<nuevo_access_token>"
+    }
+    ```
+  - `401 Unauthorized`: Token de refresco expirado o inválido.
+
+---
+
+### 3.4. Obtener Perfil del Usuario Autenticado
+- **Ruta:** `GET /api/auth/me/`
+- **Autenticación:** Requerida (`Bearer <access_token>`).
+- **Respuestas:**
+  - `200 OK`:
+    ```json
+    {
+      "id": 1,
+      "first_name": "Juan",
+      "last_name": "Pérez",
+      "email": "juan.perez@example.com",
+      "role": "CLIENT",
+      "plan": {
+        "code": "free",
+        "name": "FREE",
+        "storage_limit_bytes": 5368709120,
+        "monthly_price": "0.00"
+      },
+      "pending_plan": null,
+      "is_email_verified": false,
+      "is_active": true,
+      "created_at": "2026-09-30T10:00:00Z"
+    }
+    ```
+
+---
+
+### 3.5. Configuración de la cuenta
+
+La pantalla `/app/configuracion` está disponible desde la barra lateral para clientes,
+soporte y administradores. Ambos endpoints requieren autenticación y solo afectan
+a la cuenta del token recibido.
+
+| Método | Ruta | JSON requerido |
+| --- | --- | --- |
+| `PATCH` | `/api/auth/me/` | `first_name` y/o `last_name` |
+| `POST` | `/api/auth/password-change/` | `current_password`, `password`, `password_confirm` |
+
+- El perfil acepta nombres de hasta 150 caracteres, permite vaciarlos y rechaza
+  campos adicionales. Devuelve `200` con `{ "detail": "…", "user": { … } }`.
+- El cambio de contraseña comprueba la contraseña actual, la confirmación y la
+  política de seguridad. La nueva contraseña debe ser distinta de la actual.
+  Devuelve `200` con `detail` e invalida los tokens de acceso y refresco anteriores;
+  el frontend cierra la sesión y muestra el mensaje en el inicio de sesión.
+- Las validaciones devuelven `400`; la falta de autenticación, `401`. El cambio de
+  contraseña permite hasta 10 solicitudes por hora por usuario y después devuelve `429`.
+- Los eventos `auth.profile_updated` y `auth.password_changed` quedan en auditoría,
+  sin registrar contraseñas. Estas operaciones conservan el rol y el plan de la cuenta.
+- La preferencia de tema claro u oscuro se guarda localmente en el navegador.
+
+---
+
+## 4. Endpoints de Almacenamiento: Archivos (`/api/storage/files/`)
+
+### 4.1. Subir Archivo
+- **Ruta:** `POST /api/storage/files/upload/`
+- **Autenticación:** Requerida.
+- **Content-Type:** `multipart/form-data`
+- **Parámetros del FormData:**
+  - `archivo` *(File, Requerido)*: Objeto del archivo a cargar.
+  - `carpeta_id` *(UUID string, Opcional)*: ID de la carpeta destino. Si se omite, se guarda en la raíz.
+  - `es_temporal` *(Boolean, Opcional, Default: `false`)*: Marca si el archivo expirará automáticamente. Requiere el beneficio `temporary_files` en un plan de pago con suscripción vigente; de lo contrario devuelve `403` con código `plan_feature_unavailable`.
+  - `tiempo_vida_dias` *(Integer, Opcional, Default: `14`)*: Días de validez (1 a 365) si es temporal. El sistema elimina el archivo vencido en la tarea de limpieza diaria. Si se mueve a papelera antes de vencer, se conserva según el periodo de retención de la papelera.
+- El endpoint procesa un archivo por solicitud. Para subir varios desde el frontend, se envía una solicitud por archivo; los éxitos se conservan aunque falle otra carga.
+- **Respuestas:**
+  - `201 Created`:
+    ```json
+    {
+      "message": "Archivo cargado y persistido exitosamente.",
+      "archivo": {
+        "id": "e3b0c442-98fc-1c14-9afbf4c8996fb924",
+        "nombre_original": "informe_mensual.pdf",
+        "extension": "pdf",
+        "mime_type": "application/pdf",
+        "tamano_bytes": 2048576,
+        "tamano_legible": "1.95 MB",
+        "carpeta": null,
+        "carpeta_nombre": null,
+        "es_temporal": false,
+        "fecha_expiracion": null,
+        "estado": "activo",
+        "fecha_subida": "2026-09-30T12:30:00Z"
+      }
+    }
+    ```
+  - `400 Bad Request`: Formato no permitido o datos inválidos.
+  - `413 Request Entity Too Large`: Cuota de almacenamiento excedida.
+
+---
+
+### 4.2. Listar Archivos
+- **Ruta:** `GET /api/storage/files/`
+- **Autenticación:** Requerida.
+- **Query Parameters (Opcionales):**
+  - `carpeta_id`: UUID de la carpeta a consultar, o `root` para consultar solo los archivos raíz.
+  - `q`: Cadena de texto para buscar por coincidencia en el nombre original.
+  - `formato`: Extensión sin punto para filtrar por tipo (ej. `pdf`, `png`, `zip`).
+- **Ejemplo:** `GET /api/storage/files/?carpeta_id=root&q=reporte&formato=pdf`
+- **Respuestas:**
+  - `200 OK`: Lista de archivos con la estructura de `FileDetailSerializer`.
+
+---
+
+### 4.3. Detalle de un Archivo
+- **Ruta:** `GET /api/storage/files/<uuid:file_id>/`
+- **Autenticación:** Requerida.
+- **Respuestas:**
+  - `200 OK`: Objeto con metadatos del archivo.
+  - `404 Not Found`: Si el archivo no existe o pertenece a otro usuario.
+
+#### Renombrar Archivo
+- **Ruta:** `PATCH /api/storage/files/<uuid:file_id>/`
+- **Autenticación:** Requerida.
+- **Request Body (JSON):**
+  ```json
+  {
+    "nuevo_nombre": "informe_final.pdf"
+  }
+  ```
+- El nombre debe conservar la extensión original. No se puede usar un nombre ya activo en la misma carpeta.
+- **Respuestas:**
+  - `200 OK`: Metadatos actualizados del archivo.
+  - `400 Bad Request`: Nombre inválido o extensión distinta a la original.
+  - `404 Not Found`: El archivo no existe, no pertenece al usuario o no está activo.
+  - `409 Conflict`: Ya existe un archivo activo con ese nombre en la misma ubicación.
+
+---
+
+### 4.4. Descargar Archivo Directo
+- **Ruta:** `GET /api/storage/files/<uuid:file_id>/download/`
+- **Autenticación:** Requerida.
+- **Respuestas:**
+  - `200 OK`: Stream binario del archivo con encabezado:
+    ```http
+    Content-Disposition: attachment; filename="informe_mensual.pdf"
+    ```
+  - Permite la descarga nativa en el navegador mediante `window.open(...)` o `<a download>`.
+
+---
+
+### 4.5. Compartir Archivo (Enlace Público Temporal)
+- **Ruta:** `POST /api/storage/files/<uuid:file_id>/share/`
+- **Beneficio requerido:** `share_links` en el plan contratado, con precio mayor a cero y suscripción `ACTIVE` dentro de su periodo de vigencia. FREE, pagos pendientes y suscripciones vencidas no pueden generar enlaces (`403`, `code: plan_feature_unavailable`). Los enlaces ya emitidos conservan su vencimiento de MinIO.
+- **Autenticación:** Requerida.
+- **Request Body (JSON, Opcional):**
+  ```json
+  {
+    "expiracion_segundos": 86400
+  }
+  ```
+  `expiracion_segundos` debe estar entre `1` y `604800` (7 días, límite de MinIO). Si se omite, el enlace dura `604800` segundos.
+- **Respuestas:**
+  - `200 OK`:
+    ```json
+    {
+      "download_url": "http://minio:9000/vaultdrive-storage/...?X-Amz-Signature=...",
+      "expira_en_segundos": 86400
+    }
+    ```
+
+---
+
+### 4.6. Eliminar Archivo
+- **Ruta:** `DELETE /api/storage/files/<uuid:file_id>/`
+- **Autenticación:** Requerida.
+- **Query Parameters (Opcionales):**
+  - `permanente`: `true` o `false` (default: `false`).
+    - Si es `false`: Mueve a la papelera durante 30 días.
+    - Si es `true`: Elimina definitivamente solo si ya se cumplieron los 30 días en papelera.
+- **Respuestas:**
+  - `200 OK`:
+    ```json
+    {
+      "message": "Archivo movido a la papelera."
+    }
+    ```
+  - `409 Conflict`: El archivo todavía no cumple los 30 días de retención.
+
+### 4.7. Papelera: listar, restaurar y eliminar
+- **Listar:** `GET /api/storage/trash/`
+- **Restaurar archivo:** `POST /api/storage/files/<uuid:file_id>/restore/`
+- **Restaurar carpeta y su contenido:** `POST /api/storage/folders/<uuid:folder_id>/restore/`
+- **Autenticación:** Requerida.
+- **Respuesta del listado (`200 OK`):**
+  ```json
+  [
+    {
+      "id": "e3b0c442-98fc-1c14-9afbf4c8996fb924",
+      "tipo": "archivo",
+      "nombre": "informe.pdf",
+      "extension": "pdf",
+      "tamano_bytes": 2048576,
+      "fecha_papelera": "2026-10-01T12:30:00Z",
+      "fecha_eliminacion": "2026-10-31T12:30:00Z"
+    }
+  ]
+  ```
+- Las carpetas se muestran como un único elemento; sus subcarpetas y archivos se conservan y se restauran junto con ellas.
+- Los elementos se purgan automáticamente de PostgreSQL y MinIO al cumplirse 30 días. El servicio de limpieza en Docker Compose ejecuta la tarea diariamente.
+- Un conflicto de nombre o una carpeta original que ya no está disponible devuelve `409 Conflict` al restaurar. El borrado permanente solicitado antes de cumplir el plazo también devuelve `409 Conflict`.
+
+---
+
+## 5. Endpoints de Almacenamiento: Carpetas (`/api/storage/folders/`)
+
+### 5.1. Listar Carpetas
+- **Ruta:** `GET /api/storage/folders/`
+- **Autenticación:** Requerida.
+- **Query Parameters (Opcionales):**
+  - `parent_id`: UUID de la carpeta contenedora. Si se omite, retorna las carpetas de primer nivel (raíz).
+- **Respuestas:**
+  - `200 OK`:
+    ```json
+    [
+      {
+        "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+        "nombre": "Contabilidad",
+        "carpeta_padre": null,
+        "fecha_creacion": "2026-09-30T09:00:00Z",
+        "estado": "activo",
+        "subcarpetas_count": 2,
+        "archivos_count": 8
+      }
+    ]
+    ```
+
+---
+
+### 5.2. Crear Carpeta
+- **Ruta:** `POST /api/storage/folders/`
+- **Autenticación:** Requerida.
+- **Request Body (JSON):**
+  ```json
+  {
+    "nombre": "Facturas 2026",
+    "carpeta_padre_id": "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  }
+  ```
+  *(Usa `"carpeta_padre_id": null` para crear en la raíz).*
+- **Respuestas:**
+  - `201 Created`: Objeto de la carpeta creada.
+  - `409 Conflict`: Ya existe una carpeta con ese nombre en la misma ubicación.
+
+---
+
+### 5.3. Renombrar Carpeta
+- **Ruta:** `PATCH /api/storage/folders/<uuid:folder_id>/`
+- **Autenticación:** Requerida.
+- **Request Body (JSON):**
+  ```json
+  {
+    "nuevo_nombre": "Facturas Q3 2026"
+  }
+  ```
+- **Respuestas:**
+  - `200 OK`: Objeto de la carpeta actualizado.
+  - `409 Conflict`: Nombre duplicado en el mismo nivel.
+
+---
+
+### 5.4. Eliminar Carpeta
+- **Ruta:** `DELETE /api/storage/folders/<uuid:folder_id>/`
+- **Autenticación:** Requerida.
+- **Query Parameters (Opcionales):**
+  - `permanente`: `true` o `false` (default: `false`).
+    - Si es `false`: Mueve la carpeta y todo su contenido a la papelera durante 30 días.
+    - Si es `true`: Elimina definitivamente la carpeta y sus binarios solo después de cumplir los 30 días.
+- **Respuestas:**
+  - `200 OK`:
+    ```json
+    {
+      "message": "Carpeta eliminada exitosamente."
+    }
+    ```
+  - `409 Conflict`: El plazo de retención no ha concluido o la carpeta debe eliminarse desde su elemento superior en la papelera.
+
+---
+
+## 6. Cuota y Métricas de Espacio (`/api/storage/usage/`)
+
+### 6.1. Consultar Espacio Utilizado
+- **Ruta:** `GET /api/storage/usage/`
+- **Autenticación:** Requerida.
+- **Descripción:** Calcula en tiempo real el espacio ocupado por el usuario frente a su límite contratado. Los archivos en papelera siguen ocupando cuota hasta su eliminación definitiva.
+- **Respuestas:**
+  - `200 OK`:
+    ```json
+    {
+      "usado_bytes": 524288000,
+      "maximo_bytes": 5368709120,
+      "disponible_bytes": 4844421120,
+      "porcentaje_usado": 9.77,
+      "plan_codigo": "free",
+      "plan_nombre": "FREE",
+      "plan_precio_mensual": "0.00",
+      "plan_pendiente_codigo": null,
+      "plan_pendiente_nombre": null
+    }
+    ```
+
+## 7. Administración, Auditoría y Estadísticas (`/api/admin/`)
+
+Todos los endpoints de esta sección requieren autenticación JWT y un usuario con `role=ADMIN`, igual que los demás endpoints administrativos. El valor `is_staff` de Django no es requisito. Los endpoints son de solo lectura.
+
+### 7.1. Consultar eventos de auditoría
+- **Ruta:** `GET /api/admin/audit/`
+- **Query Parameters (Opcionales):**
+    - `action`: filtra por acción exacta, por ejemplo `file.upload`, `auth.login` o `payment.recorded`.
+    - `resource_type`: filtra por tipo de recurso, por ejemplo `file`, `folder`, `payment` o `user`.
+    - `page`: número de página.
+    - `page_size`: elementos por página (predeterminado `50`, máximo `100`).
+- **Eventos registrados:** registros e inicios de sesión exitosos; subidas, descargas y creación de enlaces compartidos; movimientos a papelera, restauraciones y eliminaciones definitivas de archivos/carpetas; pagos procesados, aprobados o rechazados; y cambios de plan completados.
+- **Respuesta (`200 OK`):**
+    ```json
+    {
+      "count": 1,
+      "next": null,
+      "previous": null,
+      "results": [
+        {
+          "id": 1,
+          "actor_id": 12,
+          "actor_email": "cliente@example.com",
+          "action": "file.upload",
+          "resource_type": "file",
+          "resource_id": "e3b0c442-98fc-1c14-9afbf4c8996fb924",
+          "details": {
+            "extension": "pdf",
+            "tamano_bytes": 2048576
+          },
+          "created_at": "2026-10-26T12:30:00Z"
+        }
+      ]
+    }
+    ```
+    Los detalles no incluyen contraseñas, tarjetas, tokens, URL firmadas ni claves/rutas internas de MinIO. `actor_id` y `actor_email` pueden ser `null` si la cuenta fue eliminada.
+
+### 7.2. Resumen de estadísticas
+- **Ruta:** `GET /api/admin/statistics/`
+- **Respuesta (`200 OK`):**
+    ```json
+    {
+      "usuarios": {
+        "total": 120,
+        "clientes": 114,
+        "clientes_activos": 110,
+        "por_rol": {
+          "CLIENT": 114,
+          "SUPPORT": 4,
+          "ADMIN": 2
+        }
+      },
+      "ingresos": {
+        "total_aprobado": "1490.00",
+        "pagos_aprobados": 10
+      },
+      "pagos": {
+        "aprobados": 10,
+        "rechazados": 2
+      },
+      "almacenamiento": {
+        "archivos_activos_y_en_papelera": 50,
+        "usado_bytes": 524288000
+      }
+    }
+    ```
+    `total_aprobado` es la suma histórica de `amount` para pagos `APPROVED`; no se añade una moneda porque el modelo de pagos no almacena ese dato. El uso total incluye archivos activos y en papelera, igual que la cuota de almacenamiento; excluye elementos eliminados definitivamente.
+
+### 7.3. Uso global de almacenamiento por extensión
+- **Ruta:** `GET /api/admin/statistics/storage-by-type/`
+- **Respuesta (`200 OK`):**
+    ```json
+    {
+      "total_usado_bytes": 524288000,
+      "tipos": [
+        {
+          "extension": "pdf",
+          "archivos_count": 20,
+          "usado_bytes": 314572800
+        },
+        {
+          "extension": "png",
+          "archivos_count": 30,
+          "usado_bytes": 209715200
+        }
+      ]
+    }
+    ```
+    El conteo y los bytes se agrupan por extensión y abarcan todos los usuarios. Incluye archivos activos y en papelera; no consulta ni revela contenido binario.
+
+---
+
+## 8. Health Check del Servicio (`/api/health/`)
+
+### 8.1. Comprobar Disponibilidad
+- **Ruta:** `GET /api/health/`
+- **Autenticación:** Pública.
+- **Respuestas:**
+  - `200 OK`:
+    ```json
+    {
+      "status": "ok",
+      "service": "VaultDrive API"
+    }
+    ```
+
+---
+
+## 9. Guía Rápida de Integración en Frontend (Ejemplos con `fetch` / `axios`)
+
+### Configurar Axios con Interceptor de Token:
+```javascript
+import axios from 'axios';
+
+export const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000',
+});
+
+// Adjuntar Token JWT automáticamente
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('access_token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+```
+
+### Ejemplo: Subida de Archivo
+```javascript
+export async function uploadFile(file, folderId = null, isTemporary = false) {
+  const formData = new FormData();
+  formData.append('archivo', file);
+  if (folderId) formData.append('carpeta_id', folderId);
+  if (isTemporary) formData.append('es_temporal', 'true');
+
+  const response = await api.post('/api/storage/files/upload/', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+}
+```

@@ -1,0 +1,388 @@
+import { useEffect, useState } from 'react'
+import {
+  ACCEPTED_FILE_TYPES,
+  getFileExtension,
+  SUPPORTED_EXTENSIONS,
+} from './fileTypes'
+
+function getErrorMessage(error) {
+  return error?.message || 'Algo salió mal. Inténtalo de nuevo.'
+}
+
+/**
+ * Lógica y estado de la unidad. `storageApi` es un puerto de operaciones que
+ * DashboardPage inyecta, de modo que este hook no depende de un cliente HTTP
+ * concreto y puede recibir una implementación de prueba si se necesita.
+ */
+export default function useDashboard(storageApi) {
+  const [folderStack, setFolderStack] = useState([])
+  const [files, setFiles] = useState([])
+  const [folders, setFolders] = useState([])
+  const [trashItems, setTrashItems] = useState([])
+  const [showTrash, setShowTrash] = useState(false)
+  const [usage, setUsage] = useState(null)
+  const [search, setSearch] = useState('')
+  const [extensionFilter, setExtensionFilter] = useState('')
+  const [uploadTemporary, setUploadTemporary] = useState(false)
+  const [uploadTtlDays, setUploadTtlDays] = useState(14)
+  const [loading, setLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const [uploadErrors, setUploadErrors] = useState([])
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [openMenu, setOpenMenu] = useState('')
+  const [dialog, setDialog] = useState(null)
+  const [dialogName, setDialogName] = useState('')
+  const [dialogBusy, setDialogBusy] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const canUploadTemporary = usage?.features?.temporary_files === true
+  const canShareLinks = usage?.features?.share_links === true
+
+  const currentFolder = folderStack.at(-1) ?? null
+  const currentFolderId = currentFolder?.id ?? null
+  const visibleFolders = folders.filter((folder) => folder.nombre.toLocaleLowerCase().includes(search.trim().toLocaleLowerCase()))
+
+  useEffect(() => {
+    let ignored = false
+    const timer = window.setTimeout(async () => {
+      setLoading(true)
+      setError('')
+      try {
+        if (showTrash) {
+          const [nextTrashItems, nextUsage] = await Promise.all([
+            storageApi.listTrash(),
+            storageApi.getStorageUsage(),
+          ])
+          if (!ignored) {
+            setTrashItems(Array.isArray(nextTrashItems) ? nextTrashItems : [])
+            setUsage(nextUsage)
+            if (!nextUsage?.features?.temporary_files) setUploadTemporary(false)
+          }
+        } else {
+          const [nextFiles, nextFolders, nextUsage] = await Promise.all([
+            storageApi.listFiles({ folderId: currentFolderId ?? 'root', query: search, formato: extensionFilter }),
+            storageApi.listFolders(currentFolderId),
+            storageApi.getStorageUsage(),
+          ])
+          if (!ignored) {
+            setFiles(Array.isArray(nextFiles) ? nextFiles : [])
+            setFolders(Array.isArray(nextFolders) ? nextFolders : [])
+            setUsage(nextUsage)
+            if (!nextUsage?.features?.temporary_files) setUploadTemporary(false)
+          }
+        }
+      } catch (requestError) {
+        if (!ignored) {
+          setUsage(null)
+          setError(getErrorMessage(requestError))
+        }
+      } finally {
+        if (!ignored) setLoading(false)
+      }
+    }, search ? 220 : 0)
+    return () => { ignored = true; window.clearTimeout(timer) }
+  }, [currentFolderId, extensionFilter, refreshKey, search, showTrash, storageApi])
+
+  function refresh() {
+    setRefreshKey((key) => key + 1)
+  }
+
+  useEffect(() => {
+    const refreshOnFocus = () => setRefreshKey((key) => key + 1)
+    window.addEventListener('focus', refreshOnFocus)
+    return () => window.removeEventListener('focus', refreshOnFocus)
+  }, [])
+
+  function clearError() {
+    setError('')
+  }
+
+  function clearUploadErrors() {
+    setUploadErrors([])
+  }
+
+  function clearNotice() {
+    setNotice('')
+  }
+
+  function toggleMenu(menuId) {
+    setOpenMenu((current) => current === menuId ? '' : menuId)
+  }
+
+  function closeDialog() {
+    setDialog(null)
+  }
+
+  function showFolderDialog(type, folder = null) {
+    setDialogName(folder?.nombre ?? '')
+    setDialog({ type, folder })
+    setOpenMenu('')
+  }
+
+  function showFileDialog(type, file = null) {
+    setDialogName(file?.nombre_original ?? '')
+    setDialog({ type, item: file })
+    setOpenMenu('')
+  }
+
+  function openFolder(folder) {
+    setFolderStack((stack) => [...stack, { id: folder.id, name: folder.nombre }])
+    setSearch('')
+    setOpenMenu('')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  function goToRoot() {
+    setFolderStack([])
+    setSearch('')
+  }
+
+  function openTrash() {
+    setFolderStack([])
+    setSearch('')
+    setShowTrash(true)
+    setOpenMenu('')
+    setNotice('')
+  }
+
+  function closeTrash() {
+    setShowTrash(false)
+    setNotice('')
+  }
+
+  async function acceptFiles(fileList) {
+    if (uploading) return
+    if (uploadTemporary && !canUploadTemporary) {
+      setError('Tu suscripción actual no incluye archivos temporales. Revisa tu plan antes de subirlos.')
+      refresh()
+      return
+    }
+    const selected = Array.from(fileList ?? [])
+    if (!selected.length) return
+
+    const validFiles = []
+    const failures = []
+    for (const file of selected) {
+      const extension = getFileExtension(file.name)
+      if (!SUPPORTED_EXTENSIONS.has(extension)) {
+        failures.push(`${file.name}: formato no compatible.`)
+      } else {
+        validFiles.push(file)
+      }
+    }
+
+    setUploading(true)
+    setUploadErrors([])
+    setError('')
+    setNotice('')
+
+    const successes = []
+    try {
+      for (const file of validFiles) {
+        try {
+          await storageApi.uploadFile(file, currentFolderId, { isTemporary: uploadTemporary, ttlDays: uploadTtlDays })
+          successes.push(file.name)
+        } catch (uploadError) {
+          failures.push(`${file.name}: ${getErrorMessage(uploadError)}`)
+          if (uploadError?.data?.code === 'plan_feature_unavailable') refresh()
+        }
+      }
+
+      if (successes.length) {
+        setNotice(`Se subieron ${successes.length} archivo${successes.length === 1 ? '' : 's'} correctamente.`)
+      }
+      if (failures.length) setUploadErrors(failures)
+
+      if (successes.length) refresh()
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  async function saveFolder(event) {
+    event.preventDefault()
+    if (!dialogName.trim()) return
+    setDialogBusy(true)
+    setError('')
+    try {
+      const isRename = dialog.type === 'rename'
+      if (isRename) await storageApi.renameFolder(dialog.folder.id, dialogName.trim())
+      else await storageApi.createFolder(dialogName.trim(), currentFolderId)
+      setDialog(null)
+      setDialogName('')
+      setNotice(isRename ? 'La carpeta se renombró correctamente.' : 'La carpeta se creó correctamente.')
+      refresh()
+    } catch (requestError) {
+      setError(getErrorMessage(requestError))
+    } finally {
+      setDialogBusy(false)
+    }
+  }
+
+  async function saveFile(event) {
+    event.preventDefault()
+    if (!dialogName.trim() || !dialog?.item) return
+    setDialogBusy(true)
+    setError('')
+    try {
+      await storageApi.renameFile(dialog.item.id, dialogName.trim())
+      setDialog(null)
+      setDialogName('')
+      setNotice('El archivo se renombró correctamente.')
+      refresh()
+    } catch (requestError) {
+      setError(getErrorMessage(requestError))
+    } finally {
+      setDialogBusy(false)
+    }
+  }
+
+  async function deleteFile(file) {
+    setOpenMenu('')
+    if (!window.confirm(`¿Mover “${file.nombre_original}” a la papelera?`)) return
+    try {
+      await storageApi.deleteFile(file.id)
+      setNotice('El archivo se movió a la papelera por 30 días.')
+      refresh()
+    } catch (requestError) {
+      setError(getErrorMessage(requestError))
+    }
+  }
+
+  async function deleteFolder(folder) {
+    setOpenMenu('')
+    if (!window.confirm(`¿Mover la carpeta “${folder.nombre}” a la papelera?`)) return
+    try {
+      await storageApi.deleteFolder(folder.id)
+      setNotice('La carpeta y su contenido se movieron a la papelera por 30 días.')
+      refresh()
+    } catch (requestError) {
+      setError(getErrorMessage(requestError))
+    }
+  }
+
+  async function restoreTrashItem(item) {
+    try {
+      if (item.tipo === 'archivo') await storageApi.restoreFile(item.id)
+      else await storageApi.restoreFolder(item.id)
+      setNotice(`${item.tipo === 'archivo' ? 'El archivo' : 'La carpeta y su contenido'} se restauró correctamente.`)
+      refresh()
+    } catch (requestError) {
+      setError(getErrorMessage(requestError))
+    }
+  }
+
+  async function deleteTrashItem(item) {
+    const expiration = Date.parse(item.fecha_eliminacion)
+    if (!Number.isFinite(expiration) || expiration > Date.now()) return
+    if (!window.confirm(`¿Eliminar definitivamente “${item.nombre}”? Esta acción no se puede deshacer.`)) return
+    try {
+      if (item.tipo === 'archivo') await storageApi.deleteFile(item.id, true)
+      else await storageApi.deleteFolder(item.id, true)
+      setNotice(`${item.nombre} se eliminó definitivamente.`)
+      refresh()
+    } catch (requestError) {
+      setError(getErrorMessage(requestError))
+    }
+  }
+
+  async function downloadFile(file) {
+    setOpenMenu('')
+    try {
+      const blob = await storageApi.downloadFile(file.id)
+      const objectUrl = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = objectUrl
+      link.download = file.nombre_original
+      document.body.append(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+    } catch (requestError) {
+      setError(getErrorMessage(requestError))
+    }
+  }
+
+  async function shareFile(file) {
+    setOpenMenu('')
+    if (!canShareLinks) {
+      setError('Tu suscripción actual no incluye enlaces compartidos.')
+      return
+    }
+    try {
+      const result = await storageApi.shareFile(file.id)
+      setCopied(false)
+      setDialog({
+        type: 'share',
+        url: storageApi.createSharePageUrl(result.download_url, file.nombre_original, result.expira_en_segundos),
+        expiresInSeconds: result.expira_en_segundos,
+      })
+    } catch (requestError) {
+      setError(getErrorMessage(requestError))
+      if (requestError?.data?.code === 'plan_feature_unavailable') refresh()
+    }
+  }
+
+  async function copyShareLink() {
+    try {
+      await navigator.clipboard.writeText(dialog.url)
+      setCopied(true)
+    } catch {
+      setError('No se pudo copiar el enlace. Selecciónalo y cópialo manualmente.')
+    }
+  }
+
+  return {
+    acceptedFileTypes: ACCEPTED_FILE_TYPES,
+    currentFolder,
+    files,
+    visibleFolders,
+    trashItems,
+    showTrash,
+    usage,
+    canUploadTemporary,
+    canShareLinks,
+    search,
+    setSearch,
+    extensionFilter,
+    setExtensionFilter,
+    uploadTemporary,
+    setUploadTemporary,
+    uploadTtlDays,
+    setUploadTtlDays,
+    loading,
+    uploading,
+    uploadErrors,
+    error,
+    clearError,
+    clearUploadErrors,
+    notice,
+    clearNotice,
+    openMenu,
+    setOpenMenu,
+    toggleMenu,
+    dialog,
+    dialogName,
+    setDialogName,
+    dialogBusy,
+    copied,
+    acceptFiles,
+    saveFolder,
+    saveFile,
+    deleteFile,
+    deleteFolder,
+    downloadFile,
+    shareFile,
+    copyShareLink,
+    openFolder,
+    goToRoot,
+    openTrash,
+    closeTrash,
+    showFolderDialog,
+    showFileDialog,
+    restoreTrashItem,
+    deleteTrashItem,
+    closeDialog,
+  }
+}

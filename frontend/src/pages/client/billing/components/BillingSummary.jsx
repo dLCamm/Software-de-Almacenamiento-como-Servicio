@@ -1,0 +1,100 @@
+import { formatBytes } from '../../dashboard/formatters'
+import BillingIcon from './BillingIcon'
+import { formatUsagePercent, getUsagePercent, getVisualPercent } from '../../../../utils/storageUsage'
+import { SUPPORTED_FILE_TYPES } from '../../dashboard/fileTypes'
+
+// Agrupa DOC y DOCX como "Documentos"; el color coincide con el icono de cada tipo en Mis Archivos.
+const TYPE_GROUPS = { pdf: 'PDF', doc: 'Documentos', png: 'Imágenes', mp3: 'Audio' }
+
+function groupByType(rows = []) {
+  const groups = {}
+  for (const row of rows) {
+    const kind = SUPPORTED_FILE_TYPES[String(row.extension || '').toLowerCase()]?.kind || 'doc'
+    groups[kind] = groups[kind] || { kind, label: TYPE_GROUPS[kind], bytes: 0, files: 0 }
+    groups[kind].bytes += Number(row.usado_bytes || 0)
+    groups[kind].files += Number(row.archivos || 0)
+  }
+  return Object.values(groups).sort((a, b) => b.bytes - a.bytes)
+}
+
+function formatMoney(value) {
+  const amount = Number(value || 0)
+  return `Q${amount.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} GTQ`
+}
+
+function formatDate(value) {
+  if (!value) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  return new Intl.DateTimeFormat('es-GT', { day: 'numeric', month: 'long', year: 'numeric' }).format(date)
+}
+
+function daysUntil(value) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+  return Math.max(0, Math.ceil((date.getTime() - Date.now()) / 86400000))
+}
+
+function daysLabel(days) {
+  if (days === null || days === undefined) return ''
+  if (days === 0) return 'hoy'
+  return days === 1 ? 'mañana' : `en ${days} días`
+}
+
+/** Título y texto de la tarjeta de próximo cobro según el estado de la suscripción. */
+function getNextCharge({ price, subscription, nextBillingDate }) {
+  if (price <= 0) return { title: 'Plan gratuito', text: 'Tu plan actual no genera cargos.' }
+  const dateLabel = formatDate(nextBillingDate)
+  if (!dateLabel) return { title: 'Próximo cobro', text: 'Te avisaremos antes de tu próximo cobro.' }
+  const days = subscription?.days_remaining ?? daysUntil(nextBillingDate)
+  const expired = subscription?.is_expired || (subscription?.status && subscription.status !== 'ACTIVE')
+  if (expired) return { title: 'Tu plan venció', text: `Venció el ${dateLabel}. Renuévalo para conservar tu espacio.`, tone: 'danger' }
+  if (subscription && subscription.auto_renew === false) {
+    return { title: 'Tu plan vence', text: `${dateLabel} · ${daysLabel(days)}. La renovación automática está desactivada.`, days, tone: days <= 5 ? 'warning' : '' }
+  }
+  return { title: 'Próximo cobro', text: `${dateLabel} · ${daysLabel(days)}`, days }
+}
+
+export default function BillingSummary({ usage, currentPlan, subscription, nextBillingDate, onViewPlans }) {
+  const percent = getUsagePercent(usage)
+  const percentText = formatUsagePercent(percent)
+  const price = Number(currentPlan?.monthly_price ?? usage?.plan_precio_mensual ?? 0)
+  const nextCharge = getNextCharge({ price, subscription, nextBillingDate })
+  const types = groupByType(usage?.por_tipo)
+  const totalBytes = types.reduce((sum, type) => sum + type.bytes, 0)
+
+  return <div className="billing-summary">
+    <div className="billing-summary-grid">
+      <section className="billing-card usage-card">
+        <h2>Almacenamiento utilizado</h2>
+        <div className="usage-card__body">
+          <div className="usage-donut" style={{ '--usage-percent': `${getVisualPercent(percent)}%` }} role="img" aria-label={`${percentText} del almacenamiento utilizado`}>
+            <div className="usage-donut__center"><strong className={percentText.length > 4 ? 'is-long' : ''}>{percentText}</strong><span>usado</span></div>
+          </div>
+          <div className="usage-total"><span>Espacio usado</span><strong>{formatBytes(usage?.usado_bytes)}</strong><span>de {formatBytes(usage?.maximo_bytes)}</span></div>
+        </div>
+      </section>
+
+      <section className="billing-card breakdown-card">
+        <h2>Desglose por tipo</h2>
+        {types.length
+          ? <ul className="breakdown-list">
+              {types.map((type) => <li key={type.kind} className={`breakdown-row breakdown-row--${type.kind}`}>
+                <div className="breakdown-row__head"><span className="breakdown-row__label"><i aria-hidden="true" />{type.label}</span><span>{formatBytes(type.bytes)} · {type.files} {type.files === 1 ? 'archivo' : 'archivos'}</span></div>
+                <div className="breakdown-row__track" aria-hidden="true"><span style={{ width: `${totalBytes ? Math.max(2, (type.bytes / totalBytes) * 100) : 0}%` }} /></div>
+              </li>)}
+            </ul>
+          : <div className="breakdown-unavailable"><BillingIcon name="chart" size={25} /><p>Aún no tienes archivos. Cuando subas documentos, imágenes o audios, aquí verás cuánto espacio ocupa cada tipo.</p></div>}
+        <div className="breakdown-total"><span>Total usado</span><strong>{formatBytes(usage?.usado_bytes)} / {formatBytes(usage?.maximo_bytes)}</strong></div>
+      </section>
+    </div>
+
+    <section className={`next-charge-card${nextCharge.tone ? ` is-${nextCharge.tone}` : ''}`}>
+      <div className="next-charge-card__icon"><BillingIcon name="clock" size={25} /></div>
+      <div className="next-charge-card__details"><strong>{nextCharge.title}</strong><span>{nextCharge.text}</span></div>
+      <strong className="next-charge-card__amount">{price > 0 ? formatMoney(price) : 'Q0.00 GTQ'}</strong>
+    </section>
+
+    <div className="billing-summary__footer"><span>Plan actual: <strong>{currentPlan?.name || usage?.plan_nombre || '—'}</strong></span><button className="billing-button billing-button--secondary" type="button" onClick={onViewPlans}>Ver planes</button></div>
+  </div>
+}

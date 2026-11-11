@@ -1,0 +1,319 @@
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { listPlans } from '../../api/billing'
+import {
+  CubeLogoIcon,
+  ArrowRightIcon,
+  UsersIcon,
+  ShieldIcon,
+  CloudIcon,
+  StarIcon,
+  LockIcon,
+  ShareIcon,
+  FolderIcon,
+  AdminShieldIcon,
+  CheckIcon,
+} from '../../components/icons'
+import ThemeToggle from '../../components/ThemeToggle'
+import './LandingPage.css'
+
+const NAV_LINKS = [
+  { id: 'caracteristicas', label: 'Características' },
+  { id: 'precios', label: 'Precios' },
+]
+
+// Lo que incluye cada plan. Sin `code` = lo incluyen todos; con `code` depende de plan.features.
+const PLAN_FEATURES = [
+  { label: 'Subir y descargar archivos' },
+  { label: 'Organizar en carpetas' },
+  { code: 'share_links', label: 'Compartir enlaces' },
+  { code: 'temporary_files', label: 'Archivos temporales' },
+]
+
+const FORMATS = [
+  { label: '.PDF', tone: 'red' },
+  { label: '.DOCX', tone: 'blue' },
+  { label: '.MP3', tone: 'green' },
+  { label: '.PNG', tone: 'violet' },
+]
+
+const STATS = [
+  { icon: UsersIcon, value: '3,490+', label: 'Usuarios activos' },
+  { icon: ShieldIcon, value: '99.9%', label: 'Disponibilidad' },
+  { icon: CloudIcon, value: '12 TB', label: 'Almacenado' },
+  { icon: StarIcon, value: '4.9', label: 'Valoración', suffix: '★' },
+]
+
+const FEATURES = [
+  {
+    icon: LockIcon,
+    tone: 'violet',
+    title: 'Almacenamiento seguro',
+    description:
+      'Cifrado de extremo a extremo. Tus archivos están protegidos 24/7 en infraestructura guatemalteca.',
+  },
+  {
+    icon: ShareIcon,
+    tone: 'blue',
+    title: 'Comparte fácilmente',
+    description:
+      'Genera enlaces de descarga con expiración configurable. Comparte con quien quieras, cuando quieras.',
+  },
+  {
+    icon: FolderIcon,
+    tone: 'amber',
+    title: 'Organización total',
+    description:
+      'Carpetas, renombrado, búsqueda instantánea y archivos temporales con auto-eliminación.',
+  },
+  {
+    icon: AdminShieldIcon,
+    tone: 'green',
+    title: 'Control de acceso',
+    description:
+      'Panel de administración completo. Gestiona usuarios, planes y auditorías desde un solo lugar.',
+  },
+]
+
+export default function LandingPage() {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [plans, setPlans] = useState([])
+  const [plansLoading, setPlansLoading] = useState(true)
+  const [plansError, setPlansError] = useState('')
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    let active = true
+    listPlans()
+      .then((result) => {
+        if (!active) return
+        const availablePlans = Array.isArray(result) ? result : result?.results
+        setPlans(Array.isArray(availablePlans) ? availablePlans : [])
+      })
+      .catch(() => {
+        if (active) setPlansError('No se pudieron cargar los planes. Intenta de nuevo más tarde.')
+      })
+      .finally(() => {
+        if (active) setPlansLoading(false)
+      })
+
+    return () => { active = false }
+  }, [])
+
+  return (
+    <div className="landing">
+      <header className="landing-nav">
+        <div className="landing-nav__bar">
+          <div className="landing-nav__brand">
+            <span className="landing-nav__logo">
+              <CubeLogoIcon />
+            </span>
+            <span className="landing-nav__name">Kubo</span>
+          </div>
+
+          <nav className="landing-nav__links" aria-label="Principal">
+            {NAV_LINKS.map((link) => (
+              <a key={link.id} href={`#${link.id}`}>
+                {link.label}
+              </a>
+            ))}
+          </nav>
+
+          <button type="button" className="btn btn--ghost landing-nav__cta" onClick={() => navigate('/login')}>
+            <ArrowRightIcon className="btn__icon" />
+            Iniciar sesión
+          </button>
+
+          <ThemeToggle className="landing-nav__theme" />
+
+          <button
+            type="button"
+            className="landing-nav__toggle"
+            aria-label="Abrir menú"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
+        </div>
+
+        {menuOpen && (
+          <div className="landing-nav__mobile">
+            {NAV_LINKS.map((link) => (
+              <a key={link.id} href={`#${link.id}`} onClick={() => setMenuOpen(false)}>
+                {link.label}
+              </a>
+            ))}
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={() => {
+                setMenuOpen(false)
+                navigate('/login')
+              }} 
+            >
+              Iniciar sesión
+            </button>
+          </div>
+        )}
+      </header>
+
+      <main>
+        <section className="hero">
+          <span className="hero__badge">
+            <span className="hero__badge-dot" />
+            Plataforma #1 de almacenamiento en Guatemala
+          </span>
+
+          <h1 className="hero__title">
+            Tu nube segura, <span className="hero__title-accent">siempre disponible</span>
+          </h1>
+
+          <p className="hero__subtitle">
+            Sube, organiza y comparte documentos, audios e imágenes con total seguridad. Planes
+            desde <strong>Q0/mes</strong> — sin tarjeta requerida.
+          </p>
+
+          <div className="hero__actions">
+            <button type="button" className="btn btn--primary btn--lg" onClick={() => navigate('/register')}>
+              Crear cuenta gratis
+            </button>
+            <a href="https://youtu.be/fBmSZrSWAh0" target="_blank" rel="noopener noreferrer" className="btn btn--secondary btn--lg">
+              Ver demostración
+              <ArrowRightIcon className="btn__icon" />
+            </a>
+          </div>
+
+          <div className="hero__formats">
+            <span>Formatos aceptados:</span>
+            <div className="hero__format-list">
+              {FORMATS.map((format) => (
+                <span key={format.label} className={`format-badge format-badge--${format.tone}`}>
+                  {format.label}
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="stats" aria-label="Estadísticas">
+          {STATS.map((stat) => (
+            <div key={stat.label} className="stats__card">
+              <stat.icon className="stats__icon" aria-hidden="true" />
+              <div className="stats__value">
+                {stat.value}
+                {stat.suffix && <span className="stats__suffix">{stat.suffix}</span>}
+              </div>
+              <div className="stats__label">{stat.label}</div>
+            </div>
+          ))}
+        </section>
+
+        <section className="features" id="caracteristicas">
+          <div className="section-heading">
+            <span className="section-heading__eyebrow">Por qué elegir Kubo</span>
+            <h2>Todo lo que necesitas en un solo lugar</h2>
+          </div>
+
+          <div className="features__grid">
+            {FEATURES.map((feature) => (
+              <div key={feature.title} className="feature-card">
+                <div className={`feature-card__icon feature-card__icon--${feature.tone}`}>
+                  <feature.icon aria-hidden="true" />
+                </div>
+                <h3>{feature.title}</h3>
+                <p>{feature.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="pricing" id="precios">
+          <div className="section-heading">
+            <span className="section-heading__eyebrow">Precios simples y transparentes</span>
+            <h2>Elige el plan que más te conviene</h2>
+          </div>
+
+          {plansLoading
+            ? <p className="pricing__status" role="status">Cargando planes…</p>
+            : plansError
+              ? <p className="pricing__status pricing__status--error" role="alert">{plansError}</p>
+              : plans.length === 0
+                ? <p className="pricing__status">No hay planes disponibles en este momento.</p>
+                : (
+                  <div className="pricing__grid">
+                    {plans.map((plan) => {
+                      const planCode = String(plan.code || '').toLowerCase()
+                      const isPopular = planCode === 'pro'
+                      const price = Number(plan.monthly_price || 0)
+                      const storage = Number(plan.storage_limit_gb || 0)
+
+                      return (
+                        <div
+                          key={plan.id}
+                          className={`plan-card${isPopular ? ' plan-card--highlighted' : ''}`}
+                        >
+                          {isPopular && <span className="plan-card__badge">Más popular</span>}
+                          <span className={`plan-card__name${planCode === 'business' ? ' plan-card__name--green' : ''}`}>
+                            {plan.name}
+                          </span>
+                          <div className="plan-card__price">
+                            Q{price.toLocaleString('es-GT', { maximumFractionDigits: 2 })}
+                            <span>/mes</span>
+                          </div>
+                          <p className="plan-card__storage">{storage.toLocaleString('es-GT')} GB de almacenamiento</p>
+                          <ul className="plan-card__features">
+                            {PLAN_FEATURES.map((feature) => {
+                              const included = !feature.code || Boolean(plan.features?.[feature.code])
+                              return (
+                                <li key={feature.label} className={included ? undefined : 'is-missing'}>
+                                  {included ? <CheckIcon /> : <span className="plan-card__dash" aria-hidden="true" />}
+                                  {included ? feature.label : <><s>{feature.label}</s><span className="visually-hidden"> (no incluido)</span></>}
+                                </li>
+                              )
+                            })}
+                          </ul>
+                          <button
+                            type="button"
+                            className={`btn btn--block ${isPopular ? 'btn--primary' : 'btn--secondary'}`}
+                            onClick={() => navigate(`/register?plan=${encodeURIComponent(plan.code)}`)}
+                          >
+                            {planCode === 'free' ? 'Comenzar gratis' : isPopular ? 'Comenzar ahora' : 'Seleccionar plan'}
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+          <p className="pricing__more">Empieza gratis y cambia de plan cuando lo necesites desde tu cuenta.</p>
+        </section>
+
+        <section className="final-cta">
+          <div className="final-cta__checks">
+            <CheckIcon />
+            <CheckIcon />
+            <CheckIcon />
+          </div>
+          <h2>Empieza hoy mismo — gratis</h2>
+          <p>Sin tarjeta de crédito. Sin compromisos. Cancela cuando quieras.</p>
+          <button type="button" className="btn btn--primary btn--lg" onClick={() => navigate('/register')}>
+            Crear cuenta gratis
+          </button>
+        </section>
+      </main>
+
+      <footer className="landing-footer">
+        <div className="landing-nav__brand">
+          <span className="landing-nav__logo landing-nav__logo--sm">
+            <CubeLogoIcon />
+          </span>
+          <span className="landing-nav__name">Kubo</span>
+        </div>
+        <p>© {new Date().getFullYear()} Kubo. Tu almacenamiento en la nube.</p>
+      </footer>
+    </div>
+  )
+}

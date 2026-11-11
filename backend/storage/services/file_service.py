@@ -1,0 +1,319 @@
+import datetime
+import logging
+import os
+import re
+import uuid
+from typing import Iterable, Optional, Union
+from uuid import UUID
+
+from django.core.files.uploadedfile import UploadedFile
+from django.db import models, transaction
+from django.utils import timezone
+
+from plans.entitlements import PlanFeatureUnavailable, get_user_features, require_feature
+from plans.models import PlanBenefit
+from users.models import User
+
+from storage.interfaces.storage_backend import (
+    IStorageBackend,
+    StorageError,
+    StorageNotFoundError,
+    StorageUploadError,
+)
+from storage.models import Archivo, Carpeta, EstadoElemento
+from storage.services.storage_service import get_storage_backend
+from storage.services.trash_service import TrashNotFoundError, TrashService
+from storage.validators.file_validator import FileValidationError, FileValidator
+
+logger = logging.getLogger(__name__)
+
+
+class FileServiceError(Exception):
+    """Excepción base para errores en el servicio de archivos."""
+    pass
+
+
+class StorageQuotaExceededError(FileServiceError):
+    """Lanzada cuando el usuario supera su cuota de almacenamiento disponible (RF-09)."""
+    pass
+
+
+class FileNotFoundServiceError(FileServiceError):
+    """Lanzada cuando un archivo solicitado no existe o no pertenece al usuario."""
+    pass
+
+
+class FileDuplicateError(FileServiceError):
+    """Lanzada cuando el nuevo nombre del archivo entra en conflicto con otro archivo del usuario."""
+    pass
+
+
+class FileService:
+    """
+    Servicio orquestador para la gestión y ciclo de vida de archivos (RF-06, RF-07, RF-09, RF-10).
+    Aplica principios SOLID:
+    - SRP: Orquesta validación, subida binaria a MinIO y persistencia atómica en PostgreSQL.
+    - DIP: Depende de la abstracción IStorageBackend.
+    - RNF-14: Implementa rollback compensatorio ante fallos de persistencia en base de datos.
+    """
+
+    DEFAULT_USER_QUOTA_BYTES = 5 * 1024 * 1024 * 1024  # 5 GB cuota base gratuita (Plan Free)
+
+    @classmethod
+    def upload_file(
+        cls,
+        user,
+        uploaded_file: UploadedFile,
+        folder_id: Optional[Union[str, UUID]] = None,
+        is_temporary: bool = False,
+        ttl_days: Optional[int] = None,
+        storage_backend: Optional[IStorageBackend] = None,
+    ) -> Archivo:
+        """
+        Flujo completo de subida de archivo conforme al Diagrama de Secuencia 4.3.3.
+
+        1. Validación estricta de formato y firma binaria (RF-07).
+        2. Verificación de cuota de almacenamiento disponible (RF-09).
+        3. Carga binaria en MinIO.
+        4. Inserción atómica en PostgreSQL con rollback compensatorio en caso de error.
+        """
+        if is_temporary:
+            require_feature(user, PlanBenefit.Feature.TEMPORARY_FILES)
+        backend = storage_backend or get_storage_backend()
+
+        # 1. Validación de Formato y Tamaño (RF-07)
+        extension, mime_type, file_size = FileValidator.validate(uploaded_file)
+
+        # 2. Verificar existencia de carpeta destino si fue provista
+        folder_instance: Optional[Carpeta] = None
+        if folder_id:
+            try:
+                folder_instance = Carpeta.objects.get(
+                    id=folder_id,
+                    usuario=user,
+                    estado=EstadoElemento.ACTIVO,
+                )
+            except Carpeta.DoesNotExist:
+                raise FileServiceError("La carpeta seleccionada no existe o no le pertenece.")
+
+        # 3. Validación de Cuota de Almacenamiento (RF-09)
+        cls._validate_user_quota(user, file_size)
+
+        # 4. Cálculo de fecha de expiración para archivos temporales (RF-10)
+        fecha_expiracion = None
+        if is_temporary:
+            dias_vida = ttl_days if (ttl_days and ttl_days > 0) else 14  # 14 días por defecto
+            fecha_expiracion = timezone.now() + datetime.timedelta(days=dias_vida)
+
+        # 5. Generar Object Key seguro y determinista en MinIO
+        safe_original_name = cls._sanitize_filename(uploaded_file.name or "archivo")
+        file_uuid = uuid.uuid4().hex
+        object_key = f"users/{user.id}/{file_uuid}_{safe_original_name}"
+
+        # 6. Carga física del binario hacia MinIO
+        try:
+            # Asegurar posición inicial del stream
+            if hasattr(uploaded_file, "seek"):
+                uploaded_file.seek(0)
+
+            backend.upload_object(
+                object_name=object_key,
+                data=uploaded_file,
+                length=file_size,
+                content_type=mime_type,
+            )
+        except (StorageUploadError, StorageError) as storage_exc:
+            logger.error("Error al transferir binario a MinIO: %s", str(storage_exc), exc_info=True)
+            raise FileServiceError(f"Fallo en el servicio de almacenamiento de objetos: {storage_exc}") from storage_exc
+
+        # 7. Persistencia Atómica en PostgreSQL y Rollback Compensatorio (RNF-14)
+        try:
+            with transaction.atomic():
+                archivo = Archivo.objects.create(
+                    usuario=user,
+                    carpeta=folder_instance,
+                    nombre_original=uploaded_file.name or safe_original_name,
+                    extension=extension,
+                    mime_type=mime_type,
+                    tamano_bytes=file_size,
+                    bucket_minio=getattr(backend, "bucket_name", "vaultdrive-storage"),
+                    object_key=object_key,
+                    es_temporal=is_temporary,
+                    fecha_expiracion=fecha_expiracion,
+                    estado=EstadoElemento.ACTIVO,
+                )
+                logger.info(
+                    "Archivo '%s' registrado exitosamente en DB (ID: %s, MinIO Key: %s).",
+                    archivo.nombre_original,
+                    archivo.id,
+                    object_key,
+                )
+                return archivo
+
+        except Exception as db_exc:
+            logger.critical(
+                "Fallo crítico al guardar metadatos en DB para el objeto '%s'. "
+                "Iniciando rollback compensatorio en MinIO para evitar archivos huérfanos...",
+                object_key,
+                exc_info=True,
+            )
+            # Limpieza compensatoria del binario en MinIO
+            backend.delete_object(object_key)
+            raise FileServiceError(
+                f"Error al registrar metadatos en la base de datos. Operación abortada: {db_exc}"
+            ) from db_exc
+
+    @classmethod
+    def get_file_download_stream(
+        cls,
+        user,
+        file_id: Union[str, UUID],
+        storage_backend: Optional[IStorageBackend] = None,
+    ) -> tuple[Archivo, Iterable[bytes]]:
+        """Recupera la instancia del archivo y su flujo binario desde MinIO."""
+        backend = storage_backend or get_storage_backend()
+        try:
+            archivo = Archivo.objects.get(
+                id=file_id,
+                usuario=user,
+                estado=EstadoElemento.ACTIVO,
+            )
+        except Archivo.DoesNotExist:
+            raise FileNotFoundServiceError("El archivo no existe o fue eliminado.")
+
+        stream = backend.download_object(archivo.object_key)
+        return archivo, stream
+
+    @classmethod
+    def generate_presigned_download_url(
+        cls,
+        user,
+        file_id: Union[str, UUID],
+        expiry_seconds: int = 1209600,  # 2 semanas por defecto (RF-11)
+        storage_backend: Optional[IStorageBackend] = None,
+    ) -> str:
+        """Genera un enlace prefirmado directo hacia MinIO (RF-11)."""
+        require_feature(user, PlanBenefit.Feature.SHARE_LINKS)
+        backend = storage_backend or get_storage_backend()
+        try:
+            archivo = Archivo.objects.get(
+                id=file_id,
+                usuario=user,
+                estado=EstadoElemento.ACTIVO,
+            )
+        except Archivo.DoesNotExist:
+            raise FileNotFoundServiceError("El archivo no existe o no tiene permisos para compartirlo.")
+
+        return backend.get_presigned_url(archivo.object_key, expiry_seconds=expiry_seconds)
+
+    @classmethod
+    def rename_file(
+        cls,
+        user,
+        file_id: Union[str, UUID],
+        new_name: str,
+    ) -> Archivo:
+        """Renombra un archivo activo y perteneciente al usuario."""
+        clean_name = (new_name or "").strip()
+        if not clean_name:
+            raise FileServiceError("El nombre del archivo no puede estar vacío.")
+
+        try:
+            archivo = Archivo.objects.get(
+                id=file_id,
+                usuario=user,
+                estado=EstadoElemento.ACTIVO,
+            )
+        except Archivo.DoesNotExist as exc:
+            raise FileNotFoundServiceError(
+                "El archivo especificado no existe o no le pertenece."
+            ) from exc
+
+        if (
+            os.path.basename(clean_name) != clean_name
+            or any(ord(character) < 32 for character in clean_name)
+        ):
+            raise FileServiceError("El nombre del archivo contiene caracteres no permitidos.")
+
+        _, new_extension = os.path.splitext(clean_name)
+        if new_extension.lstrip(".").lower() != archivo.extension.lower():
+            raise FileServiceError("Conserva la extensión original del archivo.")
+
+        if archivo.nombre_original != clean_name:
+            duplicate_qs = Archivo.objects.filter(
+                usuario=user,
+                estado=EstadoElemento.ACTIVO,
+                carpeta_id=archivo.carpeta_id,
+                nombre_original__iexact=clean_name,
+            ).exclude(id=archivo.id)
+            if duplicate_qs.exists():
+                raise FileDuplicateError(
+                    f"Ya existe un archivo con el nombre '{clean_name}' en esta ubicación."
+                )
+
+        archivo.nombre_original = clean_name
+        archivo.save(update_fields=["nombre_original"])
+        logger.info("Archivo ID %s renombrado a %s.", file_id, clean_name)
+        return archivo
+
+    @classmethod
+    def delete_file(
+        cls,
+        user,
+        file_id: Union[str, UUID],
+        permanent: bool = False,
+        storage_backend: Optional[IStorageBackend] = None,
+    ) -> None:
+        """Mueve el archivo a papelera o lo elimina tras cumplir la retención."""
+        try:
+            if permanent:
+                TrashService.delete_file_permanently(user, file_id, storage_backend)
+            else:
+                TrashService.move_file_to_trash(user, file_id)
+        except TrashNotFoundError as exc:
+            raise FileNotFoundServiceError(str(exc)) from exc
+
+    @classmethod
+    def get_user_storage_usage(cls, user) -> dict:
+        """Calcula el uso actual de almacenamiento del usuario (RF-09)."""
+        if user.role != User.Role.CLIENT or user.plan_id is None:
+            raise PlanFeatureUnavailable("El almacenamiento personal es exclusivo de clientes.")
+        total_used = Archivo.objects.filter(
+            usuario=user,
+            estado__in=(EstadoElemento.ACTIVO, EstadoElemento.PAPELERA),
+        ).aggregate(total=models.Sum("tamano_bytes"))["total"] or 0
+
+        plan = user.plan
+        max_quota = plan.storage_limit_bytes
+        available = max(0, max_quota - total_used)
+
+        return {
+            "usado_bytes": total_used,
+            "maximo_bytes": max_quota,
+            "disponible_bytes": available,
+            "porcentaje_usado": round((total_used / max_quota) * 100, 2) if max_quota > 0 else 0.0,
+            "plan_codigo": plan.code,
+            "plan_nombre": plan.name,
+            "plan_precio_mensual": plan.monthly_price,
+            "plan_pendiente_codigo": user.pending_plan.code if user.pending_plan else None,
+            "plan_pendiente_nombre": user.pending_plan.name if user.pending_plan else None,
+            "features": get_user_features(user),
+        }
+
+    @classmethod
+    def _validate_user_quota(cls, user, additional_bytes: int) -> None:
+        """Verifica que el usuario no sobrepase su cuota contratada (RF-09)."""
+        usage = cls.get_user_storage_usage(user)
+        if usage["usado_bytes"] + additional_bytes > usage["maximo_bytes"]:
+            raise StorageQuotaExceededError(
+                f"No cuenta con espacio suficiente en su plan. Espacio requerido: "
+                f"{round(additional_bytes / (1024 * 1024), 2)} MB. "
+                f"Espacio disponible: {round(usage['disponible_bytes'] / (1024 * 1024), 2)} MB."
+            )
+
+    @staticmethod
+    def _sanitize_filename(filename: str) -> str:
+        """Limpia el nombre de archivo para prevenir Path Traversal y caracteres peligrosos."""
+        base = os.path.basename(filename)
+        cleaned = re.sub(r"[^\w\.-]", "_", base)
+        return cleaned[:100]

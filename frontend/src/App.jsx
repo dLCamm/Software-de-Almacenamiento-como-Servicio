@@ -1,0 +1,58 @@
+import { Navigate, Route, Routes } from 'react-router-dom'
+
+import LandingPage from './pages/Landing/LandingPage'
+import AuthPage from './pages/Auth/AuthPage'
+import DashboardPageClient from './pages/client/DashboardPage'
+import BillingPage from './pages/client/billing/BillingPage'
+import SharedFilePage from './pages/shared/SharedFilePage'
+import ProtectedRoute from './routes/ProtectedRoute'
+import AdminRoute from './routes/AdminRoute'
+import AdminPlansPage from './pages/admin/plans/AdminPlansPage'
+import ManagedUserDetailPage from './pages/admin/management/ManagedUserDetailPage'
+import ManagedUsersPage from './pages/admin/management/ManagedUsersPage'
+import ManagedPaymentsPage from './pages/admin/management/ManagedPaymentsPage'
+import StaffRoute from './routes/StaffRoute'
+import ClientRoute from './routes/ClientRoute'
+import AdminIndexRoute from './routes/AdminIndexRoute'
+import ClientLayout from './layouts/ClientLayout'
+import AuditLogPage from './pages/admin/reports/AuditLogPage'
+import StatisticsPage from './pages/admin/reports/StatisticsPage'
+import AdminHomePage from './pages/admin/home/AdminHomePage'
+import SettingsPage from './pages/settings/SettingsPage'
+import DocumentTitle from './routes/DocumentTitle'
+
+
+export default function App() {
+  return (
+    <>
+    <DocumentTitle />
+    <Routes>
+
+      <Route path="/" element={<LandingPage />}/>
+      <Route path="/login" element={<AuthPage />}/>
+      <Route path="/register" element={<AuthPage />}/>
+      <Route path="/recover-password" element={<AuthPage />}/>
+      <Route path="/reset-password" element={<AuthPage />}/>
+      <Route path="/verify-email" element={<AuthPage />}/>
+      <Route path="/resend-verification" element={<AuthPage />}/>
+      {/* Todas las páginas dentro de ClientLayout comparten la barra lateral */}
+      <Route element={<ProtectedRoute><ClientLayout /></ProtectedRoute>}>
+        <Route path="/app/configuracion" element={<SettingsPage />}/>
+        <Route path="/app/client" element={<ClientRoute><DashboardPageClient /></ClientRoute>}/>
+        <Route path="/app/client/billing/:section?" element={<ClientRoute><BillingPage /></ClientRoute>}/>
+        <Route path="/app/admin" element={<AdminIndexRoute />}/>
+        <Route path="/app/admin/inicio" element={<AdminRoute><AdminHomePage /></AdminRoute>}/>
+        <Route path="/app/admin/planes" element={<AdminRoute><AdminPlansPage /></AdminRoute>}/>
+        <Route path="/app/admin/estadisticas" element={<AdminRoute><StatisticsPage /></AdminRoute>}/>
+        <Route path="/app/admin/auditoria" element={<AdminRoute><AuditLogPage /></AdminRoute>}/>
+        <Route path="/app/admin/usuarios" element={<StaffRoute><ManagedUsersPage /></StaffRoute>}/>
+        <Route path="/app/admin/pagos" element={<StaffRoute><ManagedPaymentsPage /></StaffRoute>}/>
+        <Route path="/app/admin/usuarios/:userId" element={<StaffRoute><ManagedUserDetailPage /></StaffRoute>}/>
+      </Route>
+      <Route path="/share" element={<SharedFilePage />}/>
+      <Route path="*" element={<Navigate to="/" replace />}/>
+
+    </Routes>
+    </>
+  )
+}

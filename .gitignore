@@ -10,6 +10,7 @@
 __pycache__/
 *.py[cod]
 *.sqlite3
+db.sqlite3
 venv/
 .venv/
 backend/venv/
@@ -30,6 +31,12 @@ yarn-error.log*
 # =========================
 .vscode/
 .idea/
+
+# =========================
+# Local assistant configuration
+# =========================
+.github/
+.claude/
 
 # =========================
 # OS

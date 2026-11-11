@@ -1,0 +1,108 @@
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: vaultdrive-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
+
+
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: vaultdrive-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    environment:
+      - MINIO_ENDPOINT=minio:9000
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health/', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 20s
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+
+  trash-cleanup:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: vaultdrive-trash-cleanup
+    command:
+      - python
+      - manage.py
+      - purge_expired_trash
+      - --loop
+      - --interval-seconds
+      - "86400"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    environment:
+      - MINIO_ENDPOINT=minio:9000
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  minio:
+    image: bitnamilegacy/minio:latest
+    container_name: vaultdrive-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_BROWSER: "on"
+    volumes:
+      - minio_data:/bitnami/minio/data
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://127.0.0.1:9000/minio/health/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  minio-init:
+    image: bitnamilegacy/minio-client:latest
+    container_name: vaultdrive-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      set -e;
+      until (mc alias set localminio http://minio:9000 minioadmin minioadmin); do
+        echo 'Esperando que MinIO esté disponible...';
+        sleep 2;
+      done;
+      mc mb localminio/vaultdrive-storage --ignore-existing;
+      echo 'Bucket vaultdrive-storage verificado/creado con éxito.';
+      exit 0;
+      "
+
+volumes:
+  minio_data:
