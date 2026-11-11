@@ -264,7 +264,6 @@ class TrashService:
             )
         except Archivo.DoesNotExist as exc:
             raise TrashNotFoundError("El archivo no existe en la papelera.") from exc
-        cls._ensure_retention_elapsed(archivo)
         backend = cls._get_backend(storage_backend)
         if not backend.delete_object(archivo.object_key):
             raise TrashStorageError("No se pudo eliminar el archivo del almacenamiento.")
@@ -285,7 +284,6 @@ class TrashService:
             )
         except Carpeta.DoesNotExist as exc:
             raise TrashNotFoundError("La carpeta no existe en la papelera.") from exc
-        cls._ensure_retention_elapsed(folder)
         if folder.carpeta_padre_id and Carpeta.objects.filter(
             id=folder.carpeta_padre_id,
             usuario=user,

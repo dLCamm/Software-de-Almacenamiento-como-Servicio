@@ -124,7 +124,7 @@ export default function DashboardPage() {
             </div>
             <div className="trash-entry__actions">
               <button type="button" onClick={() => dashboard.restoreTrashItem(item)}>Restaurar</button>
-              <button type="button" className="is-danger" disabled={daysRemaining !== 0} onClick={() => dashboard.deleteTrashItem(item)} title={daysRemaining > 0 ? 'Disponible al cumplir los 30 días' : undefined}>Eliminar definitivamente</button>
+              <button type="button" className="is-danger" onClick={() => dashboard.deleteTrashItem(item)}>Eliminar definitivamente</button>
             </div>
           </article>
         })}

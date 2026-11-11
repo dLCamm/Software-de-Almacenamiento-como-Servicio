@@ -11,7 +11,6 @@ from storage.models import Archivo, Carpeta, EstadoElemento
 from storage.services.file_service import FileService
 from storage.services.trash_service import (
     TrashConflictError,
-    TrashRetentionError,
     TrashService,
 )
 
@@ -120,15 +119,14 @@ class TrashServiceTestCase(TestCase):
         with self.assertRaises(TrashConflictError):
             TrashService.restore_folder(self.user, trashed.id)
 
-    def test_permanent_file_delete_is_blocked_before_retention_expires(self):
+    def test_permanent_file_delete_is_allowed_before_retention_expires(self):
         file = self.create_file("informe.pdf")
         TrashService.move_file_to_trash(self.user, file.id)
 
-        with self.assertRaises(TrashRetentionError):
-            TrashService.delete_file_permanently(self.user, file.id, self.backend)
+        TrashService.delete_file_permanently(self.user, file.id, self.backend)
 
-        self.backend.delete_object.assert_not_called()
-        self.assertTrue(Archivo.objects.filter(id=file.id).exists())
+        self.backend.delete_object.assert_called_once()
+        self.assertFalse(Archivo.objects.filter(id=file.id).exists())
 
     def test_permanent_file_delete_succeeds_after_retention_expires(self):
         file = self.create_file(

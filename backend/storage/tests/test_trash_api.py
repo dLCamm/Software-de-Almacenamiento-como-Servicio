@@ -54,7 +54,9 @@ class TrashApiTestCase(TestCase):
         self.assertEqual(len(response.data), 1)
         self.assertEqual(str(response.data[0]["id"]), str(own_file.id))
 
-    def test_api_rejects_permanent_delete_before_retention_expires(self):
+    @patch("storage.services.trash_service.get_storage_backend")
+    def test_api_allows_permanent_delete_before_retention_expires(self, mock_backend):
+        mock_backend.return_value.delete_object.return_value = True
         file = self.create_trashed_file(
             self.user,
             trashed_at=timezone.now() - timedelta(days=29),
@@ -65,8 +67,8 @@ class TrashApiTestCase(TestCase):
             f"/api/storage/files/{file.id}/?permanente=true"
         )
 
-        self.assertEqual(response.status_code, 409)
-        self.assertTrue(Archivo.objects.filter(id=file.id).exists())
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Archivo.objects.filter(id=file.id).exists())
 
     def test_restore_endpoint_restores_current_users_file(self):
         file = self.create_trashed_file(self.user)
