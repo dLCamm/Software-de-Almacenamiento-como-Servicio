@@ -14,8 +14,8 @@ function errorText(error) {
 }
 
 const formatNumber = (value) => Number(value || 0).toLocaleString('es-GT')
-// El backend no envía moneda, así que el importe se muestra sin símbolo.
-const formatAmount = (value) => Number(value || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+// Todos los planes se cobran en quetzales.
+const formatAmount = (value) => 'Q' + Number(value || 0).toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 const formatShare = (part, total) => {
   if (!total) return '0%'
   const share = (part / total) * 100

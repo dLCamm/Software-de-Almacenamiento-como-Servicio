@@ -73,7 +73,7 @@ export default function DashboardPage() {
   return <main className="dashboard-page" onClick={() => dashboard.setOpenMenu('')} onDragOver={(event) => { event.preventDefault(); if (!dashboard.showTrash && event.dataTransfer?.types.includes('Files')) setDragging(true) }} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget)) setDragging(false) }} onDrop={handleDrop}>
     <header className={`dashboard-toolbar${optionsOpen ? ' is-options-open' : ''}`}>
       {dashboard.showTrash
-        ? <div className="toolbar-actions"><button className="toolbar-button toolbar-button--secondary" type="button" onClick={dashboard.closeTrash}><Icon name="back" />Volver a mi unidad</button></div>
+        ? <div className="toolbar-actions"><button className="toolbar-button toolbar-button--secondary" type="button" onClick={dashboard.closeTrash}><Icon name="back" />Volver a mis archivos</button></div>
         : <>
           <label className="drive-search"><Icon name="search" /><input type="search" value={dashboard.search} onChange={(event) => dashboard.setSearch(event.target.value)} placeholder="Buscar archivos y carpetas..." aria-label="Buscar archivos y carpetas" /></label>
           {/* En celular, filtros, vista y papelera se agrupan en este menú desplegable. */}
@@ -106,7 +106,7 @@ export default function DashboardPage() {
     <section className="folder-content" aria-label="Contenido de la unidad">
       <div className="folder-heading">{dashboard.showTrash ? <span className="breadcrumb-current">PAPELERA</span> : <nav className="folder-path" aria-label="Ruta de la carpeta">
         <ol>
-          <li><button type="button" className={`folder-path__item folder-path__root${dashboard.currentFolder ? '' : ' is-current'}`} onClick={dashboard.goToRoot} aria-current={dashboard.currentFolder ? undefined : 'page'}><Icon name="home" size={16} /><span>Mi unidad</span></button></li>
+          <li><button type="button" className={`folder-path__item folder-path__root${dashboard.currentFolder ? '' : ' is-current'}`} onClick={dashboard.goToRoot} aria-current={dashboard.currentFolder ? undefined : 'page'}><Icon name="home" size={16} /><span>Mis archivos</span></button></li>
           {dashboard.folderStack.map((folder, index) => {
             const isLast = index === dashboard.folderStack.length - 1
             return <li key={folder.id}>

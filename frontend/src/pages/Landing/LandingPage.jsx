@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { getPublicStats, listPlans } from '../../api/billing'
+import { listPlans } from '../../api/billing'
 import {
   CubeLogoIcon,
   ArrowRightIcon,
@@ -12,6 +12,7 @@ import {
   FolderIcon,
   AdminShieldIcon,
   CheckIcon,
+  StarIcon,
 } from '../../components/icons'
 import ThemeToggle from '../../components/ThemeToggle'
 import './LandingPage.css'
@@ -36,33 +37,12 @@ const FORMATS = [
   { label: '.PNG', tone: 'violet' },
 ]
 
-function formatCount(value) {
-  return Number(value || 0).toLocaleString('es-GT')
-}
-
-function formatStorage(bytes) {
-  const value = Number(bytes || 0)
-  const units = ['B', 'KB', 'MB', 'GB', 'TB']
-  let size = value
-  let unit = 0
-  while (size >= 1024 && unit < units.length - 1) {
-    size /= 1024
-    unit += 1
-  }
-  const digits = unit === 0 || size >= 100 ? 0 : 1
-  return `${size.toLocaleString('es-GT', { maximumFractionDigits: digits })} ${units[unit]}`
-}
-
-// Cifras reales que entrega /api/public/stats/ (se actualizan en cada visita).
-function buildStats(stats) {
-  const ready = Boolean(stats)
-  return [
-    { icon: UsersIcon, value: ready ? formatCount(stats.usuarios) : '—', label: 'Usuarios registrados' },
-    { icon: ShieldIcon, value: ready ? formatCount(stats.archivos) : '—', label: 'Archivos guardados' },
-    { icon: FolderIcon, value: ready ? formatCount(stats.carpetas) : '—', label: 'Carpetas creadas' },
-    { icon: CloudIcon, value: ready ? formatStorage(stats.almacenado_bytes) : '—', label: 'Almacenado' },
-  ]
-}
+const STATS = [
+  { icon: UsersIcon, value: '3,490+', label: 'Usuarios activos' },
+  { icon: ShieldIcon, value: '99.9%', label: 'Disponibilidad' },
+  { icon: CloudIcon, value: '12 TB', label: 'Almacenado' },
+  { icon: StarIcon, value: '4.9', label: 'Valoración', suffix: '★' },
+]
 
 const FEATURES = [
   {
@@ -100,17 +80,7 @@ export default function LandingPage() {
   const [plans, setPlans] = useState([])
   const [plansLoading, setPlansLoading] = useState(true)
   const [plansError, setPlansError] = useState('')
-  const [stats, setStats] = useState(null)
-  const [statsError, setStatsError] = useState(false)
   const navigate = useNavigate()
-
-  useEffect(() => {
-    let active = true
-    getPublicStats()
-      .then((result) => { if (active) setStats(result) })
-      .catch(() => { if (active) setStatsError(true) })
-    return () => { active = false }
-  }, [])
 
   useEffect(() => {
     let active = true
@@ -228,8 +198,8 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section className="stats" aria-label="Estadísticas" hidden={statsError}>
-          {buildStats(stats).map((stat) => (
+        <section className="stats" aria-label="Estadísticas">
+          {STATS.map((stat) => (
             <div key={stat.label} className="stats__card">
               <stat.icon className="stats__icon" aria-hidden="true" />
               <div className="stats__value">

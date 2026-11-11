@@ -45,7 +45,7 @@ export default function BillingPage() {
   return <main className="billing-page">
     <header className="billing-header">
       <div><span className="billing-header__crumb">Planes y Facturación</span><h1>{section.label}</h1><p>Plan actual: <strong>{planName} — {formatMonthlyPrice(planPrice)}</strong></p></div>
-      <button className="billing-back-button" type="button" onClick={() => navigate('/app/client')}><BillingIcon name="arrow" size={18} />Volver a mi unidad</button>
+      <button className="billing-back-button" type="button" onClick={() => navigate('/app/client')}><BillingIcon name="arrow" size={18} />Volver a mis archivos</button>
     </header>
 
     {/* En celular, las secciones se muestran como pestañas deslizables bajo el encabezado. */}
