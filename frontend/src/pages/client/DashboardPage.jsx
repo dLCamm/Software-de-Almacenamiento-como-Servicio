@@ -29,6 +29,12 @@ function FileSkeletonGrid({ layout }) {
   </div>
 }
 
+function getInitials(account) {
+  const parts = [account.first_name, account.last_name].filter(Boolean)
+  const letters = parts.length ? parts.map((part) => part.trim()[0]) : [account.email?.[0]]
+  return letters.join('').slice(0, 2).toUpperCase()
+}
+
 export default function DashboardPage() {
   const navigate = useNavigate()
   const uploadInput = useRef(null)
@@ -94,14 +100,18 @@ export default function DashboardPage() {
         </>}
     </header>
 
-    {!account && !accountError && <div className="dashboard-account" aria-hidden="true"><span className="file-skeleton__shape dashboard-account__skeleton" /><span className="file-skeleton__shape dashboard-account__skeleton dashboard-account__skeleton--short" /></div>}
-    {account && <div className="dashboard-account">
-      <strong>Hola, {[account.first_name, account.last_name].filter(Boolean).join(' ') || account.email}</strong>
-      <span>{account.email}</span>
-    </div>}
-    {accountError && <div className="dashboard-alert dashboard-alert--error" role="alert">{accountError}</div>}
-
-    <StorageBar usage={dashboard.usage} onUpgrade={() => navigate('/app/client/billing')} />
+    <section className="dashboard-hero">
+      {!account && !accountError && <div className="dashboard-welcome" aria-hidden="true"><span className="file-skeleton__shape dashboard-welcome__avatar" /><div className="dashboard-welcome__text"><span className="file-skeleton__shape dashboard-account__skeleton" /><span className="file-skeleton__shape dashboard-account__skeleton dashboard-account__skeleton--short" /></div></div>}
+      {account && <div className="dashboard-welcome">
+        <span className="dashboard-welcome__avatar" aria-hidden="true">{getInitials(account)}</span>
+        <div className="dashboard-welcome__text">
+          <h1>Hola, {account.first_name || account.email.split('@')[0]} <span aria-hidden="true">👋</span></h1>
+          <p>{account.email}</p>
+        </div>
+      </div>}
+      {accountError && <div className="dashboard-alert dashboard-alert--error" role="alert">{accountError}</div>}
+      <StorageBar usage={dashboard.usage} onUpgrade={() => navigate('/app/client/billing')} />
+    </section>
 
     <section className="folder-content" aria-label="Contenido de la unidad">
       <div className="folder-heading">{dashboard.showTrash ? <span className="breadcrumb-current">PAPELERA</span> : <nav className="folder-path" aria-label="Ruta de la carpeta">

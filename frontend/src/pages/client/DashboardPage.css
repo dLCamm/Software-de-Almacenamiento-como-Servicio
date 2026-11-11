@@ -370,3 +370,51 @@
 .share-setup__summary strong { color: var(--purple-95); }
 .share-setup__summary.is-error { color: var(--red-77); }
 .share-setup__summary.is-error .dashboard-icon { color: var(--red-62); }
+
+/* ===== Encabezado del panel: saludo + tarjeta de almacenamiento ===== */
+.dashboard-hero { padding: 24px 2.6% 8px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(340px, 540px); align-items: center; gap: 20px 32px; }
+.dashboard-welcome { min-width: 0; display: flex; align-items: center; gap: 16px; }
+.dashboard-welcome__avatar { width: 58px; height: 58px; flex: none; display: grid; place-items: center; border-radius: 18px; color: var(--on-accent); background: linear-gradient(135deg, var(--purple-64), var(--purple-72)); font-size: 21px; font-weight: 750; letter-spacing: .02em; box-shadow: 0 10px 28px var(--shadow-purple-60-a28); }
+.dashboard-welcome__text { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.dashboard-welcome h1 { margin: 0; color: var(--gray-100); font-size: 26px; font-weight: 750; line-height: 1.15; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dashboard-welcome p { margin: 0; color: var(--gray-61); font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.storage-card { min-width: 0; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; border: 1px solid var(--gray-19); border-radius: 18px; background: var(--gray-10); }
+.storage-card__head { display: flex; align-items: center; gap: 14px; }
+.storage-card__icon { width: 44px; height: 44px; flex: none; display: grid; place-items: center; border-radius: 13px; color: var(--purple-72); background: var(--purple-63-a15); }
+.storage-card__amount { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.storage-card__amount > span { color: var(--gray-61); font-size: 13px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; }
+.storage-card__amount strong { color: var(--gray-100); font-size: 21px; font-weight: 750; white-space: nowrap; }
+.storage-card__amount small { color: var(--gray-61); font-size: 15px; font-weight: 500; }
+.storage-card__button { min-height: 42px; padding: 0 16px; flex: none; display: inline-flex; align-items: center; gap: 8px; border: 0; border-radius: 11px; color: var(--on-accent) !important; background: var(--purple-64); font-size: 15px !important; font-weight: 650; cursor: pointer; transition: transform .15s ease, box-shadow .15s ease, background .15s ease; }
+.storage-card__button:hover { background: var(--purple-69); transform: translateY(-1px); box-shadow: 0 10px 26px var(--shadow-purple-60-a28); }
+.storage-card .storage-track { height: 10px; margin: 0; }
+.storage-card.is-warning .storage-track span { background: linear-gradient(90deg, var(--yellow-63), var(--orange-51)); }
+.storage-card.is-critical .storage-track span { background: linear-gradient(90deg, var(--orange-51), var(--red-62)); }
+.storage-card__foot { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px 14px; }
+.plan-chip { padding: 6px 12px; display: inline-flex; align-items: center; gap: 7px; border: 1px solid var(--purple-32); border-radius: 999px; color: var(--gray-77); background: var(--purple-18); font-size: 14px; }
+.plan-chip strong { color: var(--purple-90); font-weight: 700; }
+.storage-card__free { color: var(--gray-61); font-size: 14px; }
+.storage-card__pending { margin: 0; color: var(--yellow-63); font-size: 13px; }
+.dashboard-hero .dashboard-alert { grid-column: 1; margin: 0; }
+.dashboard-welcome__avatar.file-skeleton__shape { box-shadow: none; }
+
+/* Barra de herramientas más clara: filtros agrupados y textos legibles */
+@media (min-width: 761px) {
+  .toolbar-options .drive-filter, .toolbar-options .upload-options { min-height: 50px; padding: 0 14px; border: 1px solid var(--gray-19); border-radius: 12px; background: var(--gray-10); color: var(--gray-67); font-size: 14px; }
+  .toolbar-options .drive-filter select { min-height: 36px; padding: 0 6px; border: 0; background: transparent; color: var(--gray-100); font-size: 14px !important; font-weight: 600; cursor: pointer; }
+  .toolbar-options .checkbox-inline { font-size: 14px; cursor: pointer; }
+  .toolbar-options .checkbox-inline input { width: 17px; height: 17px; }
+  .toolbar-options .ttl-field input { min-height: 34px; }
+  .drive-search { height: 52px; }
+  .drive-search input { font-size: 16px !important; }
+}
+@media (max-width: 1100px) { .dashboard-hero { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 760px) {
+  .dashboard-hero { padding: 18px 16px 6px; gap: 16px; }
+  .dashboard-welcome__avatar { width: 50px; height: 50px; border-radius: 15px; font-size: 18px; }
+  .dashboard-welcome h1 { font-size: 22px; }
+  .dashboard-welcome p { font-size: 14px; }
+  .storage-card { padding: 16px; }
+  .storage-card__amount strong { font-size: 19px; }
+  .storage-card__button { padding: 0 13px; font-size: 14px !important; }
+}
