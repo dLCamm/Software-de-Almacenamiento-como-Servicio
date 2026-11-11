@@ -274,8 +274,6 @@ export default function useDashboard(storageApi) {
   }
 
   async function deleteTrashItem(item) {
-    const expiration = Date.parse(item.fecha_eliminacion)
-    if (!Number.isFinite(expiration) || expiration > Date.now()) return
     if (!window.confirm(`¿Eliminar definitivamente “${item.nombre}”? Esta acción no se puede deshacer.`)) return
     try {
       if (item.tipo === 'archivo') await storageApi.deleteFile(item.id, true)
