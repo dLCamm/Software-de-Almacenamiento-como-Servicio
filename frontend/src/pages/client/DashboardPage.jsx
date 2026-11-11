@@ -88,12 +88,19 @@ export default function DashboardPage() {
           </button>
           <div id="toolbar-options" className="toolbar-options" onClick={(event) => event.stopPropagation()}>
             <label className="drive-filter"><span>Tipo</span><select value={dashboard.extensionFilter} onChange={(event) => dashboard.setExtensionFilter(event.target.value)} aria-label="Filtrar por tipo de archivo"><option value="">Todos</option>{Object.entries(SUPPORTED_FILE_TYPES).map(([extension, config]) => <option key={extension} value={extension}>{config.label}</option>)}</select></label>
-            {dashboard.canUploadTemporary && <div className="upload-options"><label className="checkbox-inline"><input type="checkbox" checked={dashboard.uploadTemporary} onChange={(event) => dashboard.setUploadTemporary(event.target.checked)} />Subida temporal</label>{dashboard.uploadTemporary && <label className="ttl-field">Días<input type="number" min="1" max="365" value={dashboard.uploadTtlDays} onChange={(event) => dashboard.setUploadTtlDays(Math.min(365, Math.max(1, Number(event.target.value) || 14)))} /></label>}</div>}
+            {dashboard.canUploadTemporary && <div className={`upload-options temp-upload${dashboard.uploadTemporary ? ' is-on' : ''}`} title="Los archivos que subas con esta opción se eliminan solos después de los días que elijas. Ideal para documentos que solo necesitas por un tiempo.">
+              <label className="temp-toggle">
+                <input type="checkbox" checked={dashboard.uploadTemporary} onChange={(event) => dashboard.setUploadTemporary(event.target.checked)} />
+                <span className="temp-toggle__switch" aria-hidden="true" />
+                <span className="temp-toggle__text"><strong><Icon name="clock" size={16} />Archivo temporal</strong><small>{dashboard.uploadTemporary ? 'Se borrará solo en' : 'Se borra solo tras unos días'}</small></span>
+              </label>
+              {dashboard.uploadTemporary && <label className="ttl-field"><input type="number" min="1" max="365" value={dashboard.uploadTtlDays} onChange={(event) => dashboard.setUploadTtlDays(Math.min(365, Math.max(1, Number(event.target.value) || 14)))} aria-label="Días antes de borrarse" /><span>días</span></label>}
+            </div>}
             <div className="view-toggle" role="group" aria-label="Vista de archivos"><button type="button" className={layout === 'grid' ? 'is-active' : ''} onClick={() => setLayout('grid')} aria-label="Vista de cuadrícula" aria-pressed={layout === 'grid'}><Icon name="grid" /></button><button type="button" className={layout === 'list' ? 'is-active' : ''} onClick={() => setLayout('list')} aria-label="Vista de lista" aria-pressed={layout === 'list'}><Icon name="list" /></button></div>
             <button className="toolbar-button toolbar-button--secondary toolbar-trash" type="button" title="Papelera" onClick={() => { setOptionsOpen(false); dashboard.openTrash() }}><Icon name="trash" /><span>Papelera</span></button>
           </div>
           <div className="toolbar-actions">
-            <button className="toolbar-button toolbar-button--primary" type="button" onClick={() => uploadInput.current?.click()} disabled={dashboard.uploading}><Icon name="upload" />{dashboard.uploading ? 'Subiendo…' : 'Subir archivo'}</button>
+            <button className="toolbar-button toolbar-button--primary" type="button" onClick={() => uploadInput.current?.click()} disabled={dashboard.uploading}><Icon name="upload" />{dashboard.uploading ? 'Subiendo…' : dashboard.uploadTemporary ? 'Subir temporal' : 'Subir archivo'}</button>
             <button className="toolbar-button toolbar-button--secondary" type="button" onClick={() => dashboard.showFolderDialog('create')}><Icon name="folderAdd" /><span>Nueva carpeta</span></button>
           </div>
           <input ref={uploadInput} className="visually-hidden" type="file" accept={dashboard.acceptedFileTypes} multiple onChange={handleFileSelection} />
