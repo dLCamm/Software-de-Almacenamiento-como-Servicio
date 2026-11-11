@@ -1,0 +1,6 @@
+# HTTPS automático (Let's Encrypt / ZeroSSL) delante del frontend.
+# El dominio viene de la variable DOMAIN (ver .env en la raíz del servidor).
+{$DOMAIN} {
+	encode gzip
+	reverse_proxy frontend:80
+}

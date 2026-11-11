@@ -46,8 +46,15 @@ git clone -b deploy/presentacion https://github.com/dLCamm/Software-de-Almacenam
 cd kubo
 nano backend/.env        # pegar el mismo .env que usan en local
 
-# Levantar (cambiar el dominio por el de la VM)
-export HTTP_PORT=80 PUBLIC_URL=http://<nombre>.<region>.cloudapp.azure.com
+# Configuración del servidor (una sola vez; cambiar el dominio por el de la VM)
+cat > .env <<'CFG'
+HTTP_PORT=8080
+COMPOSE_PROFILES=https
+DOMAIN=<nombre>.<region>.cloudapp.azure.com
+PUBLIC_URL=https://<nombre>.<region>.cloudapp.azure.com
+CFG
+
+# Levantar (Caddy obtiene el certificado https solo; abrir puertos 80 y 443 en Azure)
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
@@ -55,7 +62,6 @@ Actualizar después de nuevos cambios:
 
 ```bash
 cd kubo && git pull
-export HTTP_PORT=80 PUBLIC_URL=http://<nombre>.<region>.cloudapp.azure.com
 docker compose -f docker-compose.prod.yml up -d --build
 docker compose -f docker-compose.prod.yml restart frontend
 ```

@@ -1,7 +1,10 @@
 # Despliegue: todo se sirve desde un solo origen (Nginx).
 #
-# En un servidor (Azure):
-#   HTTP_PORT=80 PUBLIC_URL=http://<dominio> docker compose -f docker-compose.prod.yml up -d --build
+# En un servidor (Azure), con HTTPS automático (Caddy). En el .env de la raíz:
+#   COMPOSE_PROFILES=https
+#   DOMAIN=<dominio>
+#   PUBLIC_URL=https://<dominio>
+#   docker compose -f docker-compose.prod.yml up -d --build
 #
 # En una computadora del equipo, con enlace público por Cloudflare Tunnel:
 #   .\desplegar.ps1   (usa el perfil "tunnel")
@@ -110,5 +113,26 @@ services:
       - frontend
     restart: unless-stopped
 
+  caddy:
+    image: caddy:2-alpine
+    container_name: kubo-caddy
+    # Solo con --profile https (o COMPOSE_PROFILES=https). Publica 80 y 443
+    # y obtiene/renueva el certificado para DOMAIN.
+    profiles: ["https"]
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+    restart: unless-stopped
+
 volumes:
   minio_data:
+  caddy_data:
+  caddy_config:
