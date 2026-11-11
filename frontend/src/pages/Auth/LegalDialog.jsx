@@ -1,5 +1,4 @@
 import { useEffect } from 'react'
-import { createPortal } from 'react-dom'
 import './LegalDialog.css'
 
 const UPDATED = '10 de noviembre de 2026'
@@ -154,8 +153,7 @@ export default function LegalDialog({ type, onClose }) {
 
   if (!doc) return null
 
-  // Se monta en <body> para que la ventana cubra toda la pantalla.
-  return createPortal(
+  return (
     <div className="legal-backdrop" onClick={onClose}>
       <section
         className="legal-dialog"
@@ -165,25 +163,37 @@ export default function LegalDialog({ type, onClose }) {
         onClick={(event) => event.stopPropagation()}
       >
         <header className="legal-dialog__header">
-          <div>
+          <span className="legal-dialog__icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              {type === 'privacidad'
+                ? <><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z" /><path d="m9 12 2 2 4-4" /></>
+                : <><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z" /><path d="M14 3v5h5M9 13h6M9 17h6" /></>}
+            </svg>
+          </span>
+          <div className="legal-dialog__heading">
             <h2 id="legal-title">{doc.title}</h2>
             <p>Última actualización: {UPDATED}</p>
           </div>
-          <button type="button" className="legal-dialog__close" onClick={onClose} aria-label="Cerrar">×</button>
+          <button type="button" className="legal-dialog__close" onClick={onClose} aria-label="Cerrar">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" /></svg>
+          </button>
         </header>
         <div className="legal-dialog__body">
-          {doc.sections.map((section) => (
-            <section key={section.heading}>
-              <h3>{section.heading}</h3>
-              {section.body.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
-            </section>
-          ))}
+          {doc.sections.map((section) => {
+            const [, number, title] = section.heading.match(/^(\d+)\.\s*(.*)$/) || [null, '', section.heading]
+            return (
+              <section className="legal-section" key={section.heading}>
+                <h3>{number && <span className="legal-section__number">{number}</span>}{title}</h3>
+                {section.body.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}
+              </section>
+            )
+          })}
         </div>
         <footer className="legal-dialog__footer">
-          <button type="button" className="btn btn--primary" onClick={onClose}>Entendido</button>
+          <p className="legal-dialog__note">Kubo · Tu almacenamiento en la nube</p>
+          <button type="button" className="legal-dialog__ok" onClick={onClose}>Entendido</button>
         </footer>
       </section>
-    </div>,
-    document.body,
+    </div>
   )
 }
