@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { MailIcon, LockIcon, UserIcon, CheckDotIcon } from '../../components/icons'
 import FormField from './FormField'
 import { register } from '../../api/auth'
+import LegalDialog from './LegalDialog'
 
 const REQUIREMENTS = [
   { id: 'length', label: 'Mínimo 8 caracteres', test: (v) => v.length >= 8 },
@@ -19,14 +20,10 @@ const initialForm = {
   acceptedTerms: false,
 }
 
-const PLAN_OPTIONS = [
-  { code: 'free', label: 'FREE — 5 GB, Q0/mes' },
-  { code: 'pro', label: 'PRO — 50 GB, Q149/mes' },
-  { code: 'business', label: 'BUSINESS — 500 GB, Q399/mes' },
-]
-
-export default function RegisterForm({ onSwitchTab, onResendVerification, selectedPlan = 'free' }) {
-  const [form, setForm] = useState(() => ({ ...initialForm, planCode: selectedPlan }))
+// Toda cuenta nueva inicia con FREE; el cambio de plan se hace después en Planes y Facturación.
+export default function RegisterForm({ onSwitchTab, onResendVerification }) {
+  const [form, setForm] = useState(initialForm)
+  const [legalDoc, setLegalDoc] = useState(null)
   const [errors, setErrors] = useState({})
   const [formError, setFormError] = useState('')
   const [registration, setRegistration] = useState(null)
@@ -133,22 +130,6 @@ export default function RegisterForm({ onSwitchTab, onResendVerification, select
           error={errors.email}
           onChange={(e) => updateField('email', e.target.value)}
         />
-        <label className="register-plan">
-          Plan solicitado
-          <select
-            value={form.planCode}
-            onChange={(e) => updateField('planCode', e.target.value)}
-          >
-            {PLAN_OPTIONS.map((plan) => (
-              <option key={plan.code} value={plan.code}>{plan.label}</option>
-            ))}
-          </select>
-        </label>
-        {form.planCode !== 'free' && (
-          <p className="auth-panel__subtitle">
-            El plan de pago quedará pendiente. Tu cuenta iniciará con FREE (5 GB) hasta confirmar el pago.
-          </p>
-        )}
         <FormField
           icon={LockIcon}
           isPassword
@@ -184,8 +165,8 @@ export default function RegisterForm({ onSwitchTab, onResendVerification, select
             onChange={(e) => updateField('acceptedTerms', e.target.checked)}
           />
           <span>
-            Acepto los <a href="#terminos">Términos de Servicio</a> y la{' '}
-            <a href="#privacidad">Política de Privacidad</a>
+            Acepto los <button type="button" className="terms-link" onClick={() => setLegalDoc('terminos')}>Términos de Servicio</button> y la{' '}
+            <button type="button" className="terms-link" onClick={() => setLegalDoc('privacidad')}>Política de Privacidad</button>
           </span>
         </label>
         {errors.acceptedTerms && <p className="auth-form__error">{errors.acceptedTerms}</p>}
@@ -196,6 +177,7 @@ export default function RegisterForm({ onSwitchTab, onResendVerification, select
           {loading ? 'Creando cuenta…' : 'Crear cuenta'}
         </button>
       </form>
+      {legalDoc && <LegalDialog type={legalDoc} onClose={() => setLegalDoc(null)} />}
     </div>
   )
 }
