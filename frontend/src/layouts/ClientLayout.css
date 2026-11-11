@@ -88,6 +88,8 @@
 .client-nav__storage--system.active { border-color: var(--purple-46); }
 
 .client-nav__footer { margin-top: 14px; padding-top: 14px; display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--nav-border); }
+/* Sin tarjeta de almacenamiento (soporte), el pie también se queda abajo. */
+.client-nav__links + .client-nav__footer { margin-top: auto; }
 
 .client-topbar, .client-nav__scrim { display: none; }
 .client-topbar__brand { padding: 0; display: inline-flex; align-items: center; gap: 9px; border: 0; color: var(--gray-100); background: transparent; font: inherit; cursor: pointer; }
