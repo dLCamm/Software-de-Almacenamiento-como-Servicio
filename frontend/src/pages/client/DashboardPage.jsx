@@ -121,7 +121,7 @@ export default function DashboardPage() {
     </section>
 
     <section className="folder-content" aria-label="Contenido de la unidad">
-      <div className="folder-heading">{dashboard.showTrash ? <span className="breadcrumb-current">PAPELERA</span> : <nav className="folder-path" aria-label="Ruta de la carpeta">
+      {!dashboard.showTrash && <div className="folder-heading"><nav className="folder-path" aria-label="Ruta de la carpeta">
         <ol>
           <li><button type="button" className={`folder-path__item folder-path__root${dashboard.currentFolder ? '' : ' is-current'}`} onClick={dashboard.goToRoot} aria-current={dashboard.currentFolder ? undefined : 'page'}><Icon name="home" size={16} /><span>Mis archivos</span></button></li>
           {dashboard.folderStack.map((folder, index) => {
@@ -132,9 +132,13 @@ export default function DashboardPage() {
             </li>
           })}
         </ol>
-      </nav>}</div>
-      {dashboard.showTrash && <div className="trash-toolbar">
-        <p className="trash-description">Los elementos se eliminan automáticamente después de 30 días. Puedes restaurarlos mientras permanezcan aquí.</p>
+      </nav></div>}
+      {dashboard.showTrash && <div className="trash-header">
+        <span className="trash-header__icon" aria-hidden="true"><Icon name="trash" size={28} /></span>
+        <div className="trash-header__text">
+          <h2>Papelera <span className="trash-header__count">{dashboard.trashItems.length} {dashboard.trashItems.length === 1 ? 'elemento' : 'elementos'}</span></h2>
+          <p><Icon name="clock" size={15} />Lo que está aquí se elimina automáticamente después de 30 días. Puedes restaurarlo mientras tanto.</p>
+        </div>
         {dashboard.trashItems.length > 0 && <div className="trash-toolbar__actions">
           <button type="button" onClick={dashboard.restoreAllTrash} disabled={dashboard.trashBusy}><Icon name="restore" size={16} />Restaurar todo</button>
           <button type="button" className="is-danger" onClick={dashboard.emptyTrash} disabled={dashboard.trashBusy}><Icon name="trash" size={16} />{dashboard.trashBusy ? 'Procesando…' : 'Vaciar papelera'}</button>

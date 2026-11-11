@@ -443,3 +443,19 @@
   .toolbar-options .temp-upload.is-on { border-color: var(--purple-44); background: var(--purple-18); }
 }
 @media (max-width: 760px) { .toolbar-options .temp-upload { padding: 10px 12px; border: 1px solid var(--gray-19); border-radius: 12px; background: var(--gray-12); } }
+
+/* Encabezado de la papelera */
+.trash-header { margin: 8px 0 20px; padding: 20px 22px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; border: 1px solid var(--red-30); border-radius: 18px; background: linear-gradient(135deg, var(--red-20), var(--gray-10) 70%); }
+.trash-header__icon { width: 56px; height: 56px; flex: none; display: grid; place-items: center; border-radius: 16px; color: var(--red-77); background: var(--gray-15-2); border: 1px solid var(--red-30); }
+.trash-header__icon .dashboard-icon { color: var(--red-77); }
+.trash-header__text { min-width: 220px; flex: 1; display: flex; flex-direction: column; gap: 7px; }
+.trash-header h2 { margin: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 10px; color: var(--gray-100); font-size: 25px; font-weight: 750; }
+.trash-header__count { padding: 4px 11px; border-radius: 999px; color: var(--gray-77); background: var(--gray-15); font-size: 13px; font-weight: 600; }
+.trash-header p { margin: 0; display: flex; align-items: center; gap: 7px; color: var(--gray-67); font-size: 14.5px; line-height: 1.45; }
+.trash-header p .dashboard-icon { flex: none; color: var(--gray-61); }
+@media (max-width: 760px) {
+  .trash-header { padding: 16px; gap: 14px; }
+  .trash-header__icon { width: 48px; height: 48px; }
+  .trash-header h2 { font-size: 22px; }
+  .trash-header .trash-toolbar__actions { width: 100%; }
+}
