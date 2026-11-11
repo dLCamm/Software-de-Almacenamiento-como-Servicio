@@ -8,6 +8,7 @@ import { AdminIcon } from '../plans/AdminIcon'
 import TablePagination from '../shared/TablePagination'
 import usePagedList from '../shared/usePagedList'
 import SupportUserCreateDialog from './SupportUserCreateDialog'
+import AdminCrumb from '../shared/AdminCrumb'
 import '../plans/AdminPlansPage.css'
 import './ManagementPage.css'
 
@@ -19,6 +20,12 @@ function formatDate(value) {
 
 function userName(user) {
   return [user.first_name, user.last_name].filter(Boolean).join(' ') || 'Sin nombre'
+}
+
+function userInitials(user) {
+  const parts = [user.first_name, user.last_name].filter(Boolean)
+  const letters = parts.length ? parts.map((part) => part.trim()[0]) : [user.email?.[0] || '?']
+  return letters.join('').slice(0, 2).toUpperCase()
 }
 
 function planName(plan) {
@@ -79,7 +86,7 @@ export default function ManagedUsersPage() {
 
   return <main className="admin-page">
     <header className="admin-header">
-      <div><span className="admin-header__crumb">Administración</span><h1>Gestión de usuarios</h1><p>{loading ? 'Cargando cuentas…' : `${users.length} ${users.length === 1 ? 'cuenta encontrada' : 'cuentas encontradas'}`}</p></div>
+      <div><AdminCrumb /><h1>Gestión de usuarios</h1><p>{loading ? 'Cargando cuentas…' : `${users.length} ${users.length === 1 ? 'cuenta encontrada' : 'cuentas encontradas'}`}</p></div>
       {profile?.role === 'ADMIN' && <button className="admin-button admin-button--primary" type="button" onClick={() => { setNotice(''); setCreatingSupport(true) }}><AdminIcon name="plus" />Crear usuario de soporte</button>}
     </header>
 
@@ -104,9 +111,9 @@ export default function ManagedUsersPage() {
             <table className="admin-table management-users-table">
               <thead><tr><th>Usuario</th><th>Rol</th><th>Plan</th><th>Estado</th><th>Registro</th><th><span className="visually-hidden">Detalle</span></th></tr></thead>
               <tbody>{paged.pageItems.map((user) => <tr key={user.id}>
-                <td data-label="Usuario"><span className="management-user-name">{userName(user)}</span><small className="management-user-email">{user.email}</small></td>
+                <td data-label="Usuario"><div className="management-user-cell"><span className="management-avatar" aria-hidden="true">{userInitials(user)}</span><div className="management-user-cell__text"><span className="management-user-name">{userName(user)}</span><small className="management-user-email">{user.email}</small></div></div></td>
                 <td data-label="Rol">{label(ROLE_LABELS, user.role)}</td>
-                <td data-label="Plan">{user.role === 'CLIENT' ? planName(user.plan) : 'No aplica'}</td>
+                <td data-label="Plan">{user.role === 'CLIENT' ? <span className={`management-plan-chip is-${(user.plan?.code || 'free').toLowerCase()}`}>{planName(user.plan)}</span> : <span className="management-muted">No aplica</span>}</td>
                 <td data-label="Estado"><span className={`management-badge ${user.is_active ? 'is-success' : 'is-muted'}`}>{user.is_active ? 'Activo' : 'Desactivado'}</span></td>
                 <td data-label="Registro">{formatDate(user.created_at)}</td>
                 <td className="admin-actions"><Link className="admin-button admin-button--secondary management-detail-button" to={`/app/admin/usuarios/${user.id}`}>Ver detalle</Link></td>

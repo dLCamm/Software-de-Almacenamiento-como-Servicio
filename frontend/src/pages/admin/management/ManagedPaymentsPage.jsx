@@ -5,6 +5,7 @@ import { AdminIcon } from '../plans/AdminIcon'
 import ManagementPaymentsTable from './ManagementPaymentsTable'
 import TablePagination from '../shared/TablePagination'
 import usePagedList from '../shared/usePagedList'
+import AdminCrumb from '../shared/AdminCrumb'
 import '../plans/AdminPlansPage.css'
 import './ManagementPage.css'
 
@@ -46,7 +47,7 @@ export default function ManagedPaymentsPage() {
   }
 
   return <main className="admin-page">
-    <header className="admin-header"><div><span className="admin-header__crumb">Administración</span><h1>Historial global de pagos</h1><p>{loading ? 'Cargando transacciones…' : `${payments.length} ${payments.length === 1 ? 'transacción' : 'transacciones'}`}</p></div></header>
+    <header className="admin-header"><div><AdminCrumb /><h1>Historial global de pagos</h1><p>{loading ? 'Cargando transacciones…' : `${payments.length} ${payments.length === 1 ? 'transacción' : 'transacciones'}`}</p></div></header>
     <div className="admin-content">
       {error && <div className="admin-alert admin-alert--error" role="alert"><span>{error}</span></div>}
       <MobileFilters>

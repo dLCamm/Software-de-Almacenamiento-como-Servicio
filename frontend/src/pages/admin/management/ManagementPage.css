@@ -84,3 +84,25 @@
   .management-users-table td[data-label="Plan"]::before,
   .management-payments-table td[data-label="Plan"]::before { content: attr(data-label); }
 }
+
+/* Encabezado: etiqueta del área (Administración / Soporte técnico) */
+.admin-crumb { width: fit-content; margin-bottom: 8px !important; padding: 5px 11px; display: inline-flex !important; align-items: center; gap: 7px; border: 1px solid var(--purple-32); border-radius: 999px; color: var(--purple-90) !important; background: var(--purple-18); font-size: 13px !important; font-weight: 650 !important; }
+.admin-page .admin-header h1 { font-size: 28px; }
+.admin-page .admin-header p { font-size: 15.5px; }
+
+/* Filtros y tabla más legibles */
+.admin-page .admin-field > span { font-size: 14px; }
+.admin-page .admin-field input, .admin-page .admin-field select { font-size: 15px !important; }
+.admin-page .admin-table th { font-size: 12.5px; }
+.admin-page .admin-table td { font-size: 15px; }
+.management-user-cell { display: flex; align-items: center; gap: 13px; min-width: 0; }
+.management-user-cell__text { min-width: 0; }
+.management-avatar { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 12px; color: var(--purple-90); background: var(--purple-18); border: 1px solid var(--purple-32); font-size: 14px; font-weight: 750; }
+.admin-page .management-user-name { font-size: 15.5px; }
+.admin-page .management-user-email { font-size: 13.5px; }
+.management-plan-chip { padding: 5px 11px; display: inline-flex; border-radius: 999px; color: var(--gray-77); background: var(--gray-15); font-size: 13px; font-weight: 700; letter-spacing: .02em; }
+.management-plan-chip.is-pro { color: var(--purple-90); background: var(--purple-18); }
+.management-plan-chip.is-business { color: var(--yellow-63); background: var(--yellow-47-a13); }
+.management-muted { color: var(--admin-muted); }
+.admin-page .management-badge { font-size: 13px; padding: 5px 11px; }
+.admin-page .management-detail-button { font-size: 14px !important; }
